@@ -72,22 +72,61 @@
                 </div>
             </div>
             
-            <nav class="flex bg-slate-100 p-1 rounded-xl">
-                <button onclick="switchTab('habit-tracker')" id="btn-habit-tracker" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
-                    🌱 Habit Tracker
-                </button>
-                <button onclick="switchTab('todo')" id="btn-todo" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                    🎯 Todo List
-                </button>
-                <button onclick="switchTab('plan-2026')" id="btn-plan-2026" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                    📅 Plan 2026
-                </button>
-            </nav>
+            <div class="flex items-center gap-4">
+                <nav class="flex bg-slate-100 p-1 rounded-xl">
+                    <button onclick="switchTab('habit-tracker')" id="btn-habit-tracker" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                        🌱 Habit Tracker
+                    </button>
+                    <button onclick="switchTab('todo')" id="btn-todo" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        🎯 Todo List
+                    </button>
+                    <button onclick="switchTab('plan-2026')" id="btn-plan-2026" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        📅 Plan 2026
+                    </button>
+                </nav>
+
+                <!-- Zone d'authentification Google -->
+                <div id="auth-container">
+                    <button id="btn-login" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all shadow-sm">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+                            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
+                            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                        </svg>
+                        <span>Se connecter</span>
+                    </button>
+                    <div id="user-info" class="hidden flex items-center gap-3">
+                        <img id="user-avatar" class="w-8 h-8 rounded-full border border-indigo-200" src="" alt="Avatar">
+                        <button id="btn-logout" class="text-xs text-slate-500 hover:text-rose-500 underline font-medium">Déconnexion</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
+    <!-- Écran de connexion si non connecté -->
+    <div id="logged-out-screen" class="hidden flex-1 max-w-md w-full mx-auto px-4 flex flex-col justify-center items-center text-center py-16">
+        <div class="p-4 bg-indigo-50 rounded-full text-indigo-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800 mb-2">Espace sécurisé</h2>
+        <p class="text-sm text-slate-500 mb-6">Connecte-toi avec ton compte Google pour accéder à ton suivi d'habitudes et synchroniser tes données.</p>
+        <button id="btn-login-main" class="flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all shadow-md hover:shadow-lg">
+            <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
+                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
+                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+            </svg>
+            <span>Se connecter avec Google</span>
+        </button>
+    </div>
+
     <!-- Main Content Area -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main id="app-content" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- ================= PARTIE 1: HABIT TRACKER ================= -->
         <section id="habit-tracker" class="tab-content active space-y-8">
@@ -256,10 +295,11 @@
         <p>© 2026 Mon Organiseur Pastel Personnel — Synchronisé Cloud</p>
     </footer>
 
-    <!-- FIREBASE MODULE LOGIC -->
+    <!-- FIREBASE AUTH & FIRESTORE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDCn3grH6ldSbadZzd05nsfkdvI76BMXIY",
@@ -273,29 +313,88 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const docRef = doc(db, "planner", "userData");
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
-        // Synchronisation en temps réel Firebase
-        onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                window.categories = data.categories || window.categories;
-                window.habits = data.habits || window.habits;
-                window.todoData = data.todoData || window.todoData;
-                window.planCategories = data.planCategories || window.planCategories;
-                window.planGoals = data.planGoals || window.planGoals;
+        let unsubscribeSnapshot = null;
+        let currentUserDocRef = null;
 
-                renderHabits();
-                renderTodos();
-                renderPlanGoals();
+        // Connexion Google
+        const loginGoogle = () => {
+            signInWithPopup(auth, provider).catch(error => {
+                console.error("Erreur de connexion :", error);
+            });
+        };
+
+        // Déconnexion
+        const logoutGoogle = () => {
+            signOut(auth).then(() => {
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+            }).catch(error => {
+                console.error("Erreur de déconnexion :", error);
+            });
+        };
+
+        document.getElementById('btn-login').addEventListener('click', loginGoogle);
+        document.getElementById('btn-login-main').addEventListener('click', loginGoogle);
+        document.getElementById('btn-logout').addEventListener('click', logoutGoogle);
+
+        // Ecouteur d'état d'authentification
+        onAuthStateChanged(auth, (user) => {
+            const loginBtn = document.getElementById('btn-login');
+            const userInfo = document.getElementById('user-info');
+            const userAvatar = document.getElementById('user-avatar');
+            const appContent = document.getElementById('app-content');
+            const loggedOutScreen = document.getElementById('logged-out-screen');
+
+            if (user) {
+                // Utilisateur connecté
+                loginBtn.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                userAvatar.src = user.photoURL || 'https://via.placeholder.com/32';
+                
+                appContent.classList.remove('hidden');
+                loggedOutScreen.classList.add('hidden');
+
+                // Enregistrement spécifique par identifiant d'utilisateur (user.uid)
+                currentUserDocRef = doc(db, "users", user.uid);
+
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+
+                unsubscribeSnapshot = onSnapshot(currentUserDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        window.categories = data.categories || window.categories;
+                        window.habits = data.habits || window.habits;
+                        window.todoData = data.todoData || window.todoData;
+                        window.planCategories = data.planCategories || window.planCategories;
+                        window.planGoals = data.planGoals || window.planGoals;
+
+                        renderHabits();
+                        renderTodos();
+                        renderPlanGoals();
+                    } else {
+                        saveData(); // Première sauvegarde si les données n'existent pas encore pour cet utilisateur
+                    }
+                });
+
             } else {
-                saveData(); // Sauvegarde initiale si la base est vide
+                // Utilisateur non connecté
+                loginBtn.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+                
+                appContent.classList.add('hidden');
+                loggedOutScreen.classList.remove('hidden');
+
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+                currentUserDocRef = null;
             }
         });
 
         window.saveData = async function() {
+            if (!currentUserDocRef) return;
             try {
-                await setDoc(docRef, {
+                await setDoc(currentUserDocRef, {
                     categories: window.categories,
                     habits: window.habits,
                     todoData: window.todoData,
@@ -305,7 +404,7 @@
             } catch (e) {
                 console.error("Erreur de sauvegarde Firebase: ", e);
             }
-        }
+        };
     </script>
 
     <!-- CLASSIC APPLICATION LOGIC -->
