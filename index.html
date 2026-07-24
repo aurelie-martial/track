@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="apple-touch-icon" href="lily-tracker.png">
+    <!-- Nom personnalisé sous l'icône de l'écran d'accueil -->
+    <meta name="apple-mobile-web-app-title" content="LilyPlanner">
+
+    <!-- Masquer la barre de navigateur Safari pour un effet "Application native" -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Mon Organiseur Personnel 2026</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -59,45 +66,110 @@
 
     <!-- Header & Navigation -->
     <header class="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between py-4 gap-4">
-            <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-indigo-50 rounded-xl text-indigo-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                    </svg>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between py-4 gap-4">
+            
+            <!-- En-tête : Logo + Menu Profil Mobile à droite -->
+            <div class="flex items-center justify-between w-full md:w-auto">
+                <div class="flex items-center gap-3">
+                    <div class="p-2.5 bg-indigo-50 rounded-xl text-indigo-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-800">LilyPlanner <span class="text-indigo-400 font-medium">2026</span></h1>
+                        <p class="text-xs text-slate-400">Discipline vaut mieux que motivation</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold text-slate-800">LilyPlanner <span class="text-indigo-400 font-medium">2026</span></h1>
-                    <p class="text-xs text-slate-400">Un peu d'organisation, ça peut pas faire de mal :)</p>
+
+                <!-- Zone Profil Mobile (visible uniquement sous md) -->
+                <div class="md:hidden relative">
+                    <!-- Bouton Connexion Mobile -->
+                    <button id="btn-login-mobile" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </button>
+
+                    <!-- User Avatar & Dropdown Mobile -->
+                    <div id="user-info-mobile" class="hidden relative">
+                        <button onclick="toggleMobileDropdown()" class="focus:outline-none flex items-center">
+                            <img id="user-avatar-mobile" class="w-9 h-9 rounded-full border-2 border-indigo-200" src="" alt="Avatar">
+                        </button>
+                        <!-- Menu déroulant -->
+                        <div id="mobile-user-menu" class="hidden absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+                            <button id="btn-logout-mobile" class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-slate-50 font-medium flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 01-3-3h4a3 3 0 013 3v1" />
+                                </svg>
+                                Se déconnecter
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <nav class="flex flex-wrap justify-center bg-slate-100 p-1 rounded-xl gap-1">
-                <button onclick="switchTab('habit-tracker')" id="btn-habit-tracker" class="tab-btn px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
-                    🌱 Habit Tracker
-                </button>
-                <button onclick="switchTab('todo')" id="btn-todo" class="tab-btn px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                    🎯 Todo List
-                </button>
-                <button onclick="switchTab('plan-2026')" id="btn-plan-2026" class="tab-btn px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                    📅 Plan 2026
-                </button>
-                <button onclick="switchTab('recipes')" id="btn-recipes" class="tab-btn px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                    🍳 Recettes
-                </button>
-            </nav>
+            <div class="flex items-center gap-4 w-full md:w-auto justify-center">
+                <nav class="flex bg-slate-100 p-1 rounded-xl w-full md:w-auto justify-between md:justify-start">
+                    <button onclick="switchTab('habit-tracker')" id="btn-habit-tracker" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                        🌱 Habit Tracker
+                    </button>
+                    <button onclick="switchTab('todo')" id="btn-todo" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        🎯 Todo List
+                    </button>
+                    <button onclick="switchTab('plan-2026')" id="btn-plan-2026" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        📅 Plan 2026
+                    </button>
+                </nav>
+
+                <!-- Zone d'authentification Google Desktop (masquée sur mobile) -->
+                <div id="auth-container" class="hidden md:block">
+                    <button id="btn-login" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all shadow-sm">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+                            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
+                            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                        </svg>
+                        <span>Se connecter</span>
+                    </button>
+                    <div id="user-info" class="hidden flex items-center gap-3">
+                        <img id="user-avatar" class="w-8 h-8 rounded-full border border-indigo-200" src="" alt="Avatar">
+                        <button id="btn-logout" class="text-xs text-slate-500 hover:text-rose-500 underline font-medium">Déconnexion</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
+    <!-- Écran de connexion si non connecté -->
+    <div id="logged-out-screen" class="hidden flex-1 max-w-md w-full mx-auto px-4 flex flex-col justify-center items-center text-center py-16">
+        <div class="p-4 bg-indigo-50 rounded-full text-indigo-500 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800 mb-2">Espace sécurisé</h2>
+        <p class="text-sm text-slate-500 mb-6">Connecte-toi avec ton compte Google pour accéder à ton suivi d'habitudes et synchroniser tes données.</p>
+        <button id="btn-login-main" class="flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all shadow-md hover:shadow-lg">
+            <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
+                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
+                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12s.7 2.3 1.9 4.7l3.7-2.9z"/>
+                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.2-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+            </svg>
+            <span>Se connecter avec Google</span>
+        </button>
+    </div>
+
     <!-- Main Content Area -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main id="app-content" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         <!-- ================= PARTIE 1: HABIT TRACKER ================= -->
         <section id="habit-tracker" class="tab-content active space-y-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
                     <h2 class="text-2xl font-bold text-slate-800">Suivi des Habitudes</h2>
-                    <p class="text-sm text-slate-500">Discipline vaut mieux que motivation</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="flex items-center gap-2 bg-indigo-50/50 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-100">
@@ -119,9 +191,15 @@
                     </div>
 
                     <div class="flex md:hidden items-center bg-slate-100 p-1 rounded-xl gap-2 border border-slate-200">
-                        <button onclick="navigateMobileDay(-1)" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-sm">←</button>
-                        <span id="mobile-day-display" class="text-xs font-bold text-indigo-600 px-1 min-w-[60px] text-center">Jour --</span>
-                        <button onclick="navigateMobileDay(1)" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-sm">→</button>
+                        <button onclick="navigateMobileDay(-1)" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-sm">
+                            ←
+                        </button>
+                        <span id="mobile-day-display" class="text-xs font-bold text-indigo-600 px-1 min-w-[60px] text-center">
+                            Jour --
+                        </span>
+                        <button onclick="navigateMobileDay(1)" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-sm">
+                            →
+                        </button>
                     </div>
                 </div>
             </div>
@@ -141,7 +219,8 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Catégorie</label>
-                                <select id="new-habit-category" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white"></select>
+                                <select id="new-habit-category" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white">
+                                </select>
                             </div>
                             <div class="flex items-end">
                                 <button onclick="addHabit()" class="w-full bg-emerald-400 hover:bg-emerald-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-2">
@@ -176,9 +255,8 @@
         <section id="todo" class="tab-content space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Gestion par Blocs de Tâches</h2>
-                    <p class="text-sm text-slate-500">Organisez vos priorités par univers ou projet.</p>
-                </div>
+                    <h2 class="text-2xl font-bold text-slate-800">Todo List</h2>
+                 </div>
                 <div class="flex gap-2">
                     <input type="text" id="new-todo-cat-input" placeholder="Nouveau bloc..." class="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
                     <button onclick="addTodoCategory()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">
@@ -192,9 +270,42 @@
 
         <!-- ================= PARTIE 3: PLAN 2026 ================= -->
         <section id="plan-2026" class="tab-content space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
-                <h2 class="text-2xl font-bold text-slate-800">Objectifs de l'Année 2026</h2>
-                <p class="text-sm text-slate-500">Planifiez à long terme et associez vos buts à un mois précis de l'année.</p>
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 class="text-2xl font-bold text-slate-800">Plan 2026</h2>
+                <button onclick="managePlanCategories()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 font-semibold px-4 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 w-fit">
+                    ⚙️ Gérer les catégories Plan
+                </button>
+            </div>
+
+            <!-- Rétroplanning Visuel (Gantt) -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Rétroplanning Visuel
+                </h3>
+                <div class="overflow-x-auto">
+                    <div class="min-w-[800px]">
+                        <!-- En-tête des mois -->
+                        <div class="grid grid-cols-12 border-b border-slate-200 pb-2 text-center font-bold text-xs text-slate-500 uppercase tracking-wider">
+                            <div>Jan</div>
+                            <div>Fév</div>
+                            <div>Mar</div>
+                            <div>Avr</div>
+                            <div>Mai</div>
+                            <div>Juin</div>
+                            <div>Juil</div>
+                            <div>Aoû</div>
+                            <div>Sep</div>
+                            <div>Oct</div>
+                            <div>Nov</div>
+                            <div>Déc</div>
+                        </div>
+
+                        <!-- Grille du Rétroplanning -->
+                        <div id="plan-gantt-chart" class="py-4 space-y-3 min-h-[120px]">
+                            <!-- Généré par JavaScript -->
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -204,7 +315,6 @@
                         <input type="text" id="new-plan-title" placeholder="Ex: Finir le storyboard..." class="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 min-w-[240px]">
                         <div class="flex items-center gap-1">
                             <select id="new-plan-cat" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"></select>
-                            <button onclick="managePlanCategories()" title="Gérer les catégories" class="p-2 bg-slate-200 rounded-xl hover:bg-slate-300 transition-colors text-sm">⚙️</button>
                         </div>
                         <select id="new-plan-month" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
                             <option value="">Non planifié (Mois)</option>
@@ -246,246 +356,191 @@
             </div>
         </section>
 
-        <!-- ================= PARTIE 4: RECETTES ================= -->
-        <section id="recipes" class="tab-content space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Mes Recettes Personnelles</h2>
-                    <p class="text-sm text-slate-500">Stockez et consultez facilement vos plats préférés.</p>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <button onclick="openRecipeCategoryModal()" class="bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors">
-                        🎨 Gérer Catégories
-                    </button>
-                    <button onclick="openRecipeModal()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1">
-                        <span>+</span> Nouvelle Recette
-                    </button>
-                </div>
-            </div>
-
-            <!-- Grille des Recettes (Cartes Aperçu) -->
-            <div id="recipes-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Généré dynamiquement -->
-            </div>
-        </section>
-
     </main>
 
-    <!-- ================= MODALS POUR RECETTES ================= -->
-    
-    <!-- Modal Ajout / Édition de Recette -->
-    <div id="recipe-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 id="recipe-modal-title" class="text-lg font-bold text-slate-800">Ajouter une recette</h3>
-                <button onclick="closeRecipeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
-            </div>
-
-            <form id="recipe-form" onsubmit="saveRecipe(event)" class="space-y-4">
-                <input type="hidden" id="recipe-id">
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Titre de la recette *</label>
-                    <input type="text" id="recipe-title-input" required placeholder="Ex: Tarte aux pommes maison" class="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Catégorie(s)</label>
-                    <div id="recipe-categories-checkboxes" class="flex flex-wrap gap-2 border border-slate-200 p-3 rounded-xl max-h-32 overflow-y-auto">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Photo (Upload)</label>
-                    <input type="file" id="recipe-image-input" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
-                    <div id="recipe-image-preview" class="mt-2 hidden">
-                        <img id="recipe-preview-img" src="" alt="Aperçu" class="w-24 h-24 object-cover rounded-xl border border-slate-200">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Ingrédients (Bloc texte libre)</label>
-                    <textarea id="recipe-ingredients-input" rows="4" placeholder="• 200g de farine&#10;• 3 œufs&#10;• 100g de sucre..." class="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Étapes de préparation (Bloc texte libre)</label>
-                    <textarea id="recipe-steps-input" rows="5" placeholder="1. Préchauffer le four à 180°C.&#10;2. Mélanger les ingrédients...&#10;3. Enfourner 30 min." class="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400"></textarea>
-                </div>
-
-                <div class="border-t border-slate-100 pt-3">
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Valeurs Nutritionnelles (Optionnel)</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                            <input type="text" id="recipe-nutri-cal" placeholder="Calories (ex: 350 kcal)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
-                        </div>
-                        <div>
-                            <input type="text" id="recipe-nutri-prot" placeholder="Protéines (ex: 12g)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
-                        </div>
-                        <div>
-                            <input type="text" id="recipe-nutri-carbs" placeholder="Glucides / Lipides" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
-                        </div>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Lien Web / Vidéo (Accessible sur la mini-fiche)</label>
-                    <input type="url" id="recipe-link-input" placeholder="https://exemple.com/recette..." class="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
-                </div>
-
-                <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                    <button type="button" onclick="closeRecipeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm hover:bg-slate-50">Annuler</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-500 text-white font-medium text-sm hover:bg-indigo-600">Enregistrer la recette</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Détails de Recette (Lecture seule) -->
-    <div id="recipe-detail-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden overflow-y-auto">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-6">
-            <div class="flex justify-between items-start">
-                <div class="space-y-1">
-                    <h3 id="detail-title" class="text-2xl font-bold text-slate-800"></h3>
-                    <div id="detail-categories" class="flex flex-wrap gap-1.5"></div>
-                </div>
-                <button onclick="closeRecipeDetailModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
-            </div>
-
-            <div id="detail-img-container" class="hidden">
-                <img id="detail-img" src="" alt="" class="w-full h-56 object-cover rounded-2xl border border-slate-100">
-            </div>
-
-            <div id="detail-nutri-container" class="hidden grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl text-center text-xs">
-                <div>
-                    <span class="block text-slate-400 font-medium">Calories</span>
-                    <span id="detail-nutri-cal" class="font-bold text-slate-700"></span>
-                </div>
-                <div>
-                    <span class="block text-slate-400 font-medium">Protéines</span>
-                    <span id="detail-nutri-prot" class="font-bold text-slate-700"></span>
-                </div>
-                <div>
-                    <span class="block text-slate-400 font-medium">Glucides / Lipides</span>
-                    <span id="detail-nutri-carbs" class="font-bold text-slate-700"></span>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-100">
-                    <h4 class="font-bold text-amber-800 mb-2 text-sm flex items-center gap-1.5">🥕 Ingrédients</h4>
-                    <p id="detail-ingredients" class="whitespace-pre-line text-sm text-slate-700 leading-relaxed"></p>
-                </div>
-                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
-                    <h4 class="font-bold text-indigo-800 mb-2 text-sm flex items-center gap-1.5">👩‍🍳 Préparation</h4>
-                    <p id="detail-steps" class="whitespace-pre-line text-sm text-slate-700 leading-relaxed"></p>
-                </div>
-            </div>
-
-            <div id="detail-link-container" class="hidden pt-2">
-                <a id="detail-link" href="#" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-800 underline">
-                    🔗 Voir la source de la recette
-                </a>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <button onclick="closeRecipeDetailModal()" class="px-5 py-2 rounded-xl bg-slate-100 text-slate-600 font-medium text-sm hover:bg-slate-200">Fermer</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Gestion des Catégories de Recettes -->
-    <div id="recipe-cat-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-slate-800">Catégories de Recettes</h3>
-                <button onclick="closeRecipeCategoryModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
-            </div>
-
-            <div class="flex gap-2">
-                <input type="text" id="new-recipe-cat-name" placeholder="Nom..." class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
-                <input type="color" id="new-recipe-cat-color" value="#818cf8" class="w-10 h-10 rounded-xl border border-slate-200 p-0.5 cursor-pointer">
-                <button onclick="addRecipeCategory()" class="bg-purple-500 hover:bg-purple-600 text-white font-medium px-4 py-2 rounded-xl text-sm whitespace-nowrap">Créer</button>
-            </div>
-
-            <div id="recipe-categories-list" class="space-y-2 max-h-60 overflow-y-auto border border-slate-100 p-2 rounded-xl">
-                <!-- Populated dynamically -->
-            </div>
-
-            <div class="flex justify-end pt-2">
-                <button onclick="closeRecipeCategoryModal()" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-sm font-medium hover:bg-slate-200">Fermer</button>
-            </div>
-        </div>
-    </div>
-
     <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
-        <p>© 2026 Mon Organiseur Pastel Personnel — Fait avec soin</p>
+        <p>© 2026 Mon Organiseur Pastel Personnel — Synchronisé Cloud</p>
     </footer>
 
-    <!-- JavaScript Application Logic -->
-    <script>
-        // --- BASE DATA STRUCTURES ---
-        let categories = JSON.parse(localStorage.getItem('planner_categories')) || ["Santé", "Travail", "Loisirs", "Maison"];
-        
-        let habits = JSON.parse(localStorage.getItem('planner_habits')) || [
-            { id: 1, title: "Boire de l'eau (2L)", category: "Santé", history: {} },
-            { id: 2, title: "15 mins de lecture", category: "Loisirs", history: {} },
-            { id: 3, title: "Ranger le bureau", category: "Maison", history: {} }
-        ];
+    <!-- FIREBASE AUTH & FIRESTORE LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        let todoData = JSON.parse(localStorage.getItem('planner_todo')) || {
-            "Airbnb": [
-                { id: 101, text: "Répondre aux messages voyageurs", completed: false },
-                { id: 102, text: "Changer le code de la boîte à clés", completed: true }
-            ],
-            "Roman graphique": [
-                { id: 103, text: "Crayonnés de la page 12 à 15", completed: false },
-                { id: 104, text: "Recherche de palette de couleurs", completed: false }
-            ],
-            "TODO": [
-                { id: 105, text: "Prendre rdv dentiste", completed: false }
-            ]
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCn3grH6ldSbadZzd05nsfkdvI76BMXIY",
+            authDomain: "lilytracker-995a0.firebaseapp.com",
+            projectId: "lilytracker-995a0",
+            storageBucket: "lilytracker-995a0.firebasestorage.app",
+            messagingSenderId: "814870161383",
+            appId: "1:814870161383:web:68c7b55889044a68307f42",
+            measurementId: "G-GDXVNTQPF7"
         };
 
-        let planCategories = JSON.parse(localStorage.getItem('planner_plan_categories')) || ["Airbnb", "Roman graphique", "TODO", "Sport", "Achat"];
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
-        let planGoals = JSON.parse(localStorage.getItem('planner_goals')) || [
-            { id: 201, text: "Lancer les réservations de la saison haute", category: "Airbnb", completed: false, month: "Mars" },
-            { id: 202, text: "Terminer le premier chapitre complet", category: "Roman graphique", completed: false, month: "Juin" }
-        ];
+        let unsubscribeSnapshot = null;
+        let currentUserDocRef = null;
 
-        // Recettes & Catégories Recettes Data
-        let recipeCategories = JSON.parse(localStorage.getItem('planner_recipe_categories')) || [
-            { id: 'cat1', name: "Entrée", color: "#60a5fa" },
-            { id: 'cat2', name: "Plat principal", color: "#f87171" },
-            { id: 'cat3', name: "Dessert", color: "#f472b6" },
-            { id: 'cat4', name: "Healthy", color: "#34d399" }
-        ];
+        // Connexion Google
+        const loginGoogle = () => {
+            signInWithPopup(auth, provider).catch(error => {
+                console.error("Erreur de connexion :", error);
+            });
+        };
 
-        let recipes = JSON.parse(localStorage.getItem('planner_recipes')) || [
-            {
-                id: 301,
-                title: "Pancakes Moelleux",
-                categoryIds: ["cat3", "cat4"],
-                image: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?auto=format&fit=crop&w=500&q=80",
-                ingredients: "• 250g de farine\n• 2 œufs\n• 30cl de lait\n• 1 sachet de levure\n• 2 c.à.s de sucre",
-                steps: "1. Mélanger la farine, le sucre et la levure.\n2. Ajouter les œufs et verser le lait petit à petit.\n3. Cuire dans une poêle chaude poivrée 2 mins par côté.",
-                nutriCal: "210 kcal",
-                nutriProt: "7g",
-                nutriCarbs: "35g Glucides",
-                link: "https://www.marmiton.org"
+        // Déconnexion
+        const logoutGoogle = () => {
+            signOut(auth).then(() => {
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+            }).catch(error => {
+                console.error("Erreur de déconnexion :", error);
+            });
+        };
+
+        document.getElementById('btn-login').addEventListener('click', loginGoogle);
+        document.getElementById('btn-login-mobile').addEventListener('click', loginGoogle);
+        document.getElementById('btn-login-main').addEventListener('click', loginGoogle);
+        document.getElementById('btn-logout').addEventListener('click', logoutGoogle);
+        document.getElementById('btn-logout-mobile').addEventListener('click', () => {
+            logoutGoogle();
+            document.getElementById('mobile-user-menu').classList.add('hidden');
+        });
+
+        window.toggleMobileDropdown = () => {
+            const menu = document.getElementById('mobile-user-menu');
+            menu.classList.toggle('hidden');
+        };
+
+        // Fermer le menu déroulant mobile au clic à l'extérieur
+        document.addEventListener('click', (e) => {
+            const userInfoMobile = document.getElementById('user-info-mobile');
+            const mobileMenu = document.getElementById('mobile-user-menu');
+            if (userInfoMobile && !userInfoMobile.contains(e.target) && mobileMenu) {
+                mobileMenu.classList.add('hidden');
             }
+        });
+
+        // Ecouteur d'état d'authentification
+        onAuthStateChanged(auth, (user) => {
+            const loginBtn = document.getElementById('btn-login');
+            const loginBtnMobile = document.getElementById('btn-login-mobile');
+            const userInfo = document.getElementById('user-info');
+            const userInfoMobile = document.getElementById('user-info-mobile');
+            const userAvatar = document.getElementById('user-avatar');
+            const userAvatarMobile = document.getElementById('user-avatar-mobile');
+            const appContent = document.getElementById('app-content');
+            const loggedOutScreen = document.getElementById('logged-out-screen');
+
+            if (user) {
+                // Utilisateur connecté
+                loginBtn.classList.add('hidden');
+                loginBtnMobile.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                userInfoMobile.classList.remove('hidden');
+                
+                const avatarSrc = user.photoURL || 'https://via.placeholder.com/32';
+                userAvatar.src = avatarSrc;
+                userAvatarMobile.src = avatarSrc;
+                
+                appContent.classList.remove('hidden');
+                loggedOutScreen.classList.add('hidden');
+
+                // Enregistrement spécifique par identifiant d'utilisateur (user.uid)
+                currentUserDocRef = doc(db, "users", user.uid);
+
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+
+                unsubscribeSnapshot = onSnapshot(currentUserDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        window.categories = data.categories || window.categories;
+                        window.habits = data.habits || window.habits;
+                        window.todoData = data.todoData || window.todoData;
+                        window.planCategories = data.planCategories || window.planCategories;
+                        window.planGoals = data.planGoals || window.planGoals;
+
+                        renderHabits();
+                        renderTodos();
+                        renderPlanGoals();
+                    } else {
+                        saveData(); // Première sauvegarde si les données n'existent pas encore pour cet utilisateur
+                    }
+                });
+
+            } else {
+                // Utilisateur non connecté
+                loginBtn.classList.remove('hidden');
+                loginBtnMobile.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+                userInfoMobile.classList.add('hidden');
+                
+                appContent.classList.add('hidden');
+                loggedOutScreen.classList.remove('hidden');
+
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+                currentUserDocRef = null;
+            }
+        });
+
+        window.saveData = async function() {
+            if (!currentUserDocRef) return;
+            try {
+                await setDoc(currentUserDocRef, {
+                    categories: window.categories,
+                    habits: window.habits,
+                    todoData: window.todoData,
+                    planCategories: window.planCategories,
+                    planGoals: window.planGoals
+                });
+            } catch (e) {
+                console.error("Erreur de sauvegarde Firebase: ", e);
+            }
+        };
+    </script>
+
+    <!-- CLASSIC APPLICATION LOGIC -->
+    <script>
+        // --- BASE DATA STRUCTURES ---
+        window.categories = ["Santé", "Travail", "Loisirs", "Maison"];
+        window.habits = [
+            { id: 1, title: "Boire de l'eau (2L)", category: "Santé", history: {} },
+            { id: 2, title: "15 mins de lecture", category: "Loisirs", history: {} }
+        ];
+        window.todoData = {
+            "Airbnb": [{ id: 101, text: "Répondre aux messages", completed: false }],
+            "TODO": [{ id: 105, text: "Exemple de tâche", completed: false }]
+        };
+        window.planCategories = ["Airbnb", "Roman graphique", "TODO", "Sport"];
+        window.planGoals = [
+            { id: 201, text: "Lancer les réservations", category: "Airbnb", completed: false, month: "Mars" }
         ];
 
-        const pastelColors = [
-            'bg-pastel-blue', 'bg-pastel-green', 'bg-pastel-purple', 
-            'bg-pastel-pink', 'bg-pastel-orange'
+        const pastelColors = ['bg-pastel-blue', 'bg-pastel-green', 'bg-pastel-purple', 'bg-pastel-pink', 'bg-pastel-orange'];
+        
+        // Palette de couleurs pour les catégories du Plan 2026
+        const categoryColorPalette = [
+            { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200', bar: 'bg-indigo-500' },
+            { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', bar: 'bg-emerald-500' },
+            { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', bar: 'bg-amber-500' },
+            { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', bar: 'bg-purple-500' },
+            { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200', bar: 'bg-rose-500' },
+            { bg: 'bg-sky-100', text: 'text-sky-700', border: 'border-sky-200', bar: 'bg-sky-500' },
+            { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200', bar: 'bg-teal-500' }
         ];
+
+        function getCategoryColor(categoryName) {
+            const index = window.planCategories.indexOf(categoryName);
+            const colorIndex = index >= 0 ? index % categoryColorPalette.length : 0;
+            return categoryColorPalette[colorIndex];
+        }
 
         let selectedMobileDay = new Date().getDate();
 
-        // --- APPS & TABS NAVIGATION ---
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => {
@@ -508,17 +563,6 @@
             });
         }
 
-        function saveData() {
-            localStorage.setItem('planner_categories', JSON.stringify(categories));
-            localStorage.setItem('planner_habits', JSON.stringify(habits));
-            localStorage.setItem('planner_todo', JSON.stringify(todoData));
-            localStorage.setItem('planner_plan_categories', JSON.stringify(planCategories));
-            localStorage.setItem('planner_goals', JSON.stringify(planGoals));
-            localStorage.setItem('planner_recipe_categories', JSON.stringify(recipeCategories));
-            localStorage.setItem('planner_recipes', JSON.stringify(recipes));
-        }
-
-        // --- PART 1: HABIT TRACKER LOGIC ---
         function getDaysInMonth(month, year) {
             return new Date(year, month + 1, 0).getDate();
         }
@@ -526,20 +570,16 @@
         function changeMonth() {
             const monthIndex = parseInt(document.getElementById('habit-month-select').value);
             const totalDays = getDaysInMonth(monthIndex, 2026);
-            if (selectedMobileDay > totalDays) {
-                selectedMobileDay = totalDays;
-            }
+            if (selectedMobileDay > totalDays) selectedMobileDay = totalDays;
             renderHabits();
         }
 
         function navigateMobileDay(delta) {
             const monthIndex = parseInt(document.getElementById('habit-month-select').value);
             const totalDays = getDaysInMonth(monthIndex, 2026);
-            
             selectedMobileDay += delta;
             if (selectedMobileDay < 1) selectedMobileDay = 1;
             if (selectedMobileDay > totalDays) selectedMobileDay = totalDays;
-
             renderHabits();
         }
 
@@ -550,9 +590,7 @@
             container.innerHTML = '';
 
             const mobileDisplay = document.getElementById('mobile-day-display');
-            if (mobileDisplay) {
-                mobileDisplay.innerText = `Jour ${selectedMobileDay}`;
-            }
+            if (mobileDisplay) mobileDisplay.innerText = `Jour ${selectedMobileDay}`;
 
             const realToday = new Date();
             const realDay = realToday.getDate();
@@ -560,7 +598,7 @@
             const realYear = realToday.getFullYear();
 
             const catSelect = document.getElementById('new-habit-category');
-            catSelect.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+            if(catSelect) catSelect.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
 
             categories.forEach((cat, catIdx) => {
                 const catHabits = habits.filter(h => h.category === cat);
@@ -585,7 +623,6 @@
                                     const checkDate = new Date(2026, monthIndex, d);
                                     const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
                                     const isToday = (realYear === 2026 && monthIndex === realMonth && d === realDay);
-                                    
                                     const highlightClass = isToday ? 'bg-indigo-600 text-white rounded-full p-0.5 inline-block w-5 h-5 text-center leading-4 shadow-sm' : '';
                                     const weekendClass = isWeekend ? 'bg-slate-100' : '';
                                     const isMobileVisible = (d === selectedMobileDay) ? 'mobile-visible' : '';
@@ -653,38 +690,16 @@
                 `;
                 for (let d = 1; d <= totalDays; d++) {
                     let catColumnTotal = 0;
-                    catHabits.forEach(h => {
-                        if(h.history[`2026-${monthIndex}-${d}`]) catColumnTotal++;
-                    });
-                    
+                    catHabits.forEach(h => { if(h.history[`2026-${monthIndex}-${d}`]) catColumnTotal++; });
                     const checkDate = new Date(2026, monthIndex, d);
                     const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
                     const weekendClass = isWeekend ? 'bg-slate-200/50' : '';
                     const isMobileVisible = (d === selectedMobileDay) ? 'mobile-visible' : '';
-                    
                     catHtml += `<td class="day-cell py-2 font-bold text-slate-600 ${weekendClass} mobile-day-col ${isMobileVisible}">${catColumnTotal}</td>`;
                 }
-                catHtml += `
-                        <td colspan="2"></td>
-                    </tr>
-                `;
-
-                catHtml += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
+                catHtml += `<td colspan="2"></td></tr></tbody></table></div></div>`;
                 container.innerHTML += catHtml;
             });
-
-            if(habits.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center p-12 bg-white rounded-2xl border border-slate-100 text-slate-400">
-                        Aucune habitude configurée. Créez-en une en bas de page pour commencer !
-                    </div>
-                `;
-            }
 
             renderCategoriesManagementList();
         }
@@ -702,16 +717,9 @@
         function addHabit() {
             const titleInput = document.getElementById('new-habit-title');
             const catSelect = document.getElementById('new-habit-category');
-            
             if (!titleInput.value.trim()) return;
 
-            habits.push({
-                id: Date.now(),
-                title: titleInput.value.trim(),
-                category: catSelect.value,
-                history: {}
-            });
-
+            habits.push({ id: Date.now(), title: titleInput.value.trim(), category: catSelect.value, history: {} });
             titleInput.value = '';
             saveData();
             renderHabits();
@@ -744,17 +752,15 @@
         function renameCategory(oldName, index) {
             const newName = prompt(`Renommer la catégorie "${oldName}" en :`, oldName);
             if (!newName || newName.trim() === "" || categories.includes(newName.trim())) return;
-            
             categories[index] = newName.trim();
-            habits.forEach(h => {
-                if (h.category === oldName) h.category = newName.trim();
-            });
+            habits.forEach(h => { if (h.category === oldName) h.category = newName.trim(); });
             saveData();
             renderHabits();
         }
 
         function renderCategoriesManagementList() {
             const listEl = document.getElementById('categories-management-list');
+            if(!listEl) return;
             listEl.innerHTML = categories.map((cat, idx) => `
                 <div class="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded-lg text-sm">
                     <span class="font-medium text-slate-700">${cat}</span>
@@ -766,9 +772,9 @@
             `).join('');
         }
 
-        // --- PART 2: TODO LIST BLOCKS LOGIC ---
         function renderTodos() {
             const container = document.getElementById('todo-blocks-container');
+            if(!container) return;
             container.innerHTML = '';
 
             Object.keys(todoData).forEach((blockName, blockIdx) => {
@@ -780,11 +786,10 @@
                         <div class="px-5 py-4 ${blockColor} flex justify-between items-center border-b border-slate-100">
                             <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase">${blockName}</h3>
                             <div class="flex items-center gap-1">
-                                <button onclick="clearAllCategoryTodos('${blockName}')" title="Tout effacer" class="text-slate-500 hover:text-rose-600 p-1 rounded text-xs bg-white/50 hover:bg-white transition-colors">Vider</button>
-                                <button onclick="deleteTodoCategory('${blockName}')" title="Supprimer la catégorie" class="text-slate-400 hover:text-rose-600 p-1 rounded text-xs">❌</button>
+                                <button onclick="clearAllCategoryTodos('${blockName}')" class="text-slate-500 hover:text-rose-600 p-1 rounded text-xs bg-white/50 hover:bg-white transition-colors">Vider</button>
+                                <button onclick="deleteTodoCategory('${blockName}')" class="text-slate-400 hover:text-rose-600 p-1 rounded text-xs">❌</button>
                             </div>
                         </div>
-
                         <div class="p-4 flex-1 space-y-2 max-h-72 overflow-y-auto">
                 `;
 
@@ -806,20 +811,15 @@
                     `;
                 });
 
-                if (tasks.length === 0) {
-                    blockHtml += `<p class="text-xs text-center text-slate-400 py-6">Aucune tâche</p>`;
-                }
+                if (tasks.length === 0) blockHtml += `<p class="text-xs text-center text-slate-400 py-6">Aucune tâche</p>`;
 
                 blockHtml += `
                         </div>
-
                         <div class="p-3 bg-slate-50/50 border-t border-slate-100 flex gap-1.5">
                             <input type="text" id="input-add-${blockIdx}" placeholder="Ajouter une tâche..." 
                                 onkeydown="if(event.key === 'Enter') addTodoItem('${blockName}', ${blockIdx})" 
                                 class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-indigo-400 bg-white">
-                            <button onclick="addTodoItem('${blockName}', ${blockIdx})" class="bg-indigo-500 text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors">
-                                Ajouter
-                            </button>
+                            <button onclick="addTodoItem('${blockName}', ${blockIdx})" class="bg-indigo-500 text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors">Ajouter</button>
                         </div>
                     </div>
                 `;
@@ -831,7 +831,6 @@
             const input = document.getElementById('new-todo-cat-input');
             const name = input.value.trim();
             if (!name || todoData[name]) return;
-
             todoData[name] = [];
             input.value = '';
             saveData();
@@ -839,7 +838,7 @@
         }
 
         function deleteTodoCategory(name) {
-            if (confirm(`Voulez-vous supprimer tout le bloc "${name}" ?`)) {
+            if (confirm(`Supprimer le bloc "${name}" ?`)) {
                 delete todoData[name];
                 saveData();
                 renderTodos();
@@ -856,13 +855,7 @@
             const input = document.getElementById(`input-add-${blockIdx}`);
             const text = input.value.trim();
             if (!text) return;
-
-            todoData[categoryName].push({
-                id: Date.now(),
-                text: text,
-                completed: false
-            });
-
+            todoData[categoryName].push({ id: Date.now(), text: text, completed: false });
             input.value = '';
             saveData();
             renderTodos();
@@ -895,12 +888,14 @@
             renderTodos();
         }
 
-        // --- PART 3: PLAN 2026 LOGIC ---
+        // --- GESTION DES CATÉGORIES ET OBJECTIFS PLAN 2026 ---
         function managePlanCategories() {
-            const action = prompt("Tapez 'add' pour ajouter une catégorie ou 'delete' pour en supprimer une :");
+            const action = prompt("Catégories actuelles : " + planCategories.join(', ') + "\n\nTapez :\n- 'add' pour ajouter\n- 'edit' pour modifier\n- 'delete' pour supprimer");
             if (!action) return;
             
-            if (action.toLowerCase() === 'add') {
+            const lowerAction = action.toLowerCase().trim();
+
+            if (lowerAction === 'add') {
                 const newCat = prompt("Nom de la nouvelle catégorie :");
                 if (newCat && newCat.trim() !== "" && !planCategories.includes(newCat.trim())) {
                     planCategories.push(newCat.trim());
@@ -908,73 +903,158 @@
                     saveData();
                     renderPlanGoals();
                 }
-            } else if (action.toLowerCase() === 'delete') {
-                const catToDelete = prompt(`Entrez le nom exact de la catégorie à supprimer parmi :\n${planCategories.join(', ')}`);
-                if (catToDelete && planCategories.includes(catToDelete.trim())) {
-                    if (confirm(`Voulez-vous supprimer la catégorie "${catToDelete}" ?`)) {
-                        planCategories = planCategories.filter(c => c !== catToDelete.trim());
+            } else if (lowerAction === 'edit') {
+                const catToEdit = prompt(`Quelle catégorie voulez-vous modifier ?\n${planCategories.join(', ')}`);
+                if (catToEdit && planCategories.includes(catToEdit.trim())) {
+                    const newName = prompt(`Nouveau nom pour "${catToEdit.trim()}" :`, catToEdit.trim());
+                    if (newName && newName.trim() !== "" && !planCategories.includes(newName.trim())) {
+                        const oldCat = catToEdit.trim();
+                        const updatedName = newName.trim();
+                        const idx = planCategories.indexOf(oldCat);
+                        planCategories[idx] = updatedName;
+                        
+                        // Mettre à jour les objectifs rattachés
                         planGoals.forEach(g => {
-                            if (g.category === catToDelete.trim()) g.category = "TODO";
+                            if (g.category === oldCat) g.category = updatedName;
                         });
+                        
+                        planCategories.sort();
                         saveData();
                         renderPlanGoals();
                     }
                 }
+            } else if (lowerAction === 'delete') {
+                const catToDelete = prompt(`Nom exact de la catégorie à supprimer :\n${planCategories.join(', ')}`);
+                if (catToDelete && planCategories.includes(catToDelete.trim())) {
+                    const deletedCat = catToDelete.trim();
+                    planCategories = planCategories.filter(c => c !== deletedCat);
+                    planGoals.forEach(g => { if (g.category === deletedCat) g.category = "TODO"; });
+                    saveData();
+                    renderPlanGoals();
+                }
             }
+        }
+
+        function editPlanGoal(id) {
+            const goal = planGoals.find(g => g.id === id);
+            if (!goal) return;
+            const newText = prompt("Modifier l'objectif :", goal.text);
+            if (newText && newText.trim() !== "") {
+                goal.text = newText.trim();
+                saveData();
+                renderPlanGoals();
+            }
+        }
+
+        function updateGoalCategory(id, newCat) {
+            const goal = planGoals.find(g => g.id === id);
+            if (goal) {
+                goal.category = newCat;
+                saveData();
+                renderPlanGoals();
+            }
+        }
+
+        // --- AFFICHAGE DE LA SECTION PLAN 2026 ---
+        const monthsList = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+
+        function renderGanttChart() {
+            const ganttContainer = document.getElementById('plan-gantt-chart');
+            if (!ganttContainer) return;
+            ganttContainer.innerHTML = '';
+
+            if (planGoals.length === 0) {
+                ganttContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-4">Aucun objectif à afficher sur le rétroplanning.</p>`;
+                return;
+            }
+
+            planGoals.forEach(goal => {
+                const monthIndex = monthsList.indexOf(goal.month);
+                const colors = getCategoryColor(goal.category);
+
+                let rowHtml = `<div class="grid grid-cols-12 gap-1 items-center bg-slate-50/50 p-1.5 rounded-xl border border-slate-100">`;
+
+                if (monthIndex >= 0) {
+                    for (let m = 0; m < 12; m++) {
+                        if (m === monthIndex) {
+                            rowHtml += `
+                                <div class="col-span-1">
+                                    <div class="${goal.completed ? 'bg-slate-300 line-through opacity-70' : colors.bar} text-white text-[10px] font-medium py-1 px-1.5 rounded-lg truncate text-center shadow-xs cursor-pointer" onclick="editPlanGoal(${goal.id})" title="${goal.text} (${goal.category}) - Cliquer pour modifier">
+                                        ${goal.text}
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            rowHtml += `<div class="col-span-1 h-2 border-r border-slate-100 border-dashed"></div>`;
+                        }
+                    }
+                } else {
+                    rowHtml += `
+                        <div class="col-span-12 flex items-center justify-between px-2">
+                            <span class="text-xs font-medium text-slate-500 italic truncate cursor-pointer" onclick="editPlanGoal(${goal.id})">${goal.text}</span>
+                            <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">Non planifié</span>
+                        </div>
+                    `;
+                }
+
+                rowHtml += `</div>`;
+                ganttContainer.innerHTML += rowHtml;
+            });
         }
 
         function renderPlanGoals() {
             planGoals.sort((a, b) => a.category.localeCompare(b.category));
-
             const catSelect = document.getElementById('new-plan-cat');
-            if (catSelect) {
-                catSelect.innerHTML = planCategories.map(c => `<option value="${c}">${c}</option>`).join('');
-            }
+            if (catSelect) catSelect.innerHTML = planCategories.map(c => `<option value="${c}">${c}</option>`).join('');
 
             const tbody = document.getElementById('plan-goals-tbody');
+            if(!tbody) return;
             tbody.innerHTML = '';
 
             planGoals.forEach(goal => {
+                const colors = getCategoryColor(goal.category);
+                const rowCompletedClass = goal.completed ? 'bg-slate-100/70 text-slate-400 opacity-60' : 'hover:bg-slate-50/50';
+
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50/50 transition-colors">
+                    <tr class="transition-colors ${rowCompletedClass}">
                         <td class="py-3 px-4">
                             <input type="checkbox" ${goal.completed ? 'checked' : ''} 
                                 onclick="togglePlanGoalStatus(${goal.id}, this.checked)"
                                 class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-400 cursor-pointer">
                         </td>
-                        <td class="py-3 px-4 font-medium text-slate-800 ${goal.completed ? 'line-through text-slate-400' : ''}">${goal.text}</td>
-                        <td class="py-3 px-4">
-                            <span class="px-2.5 py-1 bg-slate-100 rounded-full text-xs font-medium text-slate-600">${goal.category}</span>
+                        <td class="py-3 px-4 font-medium ${goal.completed ? 'line-through text-slate-400' : 'text-slate-800'} cursor-pointer" onclick="editPlanGoal(${goal.id})" title="Cliquer pour modifier">
+                            ${goal.text}
                         </td>
                         <td class="py-3 px-4">
-                            <select onchange="updateGoalMonth(${goal.id}, this.value)" class="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-600 focus:outline-none">
+                            <select onchange="updateGoalCategory(${goal.id}, this.value)" class="px-2.5 py-1 ${colors.bg} ${colors.text} ${colors.border} border rounded-full text-xs font-semibold focus:outline-none cursor-pointer">
+                                ${planCategories.map(c => `<option value="${c}" ${goal.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="py-3 px-4">
+                            <select onchange="updateGoalMonth(${goal.id}, this.value)" class="bg-white border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-600 focus:outline-none shadow-xs cursor-pointer">
                                 <option value="" ${goal.month === '' ? 'selected' : ''}>Non planifié</option>
-                                ${["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map(m => 
+                                ${monthsList.map(m => 
                                     `<option value="${m}" ${goal.month === m ? 'selected' : ''}>${m}</option>`
                                 ).join('')}
                             </select>
                         </td>
                         <td class="py-3 px-4 text-right">
-                            <button onclick="deletePlanGoal(${goal.id})" class="text-slate-300 hover:text-rose-500 transition-colors p-1">🗑️</button>
+                            <div class="flex justify-end gap-1">
+                                <button onclick="editPlanGoal(${goal.id})" class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Modifier l'objectif">✏️</button>
+                                <button onclick="deletePlanGoal(${goal.id})" class="text-slate-300 hover:text-rose-500 transition-colors p-1" title="Supprimer">🗑️</button>
+                            </div>
                         </td>
                     </tr>
                 `;
             });
 
-            if(planGoals.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center py-8 text-slate-400 text-sm">Aucun objectif annuel défini.</td>
-                    </tr>
-                `;
-            }
+            renderGanttChart();
         }
 
         function addPlanGoal() {
             const textInput = document.getElementById('new-plan-title');
             const catSelect = document.getElementById('new-plan-cat');
             const monthSelect = document.getElementById('new-plan-month');
-
             if (!textInput.value.trim()) return;
 
             planGoals.push({
@@ -1005,6 +1085,7 @@
             if(goal) {
                 goal.month = newMonth;
                 saveData();
+                renderPlanGoals();
             }
         }
 
@@ -1014,348 +1095,10 @@
             renderPlanGoals();
         }
 
-
-        // --- PART 4: RECIPES LOGIC ---
-        function renderRecipes() {
-            const container = document.getElementById('recipes-grid');
-            container.innerHTML = '';
-
-            recipes.forEach(recipe => {
-                // Determine category badges
-                const recipeCats = recipeCategories.filter(c => recipe.categoryIds && recipe.categoryIds.includes(c.id));
-                const catBadgesHtml = recipeCats.map(c => `
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold text-white shadow-2xs" style="background-color: ${c.color}">
-                        ${c.name}
-                    </span>
-                `).join(' ');
-
-                const hasNutri = recipe.nutriCal || recipe.nutriProt || recipe.nutriCarbs;
-
-                const cardHtml = `
-                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
-                        <div>
-                            <!-- Recipe Image -->
-                            <div class="relative h-44 bg-slate-100 overflow-hidden">
-                                ${recipe.image ? 
-                                    `<img src="${recipe.image}" alt="${recipe.title}" class="w-full h-full object-cover">` : 
-                                    `<div class="w-full h-full flex items-center justify-center text-4xl text-slate-300">🍽️</div>`
-                                }
-                                <div class="absolute top-3 right-3 flex gap-1 bg-white/80 backdrop-blur-xs p-1 rounded-xl shadow-xs">
-                                    <button onclick="editRecipe(${recipe.id})" title="Modifier" class="p-1 hover:text-indigo-600 text-slate-600 text-xs">✏️</button>
-                                    <button onclick="deleteRecipe(${recipe.id})" title="Supprimer" class="p-1 hover:text-rose-600 text-slate-600 text-xs">🗑️</button>
-                                </div>
-                            </div>
-
-                            <div class="p-5 space-y-3">
-                                <div class="flex flex-wrap gap-1">
-                                    ${catBadgesHtml}
-                                </div>
-                                <h3 class="text-lg font-bold text-slate-800 cursor-pointer hover:text-indigo-600 transition-colors" onclick="viewRecipeDetail(${recipe.id})">
-                                    ${recipe.title}
-                                </h3>
-
-                                ${hasNutri ? `
-                                    <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                        ${recipe.nutriCal ? `<span class="font-semibold text-slate-700">🔥 ${recipe.nutriCal}</span>` : ''}
-                                        ${recipe.nutriProt ? `<span>💪 ${recipe.nutriProt}</span>` : ''}
-                                        ${recipe.nutriCarbs ? `<span>🍞 ${recipe.nutriCarbs}</span>` : ''}
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-
-                        <!-- Card Footer actions -->
-                        <div class="p-5 pt-0 flex items-center justify-between gap-2">
-                            <button onclick="viewRecipeDetail(${recipe.id})" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-xl transition-colors">
-                                Voir la recette
-                            </button>
-
-                            ${recipe.link ? `
-                                <a href="${recipe.link}" target="_blank" onclick="event.stopPropagation()" class="text-xs font-medium text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-xl transition-colors flex items-center gap-1">
-                                    <span>🔗 Lien Source</span>
-                                </a>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-                container.innerHTML += cardHtml;
-            });
-
-            if (recipes.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-100 text-slate-400">
-                        Aucune recette enregistrée. Cliquez sur "+ Nouvelle Recette" pour commencer !
-                    </div>
-                `;
-            }
-        }
-
-        // Open Recipe Modal (Add or Edit)
-        function openRecipeModal(recipeToEdit = null) {
-            document.getElementById('recipe-form').reset();
-            document.getElementById('recipe-id').value = '';
-            document.getElementById('recipe-image-preview').classList.add('hidden');
-            document.getElementById('recipe-modal-title').innerText = recipeToEdit ? "Modifier la recette" : "Ajouter une recette";
-
-            // Render categories checkboxes
-            const catBox = document.getElementById('recipe-categories-checkboxes');
-            catBox.innerHTML = recipeCategories.map(cat => `
-                <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-medium cursor-pointer hover:bg-slate-50">
-                    <input type="checkbox" value="${cat.id}" class="recipe-cat-cb text-indigo-600 rounded focus:ring-indigo-400">
-                    <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color: ${cat.color}"></span>
-                    <span>${cat.name}</span>
-                </label>
-            `).join('');
-
-            if (recipeToEdit) {
-                document.getElementById('recipe-id').value = recipeToEdit.id;
-                document.getElementById('recipe-title-input').value = recipeToEdit.title;
-                document.getElementById('recipe-ingredients-input').value = recipeToEdit.ingredients || '';
-                document.getElementById('recipe-steps-input').value = recipeToEdit.steps || '';
-                document.getElementById('recipe-nutri-cal').value = recipeToEdit.nutriCal || '';
-                document.getElementById('recipe-nutri-prot').value = recipeToEdit.nutriProt || '';
-                document.getElementById('recipe-nutri-carbs').value = recipeToEdit.nutriCarbs || '';
-                document.getElementById('recipe-link-input').value = recipeToEdit.link || '';
-
-                if (recipeToEdit.image) {
-                    document.getElementById('recipe-preview-img').src = recipeToEdit.image;
-                    document.getElementById('recipe-image-preview').classList.remove('hidden');
-                }
-
-                if (recipeToEdit.categoryIds) {
-                    document.querySelectorAll('.recipe-cat-cb').forEach(cb => {
-                        if (recipeToEdit.categoryIds.includes(cb.value)) cb.checked = true;
-                    });
-                }
-            }
-
-            document.getElementById('recipe-modal').classList.remove('hidden');
-        }
-
-        function closeRecipeModal() {
-            document.getElementById('recipe-modal').classList.add('hidden');
-        }
-
-        function editRecipe(id) {
-            const recipe = recipes.find(r => r.id === id);
-            if (recipe) openRecipeModal(recipe);
-        }
-
-        function deleteRecipe(id) {
-            if (confirm("Supprimer cette recette ?")) {
-                recipes = recipes.filter(r => r.id !== id);
-                saveData();
-                renderRecipes();
-            }
-        }
-
-        function saveRecipe(event) {
-            event.preventDefault();
-
-            const id = document.getElementById('recipe-id').value;
-            const title = document.getElementById('recipe-title-input').value.trim();
-            const ingredients = document.getElementById('recipe-ingredients-input').value;
-            const steps = document.getElementById('recipe-steps-input').value;
-            const nutriCal = document.getElementById('recipe-nutri-cal').value.trim();
-            const nutriProt = document.getElementById('recipe-nutri-prot').value.trim();
-            const nutriCarbs = document.getElementById('recipe-nutri-carbs').value.trim();
-            const link = document.getElementById('recipe-link-input').value.trim();
-
-            const selectedCatIds = Array.from(document.querySelectorAll('.recipe-cat-cb:checked')).map(cb => cb.value);
-
-            const fileInput = document.getElementById('recipe-image-input');
-            const file = fileInput.files[0];
-
-            const processAndSave = (imageDataUrl) => {
-                let existingRecipe = recipes.find(r => r.id == id);
-
-                const recipeData = {
-                    id: id ? parseInt(id) : Date.now(),
-                    title: title,
-                    categoryIds: selectedCatIds,
-                    image: imageDataUrl || (existingRecipe ? existingRecipe.image : ''),
-                    ingredients: ingredients,
-                    steps: steps,
-                    nutriCal: nutriCal,
-                    nutriProt: nutriProt,
-                    nutriCarbs: nutriCarbs,
-                    link: link
-                };
-
-                if (id) {
-                    const idx = recipes.findIndex(r => r.id == id);
-                    if (idx !== -1) recipes[idx] = recipeData;
-                } else {
-                    recipes.push(recipeData);
-                }
-
-                saveData();
-                renderRecipes();
-                closeRecipeModal();
-            };
-
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    processAndSave(e.target.result);
-                };
-                reader.readAsDataURL(file);
-            } else {
-                processAndSave(null);
-            }
-        }
-
-        function viewRecipeDetail(id) {
-            const recipe = recipes.find(r => r.id === id);
-            if (!recipe) return;
-
-            document.getElementById('detail-title').innerText = recipe.title;
-
-            // Categories
-            const recipeCats = recipeCategories.filter(c => recipe.categoryIds && recipe.categoryIds.includes(c.id));
-            document.getElementById('detail-categories').innerHTML = recipeCats.map(c => `
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold text-white" style="background-color: ${c.color}">${c.name}</span>
-            `).join(' ');
-
-            // Image
-            const imgContainer = document.getElementById('detail-img-container');
-            if (recipe.image) {
-                document.getElementById('detail-img').src = recipe.image;
-                imgContainer.classList.remove('hidden');
-            } else {
-                imgContainer.classList.add('hidden');
-            }
-
-            // Nutri
-            const nutriContainer = document.getElementById('detail-nutri-container');
-            if (recipe.nutriCal || recipe.nutriProt || recipe.nutriCarbs) {
-                document.getElementById('detail-nutri-cal').innerText = recipe.nutriCal || '-';
-                document.getElementById('detail-nutri-prot').innerText = recipe.nutriProt || '-';
-                document.getElementById('detail-nutri-carbs').innerText = recipe.nutriCarbs || '-';
-                nutriContainer.classList.remove('hidden');
-            } else {
-                nutriContainer.classList.add('hidden');
-            }
-
-            // Ingredients & Steps
-            document.getElementById('detail-ingredients').innerText = recipe.ingredients || 'Aucun ingrédient spécifié.';
-            document.getElementById('detail-steps').innerText = recipe.steps || 'Aucune étape spécifiée.';
-
-            // Link
-            const linkContainer = document.getElementById('detail-link-container');
-            if (recipe.link) {
-                const linkEl = document.getElementById('detail-link');
-                linkEl.href = recipe.link;
-                linkContainer.classList.remove('hidden');
-            } else {
-                linkContainer.classList.add('hidden');
-            }
-
-            document.getElementById('recipe-detail-modal').classList.remove('hidden');
-        }
-
-        function closeRecipeDetailModal() {
-            document.getElementById('recipe-detail-modal').classList.add('hidden');
-        }
-
-        // --- Recipe Category Management ---
-        function openRecipeCategoryModal() {
-            renderRecipeCategoryList();
-            document.getElementById('recipe-cat-modal').classList.remove('hidden');
-        }
-
-        function closeRecipeCategoryModal() {
-            document.getElementById('recipe-cat-modal').classList.add('hidden');
-        }
-
-        function renderRecipeCategoryList() {
-            const container = document.getElementById('recipe-categories-list');
-            container.innerHTML = recipeCategories.map((cat) => `
-                <div class="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl text-sm">
-                    <div class="flex items-center gap-2">
-                        <span class="w-3.5 h-3.5 rounded-full inline-block" style="background-color: ${cat.color}"></span>
-                        <span class="font-medium text-slate-700">${cat.name}</span>
-                    </div>
-                    <div class="flex gap-1">
-                        <button onclick="editRecipeCategory('${cat.id}')" class="text-slate-400 hover:text-indigo-500 p-1">✏️</button>
-                        <button onclick="deleteRecipeCategory('${cat.id}')" class="text-slate-400 hover:text-rose-500 p-1">🗑️</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function addRecipeCategory() {
-            const nameInput = document.getElementById('new-recipe-cat-name');
-            const colorInput = document.getElementById('new-recipe-cat-color');
-            const name = nameInput.value.trim();
-
-            if (!name) return;
-
-            recipeCategories.push({
-                id: 'cat_' + Date.now(),
-                name: name,
-                color: colorInput.value
-            });
-
-            nameInput.value = '';
-            saveData();
-            renderRecipeCategoryList();
-            renderRecipes();
-        }
-
-        function editRecipeCategory(catId) {
-            const cat = recipeCategories.find(c => c.id === catId);
-            if (!cat) return;
-
-            const newName = prompt("Nom de la catégorie :", cat.name);
-            if (newName && newName.trim() !== "") {
-                cat.name = newName.trim();
-                saveData();
-                renderRecipeCategoryList();
-                renderRecipes();
-            }
-        }
-
-        function deleteRecipeCategory(catId) {
-            if (confirm("Supprimer cette catégorie de recette ?")) {
-                recipeCategories = recipeCategories.filter(c => c.id !== catId);
-                // Remove category reference from recipes
-                recipes.forEach(r => {
-                    if (r.categoryIds) {
-                        r.categoryIds = r.categoryIds.filter(id => id !== catId);
-                    }
-                });
-                saveData();
-                renderRecipeCategoryList();
-                renderRecipes();
-            }
-        }
-
-        // Image Preview Handler
-        document.getElementById('recipe-image-input').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    document.getElementById('recipe-preview-img').src = evt.target.result;
-                    document.getElementById('recipe-image-preview').classList.remove('hidden');
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-
-        // --- APPLICATION INITIALIZATION ---
         window.onload = function() {
             switchTab('habit-tracker');
-
             const currentRealMonth = new Date().getMonth();
             document.getElementById('habit-month-select').value = currentRealMonth.toString();
-            
-            renderHabits();
-            renderTodos();
-            renderPlanGoals();
-            renderRecipes();
         }
     </script>
 </body>
