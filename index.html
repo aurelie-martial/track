@@ -259,20 +259,7 @@
     <!-- FIREBASE MODULE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-
-import {
-    getFirestore,
-    doc,
-    onSnapshot,
-    setDoc
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-import {
-    getAuth,
-    GoogleAuthProvider,
-    signInWithPopup,
-    onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDCn3grH6ldSbadZzd05nsfkdvI76BMXIY",
@@ -285,73 +272,40 @@ import {
         };
 
         const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+        const db = getFirestore(app);
+        const docRef = doc(db, "planner", "userData");
 
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+        // Synchronisation en temps réel Firebase
+        onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                window.categories = data.categories || window.categories;
+                window.habits = data.habits || window.habits;
+                window.todoData = data.todoData || window.todoData;
+                window.planCategories = data.planCategories || window.planCategories;
+                window.planGoals = data.planGoals || window.planGoals;
 
-let docRef = null;
-
-onAuthStateChanged(auth, async (user) => {
-
-    if (!user) {
-        await signInWithPopup(auth, provider);
-        return;
-    }
-
-    console.log("Connecté :", user.email);
-
-    docRef = doc(db, "planner", "userData");
-
-    onSnapshot(docRef, (docSnap) => {
-
-        if (docSnap.exists()) {
-
-            const data = docSnap.data();
-
-            window.categories = data.categories || window.categories;
-            window.habits = data.habits || window.habits;
-            window.todoData = data.todoData || window.todoData;
-            window.planCategories = data.planCategories || window.planCategories;
-            window.planGoals = data.planGoals || window.planGoals;
-
-            renderHabits();
-            renderTodos();
-            renderPlanGoals();
-
-        } else {
-
-            saveData();
-
-        }
-
-    });
-
-});
-
-window.saveData = async function () {
-
-    if (!docRef) return;
-
-    try {
-
-        await setDoc(docRef, {
-
-            categories: window.categories,
-            habits: window.habits,
-            todoData: window.todoData,
-            planCategories: window.planCategories,
-            planGoals: window.planGoals
-
+                renderHabits();
+                renderTodos();
+                renderPlanGoals();
+            } else {
+                saveData(); // Sauvegarde initiale si la base est vide
+            }
         });
 
-    } catch (e) {
-
-        console.error(e);
-
-    }
-
-};
+        window.saveData = async function() {
+            try {
+                await setDoc(docRef, {
+                    categories: window.categories,
+                    habits: window.habits,
+                    todoData: window.todoData,
+                    planCategories: window.planCategories,
+                    planGoals: window.planGoals
+                });
+            } catch (e) {
+                console.error("Erreur de sauvegarde Firebase: ", e);
+            }
+        }
     </script>
 
     <!-- CLASSIC APPLICATION LOGIC -->
