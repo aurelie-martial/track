@@ -100,7 +100,7 @@
                         <div id="mobile-user-menu" class="hidden absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
                             <button id="btn-logout-mobile" class="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-slate-50 font-medium flex items-center gap-2">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 01-3-3h4a3 3 0 013 3v1" />
                                 </svg>
                                 Se déconnecter
                             </button>
@@ -270,11 +270,14 @@
 
         <!-- ================= PARTIE 3: PLAN 2026 ================= -->
         <section id="plan-2026" class="tab-content space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h2 class="text-2xl font-bold text-slate-800">Plan 2026</h2>
+                <button onclick="managePlanCategories()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 font-semibold px-4 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 w-fit">
+                    ⚙️ Gérer les catégories Plan
+                </button>
             </div>
 
-            <!-- NOUVEAU : Rétroplanning Visuel (Gantt) -->
+            <!-- Rétroplanning Visuel (Gantt) -->
             <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Rétroplanning Visuel
@@ -312,7 +315,6 @@
                         <input type="text" id="new-plan-title" placeholder="Ex: Finir le storyboard..." class="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 min-w-[240px]">
                         <div class="flex items-center gap-1">
                             <select id="new-plan-cat" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"></select>
-                            <button onclick="managePlanCategories()" title="Gérer les catégories" class="p-2 bg-slate-200 rounded-xl hover:bg-slate-300 transition-colors text-sm">⚙️</button>
                         </div>
                         <select id="new-plan-month" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
                             <option value="">Non planifié (Mois)</option>
@@ -478,7 +480,7 @@
                 userInfoMobile.classList.add('hidden');
                 
                 appContent.classList.add('hidden');
-                loggedOutScreen.classList.add('hidden');
+                loggedOutScreen.classList.remove('hidden');
 
                 if (unsubscribeSnapshot) unsubscribeSnapshot();
                 currentUserDocRef = null;
@@ -886,10 +888,14 @@
             renderTodos();
         }
 
+        // --- GESTION DES CATÉGORIES ET OBJECTIFS PLAN 2026 ---
         function managePlanCategories() {
-            const action = prompt("Tapez 'add' pour ajouter une catégorie ou 'delete' pour en supprimer une :");
+            const action = prompt("Catégories actuelles : " + planCategories.join(', ') + "\n\nTapez :\n- 'add' pour ajouter\n- 'edit' pour modifier\n- 'delete' pour supprimer");
             if (!action) return;
-            if (action.toLowerCase() === 'add') {
+            
+            const lowerAction = action.toLowerCase().trim();
+
+            if (lowerAction === 'add') {
                 const newCat = prompt("Nom de la nouvelle catégorie :");
                 if (newCat && newCat.trim() !== "" && !planCategories.includes(newCat.trim())) {
                     planCategories.push(newCat.trim());
@@ -897,14 +903,55 @@
                     saveData();
                     renderPlanGoals();
                 }
-            } else if (action.toLowerCase() === 'delete') {
-                const catToDelete = prompt(`Nom exact à supprimer parmi :\n${planCategories.join(', ')}`);
+            } else if (lowerAction === 'edit') {
+                const catToEdit = prompt(`Quelle catégorie voulez-vous modifier ?\n${planCategories.join(', ')}`);
+                if (catToEdit && planCategories.includes(catToEdit.trim())) {
+                    const newName = prompt(`Nouveau nom pour "${catToEdit.trim()}" :`, catToEdit.trim());
+                    if (newName && newName.trim() !== "" && !planCategories.includes(newName.trim())) {
+                        const oldCat = catToEdit.trim();
+                        const updatedName = newName.trim();
+                        const idx = planCategories.indexOf(oldCat);
+                        planCategories[idx] = updatedName;
+                        
+                        // Mettre à jour les objectifs rattachés
+                        planGoals.forEach(g => {
+                            if (g.category === oldCat) g.category = updatedName;
+                        });
+                        
+                        planCategories.sort();
+                        saveData();
+                        renderPlanGoals();
+                    }
+                }
+            } else if (lowerAction === 'delete') {
+                const catToDelete = prompt(`Nom exact de la catégorie à supprimer :\n${planCategories.join(', ')}`);
                 if (catToDelete && planCategories.includes(catToDelete.trim())) {
-                    planCategories = planCategories.filter(c => c !== catToDelete.trim());
-                    planGoals.forEach(g => { if (g.category === catToDelete.trim()) g.category = "TODO"; });
+                    const deletedCat = catToDelete.trim();
+                    planCategories = planCategories.filter(c => c !== deletedCat);
+                    planGoals.forEach(g => { if (g.category === deletedCat) g.category = "TODO"; });
                     saveData();
                     renderPlanGoals();
                 }
+            }
+        }
+
+        function editPlanGoal(id) {
+            const goal = planGoals.find(g => g.id === id);
+            if (!goal) return;
+            const newText = prompt("Modifier l'objectif :", goal.text);
+            if (newText && newText.trim() !== "") {
+                goal.text = newText.trim();
+                saveData();
+                renderPlanGoals();
+            }
+        }
+
+        function updateGoalCategory(id, newCat) {
+            const goal = planGoals.find(g => g.id === id);
+            if (goal) {
+                goal.category = newCat;
+                saveData();
+                renderPlanGoals();
             }
         }
 
@@ -928,12 +975,11 @@
                 let rowHtml = `<div class="grid grid-cols-12 gap-1 items-center bg-slate-50/50 p-1.5 rounded-xl border border-slate-100">`;
 
                 if (monthIndex >= 0) {
-                    // Si le mois est défini, placer la barre dans le bon mois
                     for (let m = 0; m < 12; m++) {
                         if (m === monthIndex) {
                             rowHtml += `
                                 <div class="col-span-1">
-                                    <div class="${goal.completed ? 'bg-slate-300 line-through opacity-70' : colors.bar} text-white text-[10px] font-medium py-1 px-1.5 rounded-lg truncate text-center shadow-xs" title="${goal.text} (${goal.category})">
+                                    <div class="${goal.completed ? 'bg-slate-300 line-through opacity-70' : colors.bar} text-white text-[10px] font-medium py-1 px-1.5 rounded-lg truncate text-center shadow-xs cursor-pointer" onclick="editPlanGoal(${goal.id})" title="${goal.text} (${goal.category}) - Cliquer pour modifier">
                                         ${goal.text}
                                     </div>
                                 </div>
@@ -943,10 +989,9 @@
                         }
                     }
                 } else {
-                    // Non planifié : affichage étalé ou badge
                     rowHtml += `
                         <div class="col-span-12 flex items-center justify-between px-2">
-                            <span class="text-xs font-medium text-slate-500 italic truncate">${goal.text}</span>
+                            <span class="text-xs font-medium text-slate-500 italic truncate cursor-pointer" onclick="editPlanGoal(${goal.id})">${goal.text}</span>
                             <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">Non planifié</span>
                         </div>
                     `;
@@ -977,12 +1022,16 @@
                                 onclick="togglePlanGoalStatus(${goal.id}, this.checked)"
                                 class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-400 cursor-pointer">
                         </td>
-                        <td class="py-3 px-4 font-medium ${goal.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${goal.text}</td>
-                        <td class="py-3 px-4">
-                            <span class="px-2.5 py-1 ${colors.bg} ${colors.text} ${colors.border} border rounded-full text-xs font-semibold">${goal.category}</span>
+                        <td class="py-3 px-4 font-medium ${goal.completed ? 'line-through text-slate-400' : 'text-slate-800'} cursor-pointer" onclick="editPlanGoal(${goal.id})" title="Cliquer pour modifier">
+                            ${goal.text}
                         </td>
                         <td class="py-3 px-4">
-                            <select onchange="updateGoalMonth(${goal.id}, this.value)" class="bg-white border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-600 focus:outline-none shadow-xs">
+                            <select onchange="updateGoalCategory(${goal.id}, this.value)" class="px-2.5 py-1 ${colors.bg} ${colors.text} ${colors.border} border rounded-full text-xs font-semibold focus:outline-none cursor-pointer">
+                                ${planCategories.map(c => `<option value="${c}" ${goal.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td class="py-3 px-4">
+                            <select onchange="updateGoalMonth(${goal.id}, this.value)" class="bg-white border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-600 focus:outline-none shadow-xs cursor-pointer">
                                 <option value="" ${goal.month === '' ? 'selected' : ''}>Non planifié</option>
                                 ${monthsList.map(m => 
                                     `<option value="${m}" ${goal.month === m ? 'selected' : ''}>${m}</option>`
@@ -990,7 +1039,10 @@
                             </select>
                         </td>
                         <td class="py-3 px-4 text-right">
-                            <button onclick="deletePlanGoal(${goal.id})" class="text-slate-300 hover:text-rose-500 transition-colors p-1">🗑️</button>
+                            <div class="flex justify-end gap-1">
+                                <button onclick="editPlanGoal(${goal.id})" class="text-slate-400 hover:text-indigo-600 transition-colors p-1" title="Modifier l'objectif">✏️</button>
+                                <button onclick="deletePlanGoal(${goal.id})" class="text-slate-300 hover:text-rose-500 transition-colors p-1" title="Supprimer">🗑️</button>
+                            </div>
                         </td>
                     </tr>
                 `;
