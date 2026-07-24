@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="apple-touch-icon" href="lily-tracker.png">
-<!-- Nom personnalisé sous l'icône de l'écran d'accueil -->
-<meta name="apple-mobile-web-app-title" content="LilyPlanner">
+    <link rel="apple-touch-icon" href="lily-tracker.png">
+    <!-- Nom personnalisé sous l'icône de l'écran d'accueil -->
+    <meta name="apple-mobile-web-app-title" content="LilyPlanner">
 
-<!-- Masquer la barre de navigateur Safari pour un effet "Application native" -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <!-- Masquer la barre de navigateur Safari pour un effet "Application native" -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Mon Organiseur Personnel 2026</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -274,6 +274,37 @@
                 <h2 class="text-2xl font-bold text-slate-800">Plan 2026</h2>
             </div>
 
+            <!-- NOUVEAU : Rétroplanning Visuel (Gantt) -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Rétroplanning Visuel
+                </h3>
+                <div class="overflow-x-auto">
+                    <div class="min-w-[800px]">
+                        <!-- En-tête des mois -->
+                        <div class="grid grid-cols-12 border-b border-slate-200 pb-2 text-center font-bold text-xs text-slate-500 uppercase tracking-wider">
+                            <div>Jan</div>
+                            <div>Fév</div>
+                            <div>Mar</div>
+                            <div>Avr</div>
+                            <div>Mai</div>
+                            <div>Juin</div>
+                            <div>Juil</div>
+                            <div>Aoû</div>
+                            <div>Sep</div>
+                            <div>Oct</div>
+                            <div>Nov</div>
+                            <div>Déc</div>
+                        </div>
+
+                        <!-- Grille du Rétroplanning -->
+                        <div id="plan-gantt-chart" class="py-4 space-y-3 min-h-[120px]">
+                            <!-- Généré par JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <div class="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <h3 class="font-bold text-slate-800">Ajouter un objectif annuel</h3>
@@ -447,7 +478,7 @@
                 userInfoMobile.classList.add('hidden');
                 
                 appContent.classList.add('hidden');
-                loggedOutScreen.classList.remove('hidden');
+                loggedOutScreen.classList.add('hidden');
 
                 if (unsubscribeSnapshot) unsubscribeSnapshot();
                 currentUserDocRef = null;
@@ -488,6 +519,24 @@
         ];
 
         const pastelColors = ['bg-pastel-blue', 'bg-pastel-green', 'bg-pastel-purple', 'bg-pastel-pink', 'bg-pastel-orange'];
+        
+        // Palette de couleurs pour les catégories du Plan 2026
+        const categoryColorPalette = [
+            { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200', bar: 'bg-indigo-500' },
+            { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', bar: 'bg-emerald-500' },
+            { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', bar: 'bg-amber-500' },
+            { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', bar: 'bg-purple-500' },
+            { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200', bar: 'bg-rose-500' },
+            { bg: 'bg-sky-100', text: 'text-sky-700', border: 'border-sky-200', bar: 'bg-sky-500' },
+            { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200', bar: 'bg-teal-500' }
+        ];
+
+        function getCategoryColor(categoryName) {
+            const index = window.planCategories.indexOf(categoryName);
+            const colorIndex = index >= 0 ? index % categoryColorPalette.length : 0;
+            return categoryColorPalette[colorIndex];
+        }
+
         let selectedMobileDay = new Date().getDate();
 
         function switchTab(tabId) {
@@ -859,6 +908,55 @@
             }
         }
 
+        // --- AFFICHAGE DE LA SECTION PLAN 2026 ---
+        const monthsList = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+
+        function renderGanttChart() {
+            const ganttContainer = document.getElementById('plan-gantt-chart');
+            if (!ganttContainer) return;
+            ganttContainer.innerHTML = '';
+
+            if (planGoals.length === 0) {
+                ganttContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-4">Aucun objectif à afficher sur le rétroplanning.</p>`;
+                return;
+            }
+
+            planGoals.forEach(goal => {
+                const monthIndex = monthsList.indexOf(goal.month);
+                const colors = getCategoryColor(goal.category);
+
+                let rowHtml = `<div class="grid grid-cols-12 gap-1 items-center bg-slate-50/50 p-1.5 rounded-xl border border-slate-100">`;
+
+                if (monthIndex >= 0) {
+                    // Si le mois est défini, placer la barre dans le bon mois
+                    for (let m = 0; m < 12; m++) {
+                        if (m === monthIndex) {
+                            rowHtml += `
+                                <div class="col-span-1">
+                                    <div class="${goal.completed ? 'bg-slate-300 line-through opacity-70' : colors.bar} text-white text-[10px] font-medium py-1 px-1.5 rounded-lg truncate text-center shadow-xs" title="${goal.text} (${goal.category})">
+                                        ${goal.text}
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            rowHtml += `<div class="col-span-1 h-2 border-r border-slate-100 border-dashed"></div>`;
+                        }
+                    }
+                } else {
+                    // Non planifié : affichage étalé ou badge
+                    rowHtml += `
+                        <div class="col-span-12 flex items-center justify-between px-2">
+                            <span class="text-xs font-medium text-slate-500 italic truncate">${goal.text}</span>
+                            <span class="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">Non planifié</span>
+                        </div>
+                    `;
+                }
+
+                rowHtml += `</div>`;
+                ganttContainer.innerHTML += rowHtml;
+            });
+        }
+
         function renderPlanGoals() {
             planGoals.sort((a, b) => a.category.localeCompare(b.category));
             const catSelect = document.getElementById('new-plan-cat');
@@ -869,21 +967,24 @@
             tbody.innerHTML = '';
 
             planGoals.forEach(goal => {
+                const colors = getCategoryColor(goal.category);
+                const rowCompletedClass = goal.completed ? 'bg-slate-100/70 text-slate-400 opacity-60' : 'hover:bg-slate-50/50';
+
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50/50 transition-colors">
+                    <tr class="transition-colors ${rowCompletedClass}">
                         <td class="py-3 px-4">
                             <input type="checkbox" ${goal.completed ? 'checked' : ''} 
                                 onclick="togglePlanGoalStatus(${goal.id}, this.checked)"
                                 class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-400 cursor-pointer">
                         </td>
-                        <td class="py-3 px-4 font-medium text-slate-800 ${goal.completed ? 'line-through text-slate-400' : ''}">${goal.text}</td>
+                        <td class="py-3 px-4 font-medium ${goal.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${goal.text}</td>
                         <td class="py-3 px-4">
-                            <span class="px-2.5 py-1 bg-slate-100 rounded-full text-xs font-medium text-slate-600">${goal.category}</span>
+                            <span class="px-2.5 py-1 ${colors.bg} ${colors.text} ${colors.border} border rounded-full text-xs font-semibold">${goal.category}</span>
                         </td>
                         <td class="py-3 px-4">
-                            <select onchange="updateGoalMonth(${goal.id}, this.value)" class="bg-slate-50 border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-600 focus:outline-none">
+                            <select onchange="updateGoalMonth(${goal.id}, this.value)" class="bg-white border border-slate-200 text-xs rounded-lg px-2 py-1 text-slate-600 focus:outline-none shadow-xs">
                                 <option value="" ${goal.month === '' ? 'selected' : ''}>Non planifié</option>
-                                ${["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"].map(m => 
+                                ${monthsList.map(m => 
                                     `<option value="${m}" ${goal.month === m ? 'selected' : ''}>${m}</option>`
                                 ).join('')}
                             </select>
@@ -894,6 +995,8 @@
                     </tr>
                 `;
             });
+
+            renderGanttChart();
         }
 
         function addPlanGoal() {
@@ -930,6 +1033,7 @@
             if(goal) {
                 goal.month = newMonth;
                 saveData();
+                renderPlanGoals();
             }
         }
 
