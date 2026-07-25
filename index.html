@@ -126,7 +126,10 @@
                     <button onclick="switchTab('todo')" id="btn-todo" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
                         🎯 Todo List
                     </button>
-                    <!-- ONGLET RECETTES EN 3EME POSITION -->
+                    <!-- ONGLET AGENDA EN 3EME POSITION -->
+                    <button onclick="switchTab('agenda')" id="btn-agenda" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        🗓️ Agenda
+                    </button>
                     <button onclick="switchTab('recipes')" id="btn-recipes" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
                         🍳 Recettes
                     </button>
@@ -281,7 +284,56 @@
             <div id="todo-blocks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
 
-        <!-- ================= PARTIE 3: RECETTES (NOUVEL ONGLET) ================= -->
+        <!-- ================= PARTIE 3: AGENDA ================= -->
+        <section id="agenda" class="tab-content space-y-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-slate-800">Agenda</h2>
+                    <div class="flex bg-slate-100 p-1 rounded-xl">
+                        <button onclick="switchAgendaView('month')" id="btn-agenda-view-month" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                            Mois
+                        </button>
+                        <button onclick="switchAgendaView('week')" id="btn-agenda-view-week" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                            Semaine
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="agendaNavigate(-1)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">←</button>
+                    <span id="agenda-period-label" class="text-sm font-bold text-indigo-700 min-w-[160px] text-center"></span>
+                    <button onclick="agendaNavigate(1)" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">→</button>
+                    <button onclick="agendaGoToday()" class="ml-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition-colors">Aujourd'hui</button>
+                </div>
+
+                <button onclick="openAgendaEventModal()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center justify-center gap-1.5 shadow-xs">
+                    ➕ Ajouter un événement
+                </button>
+            </div>
+
+            <!-- Légende des types d'événements -->
+            <div class="flex flex-wrap items-center gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-xs text-xs font-medium">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Avec mon fils</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-slate-400 inline-block"></span> Sans mon fils</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-orange-400 inline-block"></span> Vacances scolaires</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-purple-400 inline-block"></span> Week-end prévu</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-pink-400 inline-block"></span> Anniversaire</span>
+                <span class="flex items-center gap-1.5 ml-auto text-slate-400"><span class="w-3 h-3 rounded-sm bg-slate-200 inline-block border border-slate-300"></span> Week-end</span>
+            </div>
+
+            <!-- Vue Mois -->
+            <div id="agenda-month-view" class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <div id="agenda-month-headers" class="grid grid-cols-7 gap-1.5 mb-2 text-center text-xs font-bold uppercase tracking-wider text-slate-500"></div>
+                <div id="agenda-month-grid" class="grid grid-cols-7 gap-1.5"></div>
+            </div>
+
+            <!-- Vue Semaine -->
+            <div id="agenda-week-view" class="hidden bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <div id="agenda-week-grid" class="grid grid-cols-1 sm:grid-cols-7 gap-3"></div>
+            </div>
+        </section>
+
+        <!-- ================= PARTIE 4: RECETTES ================= -->
         <section id="recipes" class="tab-content space-y-8">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
@@ -304,7 +356,7 @@
             </div>
         </section>
 
-        <!-- ================= PARTIE 4: PLAN 2026 ================= -->
+        <!-- ================= PARTIE 5: PLAN 2026 ================= -->
         <section id="plan-2026" class="tab-content space-y-6">
             <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
@@ -533,6 +585,60 @@
         </div>
     </div>
 
+    <!-- MODAL : CRÉER / MODIFIER UN ÉVÉNEMENT D'AGENDA -->
+    <div id="agenda-event-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 id="agenda-modal-title" class="font-bold text-slate-800 text-lg">Ajouter un événement</h3>
+                <button onclick="closeAgendaEventModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
+
+            <input type="hidden" id="agenda-event-id">
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Type d'événement</label>
+                <select id="agenda-event-type" onchange="updateAgendaModalFields()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+                    <option value="garde">👦 Avec mon fils</option>
+                    <option value="pas_garde">🚫 Sans mon fils</option>
+                    <option value="vacances">🏖️ Vacances scolaires</option>
+                    <option value="weekend">🎉 Week-end prévu</option>
+                    <option value="anniversaire">🎂 Anniversaire</option>
+                </select>
+            </div>
+
+            <div id="agenda-event-title-wrapper">
+                <label id="agenda-event-title-label" class="block text-xs font-bold text-slate-500 uppercase mb-1">Titre / précision (facultatif)</label>
+                <input type="text" id="agenda-event-title" placeholder="Ex: Anniversaire de..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date de début</label>
+                    <input type="date" id="agenda-event-start" onchange="syncAgendaEndDate()" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                </div>
+                <div id="agenda-event-end-wrapper">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date de fin</label>
+                    <input type="date" id="agenda-event-end" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                </div>
+            </div>
+
+            <div id="agenda-event-recurring-wrapper" class="hidden">
+                <label class="inline-flex items-center gap-2 text-sm text-slate-600 cursor-pointer">
+                    <input type="checkbox" id="agenda-event-recurring" class="rounded text-pink-500 focus:ring-pink-400">
+                    Se répète chaque année
+                </label>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                <button id="btn-delete-agenda-event" onclick="deleteAgendaEventFromModal()" class="hidden px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">Supprimer</button>
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="closeAgendaEventModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-200 transition-colors">Annuler</button>
+                    <button onclick="saveAgendaEvent()" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors shadow-xs">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
         <p>© 2026 Mon Organiseur Pastel Personnel — Synchronisé Cloud</p>
     </footer>
@@ -640,11 +746,13 @@
                         window.planGoals = data.planGoals || window.planGoals;
                         window.recipeCategories = data.recipeCategories || window.recipeCategories;
                         window.recipes = data.recipes || window.recipes;
+                        window.agendaEvents = data.agendaEvents || window.agendaEvents;
 
                         renderHabits();
                         renderTodos();
                         renderRecipes();
                         renderPlanGoals();
+                        renderAgenda();
                     } else {
                         saveData(); // Première sauvegarde si les données n'existent pas encore pour cet utilisateur
                     }
@@ -675,7 +783,8 @@
                     planCategories: window.planCategories,
                     planGoals: window.planGoals,
                     recipeCategories: window.recipeCategories,
-                    recipes: window.recipes
+                    recipes: window.recipes,
+                    agendaEvents: window.agendaEvents
                 });
             } catch (e) {
                 console.error("Erreur de sauvegarde Firebase: ", e);
@@ -700,6 +809,11 @@
         window.planGoals = [
             { id: 201, text: "Lancer les réservations", category: "Airbnb", completed: false, month: "Mars" }
         ];
+
+        // --- DONNÉES AGENDA ---
+        // type: 'garde' | 'pas_garde' | 'vacances' | 'weekend' | 'anniversaire'
+        // start/end au format 'YYYY-MM-DD'. recurring = true pour les événements qui se répètent chaque année (anniversaires).
+        window.agendaEvents = [];
 
         // --- DONNÉES RECETTES ---
         window.recipeCategories = [
@@ -760,6 +874,10 @@
             if (tabId === 'plan-2026' && typeof scrollGanttToJuly === 'function') {
                 requestAnimationFrame(scrollGanttToJuly);
             }
+
+            if (tabId === 'agenda' && typeof renderAgenda === 'function') {
+                renderAgenda();
+            }
         }
 
         function triggerConfetti() {
@@ -773,6 +891,309 @@
 
         function getDaysInMonth(month, year) {
             return new Date(year, month + 1, 0).getDate();
+        }
+
+        // ================= AGENDA =================
+
+        const agendaEventTypes = {
+            garde:         { label: "Avec mon fils",     icon: "👦", dot: "bg-blue-500",   pill: "bg-blue-100 text-blue-700 border border-blue-200" },
+            pas_garde:     { label: "Sans mon fils",     icon: "🚫", dot: "bg-slate-400",  pill: "bg-slate-200 text-slate-600 border border-slate-300" },
+            vacances:      { label: "Vacances scolaires",icon: "🏖️", dot: "bg-orange-400", pill: "bg-orange-100 text-orange-700 border border-orange-200" },
+            weekend:       { label: "Week-end prévu",    icon: "🎉", dot: "bg-purple-400", pill: "bg-purple-100 text-purple-700 border border-purple-200" },
+            anniversaire:  { label: "Anniversaire",      icon: "🎂", dot: "bg-pink-400",   pill: "bg-pink-100 text-pink-700 border border-pink-200" }
+        };
+
+        const agendaDayHeaders = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+        const agendaMonthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+
+        window.agendaViewMode = 'month';
+        window.agendaCurrentDate = new Date();
+
+        function formatDateISO(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        function isWeekendDay(dateObj) {
+            const dow = dateObj.getDay(); // 0 = dimanche, 6 = samedi
+            return dow === 0 || dow === 6;
+        }
+
+        // Lundi = début de semaine
+        function getMondayOfWeek(d) {
+            const date = new Date(d);
+            const dow = date.getDay();
+            const diff = dow === 0 ? -6 : 1 - dow;
+            date.setDate(date.getDate() + diff);
+            date.setHours(0, 0, 0, 0);
+            return date;
+        }
+
+        function eventOccursOnDate(event, dateObj) {
+            const dateStr = formatDateISO(dateObj);
+            if (event.recurring) {
+                const start = new Date(event.start + 'T00:00:00');
+                return dateObj.getMonth() === start.getMonth() && dateObj.getDate() === start.getDate();
+            }
+            const end = event.end || event.start;
+            return dateStr >= event.start && dateStr <= end;
+        }
+
+        function getAgendaEventsForDate(dateObj) {
+            return window.agendaEvents.filter(ev => eventOccursOnDate(ev, dateObj));
+        }
+
+        function switchAgendaView(mode) {
+            window.agendaViewMode = mode;
+            const btnMonth = document.getElementById('btn-agenda-view-month');
+            const btnWeek = document.getElementById('btn-agenda-view-week');
+            [btnMonth, btnWeek].forEach(b => b.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm'));
+            [btnMonth, btnWeek].forEach(b => b.classList.add('text-slate-600'));
+            const activeBtn = mode === 'month' ? btnMonth : btnWeek;
+            activeBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+            activeBtn.classList.remove('text-slate-600');
+
+            document.getElementById('agenda-month-view').classList.toggle('hidden', mode !== 'month');
+            document.getElementById('agenda-week-view').classList.toggle('hidden', mode !== 'week');
+            renderAgenda();
+        }
+
+        function agendaNavigate(delta) {
+            const d = new Date(window.agendaCurrentDate);
+            if (window.agendaViewMode === 'month') {
+                d.setDate(1);
+                d.setMonth(d.getMonth() + delta);
+            } else {
+                d.setDate(d.getDate() + delta * 7);
+            }
+            window.agendaCurrentDate = d;
+            renderAgenda();
+        }
+
+        function agendaGoToday() {
+            window.agendaCurrentDate = new Date();
+            renderAgenda();
+        }
+
+        function renderAgenda() {
+            if (window.agendaViewMode === 'month') {
+                renderAgendaMonthView();
+            } else {
+                renderAgendaWeekView();
+            }
+        }
+
+        function renderAgendaEventPill(ev, compact) {
+            const meta = agendaEventTypes[ev.type];
+            const label = ev.title ? `${meta.icon} ${ev.title}` : `${meta.icon} ${meta.label}`;
+            const sizeClasses = compact ? 'text-[9px] px-1 py-0.5 truncate' : 'text-xs px-2 py-1';
+            return `<div class="${meta.pill} ${sizeClasses} rounded-md font-semibold cursor-pointer mt-0.5" title="${meta.label}${ev.title ? ' — ' + ev.title : ''}" onclick="event.stopPropagation(); openAgendaEventModal(null, ${ev.id})">${label}</div>`;
+        }
+
+        function renderAgendaMonthView() {
+            const current = window.agendaCurrentDate;
+            const year = current.getFullYear();
+            const month = current.getMonth();
+
+            document.getElementById('agenda-period-label').innerText = `${agendaMonthNames[month]} ${year}`;
+
+            const headersEl = document.getElementById('agenda-month-headers');
+            headersEl.innerHTML = agendaDayHeaders.map((h, i) =>
+                `<div class="${i >= 5 ? 'text-slate-400' : ''}">${h}</div>`
+            ).join('');
+
+            const firstOfMonth = new Date(year, month, 1);
+            const totalDays = getDaysInMonth(month, year);
+            const firstDow = firstOfMonth.getDay(); // 0 = dimanche
+            const leadingBlanks = firstDow === 0 ? 6 : firstDow - 1;
+
+            const today = new Date();
+            const todayStr = formatDateISO(today);
+
+            let html = '';
+            for (let i = 0; i < leadingBlanks; i++) {
+                html += `<div class="min-h-[70px] sm:min-h-[90px]"></div>`;
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                const dateObj = new Date(year, month, day);
+                const dateStr = formatDateISO(dateObj);
+                const weekend = isWeekendDay(dateObj);
+                const isToday = dateStr === todayStr;
+                const events = getAgendaEventsForDate(dateObj);
+
+                const bgClass = weekend ? 'bg-slate-100' : 'bg-white';
+                const borderClass = isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : 'border-slate-100';
+
+                html += `
+                    <div class="min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden" onclick="openAgendaEventModal('${dateStr}')">
+                        <div class="text-[10px] sm:text-xs font-bold ${isToday ? 'text-indigo-600' : 'text-slate-600'}">${day}</div>
+                        <div class="space-y-0.5">
+                            ${events.slice(0, 3).map(ev => renderAgendaEventPill(ev, true)).join('')}
+                            ${events.length > 3 ? `<div class="text-[9px] text-slate-400 font-medium">+${events.length - 3}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('agenda-month-grid').innerHTML = html;
+        }
+
+        function renderAgendaWeekView() {
+            const monday = getMondayOfWeek(window.agendaCurrentDate);
+            const sunday = new Date(monday);
+            sunday.setDate(sunday.getDate() + 6);
+
+            const sameMonth = monday.getMonth() === sunday.getMonth();
+            const label = sameMonth
+                ? `${monday.getDate()} - ${sunday.getDate()} ${agendaMonthNames[monday.getMonth()]} ${monday.getFullYear()}`
+                : `${monday.getDate()} ${agendaMonthNames[monday.getMonth()]} - ${sunday.getDate()} ${agendaMonthNames[sunday.getMonth()]} ${sunday.getFullYear()}`;
+            document.getElementById('agenda-period-label').innerText = label;
+
+            const today = new Date();
+            const todayStr = formatDateISO(today);
+
+            let html = '';
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(monday);
+                dateObj.setDate(monday.getDate() + i);
+                const dateStr = formatDateISO(dateObj);
+                const weekend = isWeekendDay(dateObj);
+                const isToday = dateStr === todayStr;
+                const events = getAgendaEventsForDate(dateObj);
+
+                const bgClass = weekend ? 'bg-slate-100' : 'bg-white';
+                const borderClass = isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : 'border-slate-100';
+
+                html += `
+                    <div class="min-h-[140px] p-2 rounded-xl border ${borderClass} ${bgClass} hover:border-indigo-300 cursor-pointer transition-colors" onclick="openAgendaEventModal('${dateStr}')">
+                        <div class="text-center mb-1.5">
+                            <div class="text-[10px] font-bold uppercase tracking-wide ${weekend ? 'text-slate-400' : 'text-slate-400'}">${agendaDayHeaders[i]}</div>
+                            <div class="text-sm font-bold ${isToday ? 'text-indigo-600' : 'text-slate-700'}">${dateObj.getDate()}</div>
+                        </div>
+                        <div class="space-y-1">
+                            ${events.map(ev => renderAgendaEventPill(ev, false)).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('agenda-week-grid').innerHTML = html;
+        }
+
+        function updateAgendaModalFields() {
+            const type = document.getElementById('agenda-event-type').value;
+            const titleLabel = document.getElementById('agenda-event-title-label');
+            const recurringWrapper = document.getElementById('agenda-event-recurring-wrapper');
+            const endWrapper = document.getElementById('agenda-event-end-wrapper');
+
+            if (type === 'anniversaire') {
+                titleLabel.innerText = "Nom (ex: Anniversaire de Lily)";
+                recurringWrapper.classList.remove('hidden');
+                endWrapper.classList.add('hidden');
+            } else if (type === 'weekend') {
+                titleLabel.innerText = "Précision (facultatif)";
+                recurringWrapper.classList.add('hidden');
+                endWrapper.classList.remove('hidden');
+            } else {
+                titleLabel.innerText = "Titre / précision (facultatif)";
+                recurringWrapper.classList.add('hidden');
+                endWrapper.classList.remove('hidden');
+            }
+        }
+
+        function syncAgendaEndDate() {
+            const endInput = document.getElementById('agenda-event-end');
+            const startInput = document.getElementById('agenda-event-start');
+            if (!endInput.value || endInput.value < startInput.value) {
+                endInput.value = startInput.value;
+            }
+        }
+
+        function openAgendaEventModal(dateStr = null, eventId = null) {
+            document.getElementById('agenda-event-id').value = '';
+            document.getElementById('agenda-event-title').value = '';
+            document.getElementById('agenda-event-type').value = 'garde';
+            document.getElementById('agenda-event-recurring').checked = false;
+            document.getElementById('btn-delete-agenda-event').classList.add('hidden');
+
+            const today = formatDateISO(new Date());
+            const initialDate = dateStr || today;
+            document.getElementById('agenda-event-start').value = initialDate;
+            document.getElementById('agenda-event-end').value = initialDate;
+
+            if (eventId) {
+                const ev = window.agendaEvents.find(e => e.id === eventId);
+                if (ev) {
+                    document.getElementById('agenda-modal-title').innerText = "Modifier l'événement";
+                    document.getElementById('agenda-event-id').value = ev.id;
+                    document.getElementById('agenda-event-type').value = ev.type;
+                    document.getElementById('agenda-event-title').value = ev.title || '';
+                    document.getElementById('agenda-event-start').value = ev.start;
+                    document.getElementById('agenda-event-end').value = ev.end || ev.start;
+                    document.getElementById('agenda-event-recurring').checked = !!ev.recurring;
+                    document.getElementById('btn-delete-agenda-event').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('agenda-modal-title').innerText = "Ajouter un événement";
+            }
+
+            updateAgendaModalFields();
+            document.getElementById('agenda-event-modal').classList.remove('hidden');
+        }
+
+        function closeAgendaEventModal() {
+            document.getElementById('agenda-event-modal').classList.add('hidden');
+        }
+
+        function saveAgendaEvent() {
+            const idVal = document.getElementById('agenda-event-id').value;
+            const type = document.getElementById('agenda-event-type').value;
+            const title = document.getElementById('agenda-event-title').value.trim();
+            const start = document.getElementById('agenda-event-start').value;
+            let end = document.getElementById('agenda-event-end').value || start;
+            const recurring = type === 'anniversaire' && document.getElementById('agenda-event-recurring').checked;
+
+            if (!start) {
+                alert("Merci de renseigner une date de début.");
+                return;
+            }
+            if (end < start) end = start;
+
+            if (idVal) {
+                const ev = window.agendaEvents.find(e => e.id === parseInt(idVal));
+                if (ev) {
+                    ev.type = type;
+                    ev.title = title;
+                    ev.start = start;
+                    ev.end = type === 'anniversaire' ? start : end;
+                    ev.recurring = recurring;
+                }
+            } else {
+                window.agendaEvents.push({
+                    id: Date.now(),
+                    type,
+                    title,
+                    start,
+                    end: type === 'anniversaire' ? start : end,
+                    recurring
+                });
+            }
+
+            saveData();
+            closeAgendaEventModal();
+            renderAgenda();
+        }
+
+        function deleteAgendaEventFromModal() {
+            const idVal = document.getElementById('agenda-event-id').value;
+            if (!idVal) return;
+            window.agendaEvents = window.agendaEvents.filter(e => e.id !== parseInt(idVal));
+            saveData();
+            closeAgendaEventModal();
+            renderAgenda();
         }
 
         function changeMonth() {
