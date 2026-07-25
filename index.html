@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="apple-touch-icon" href="lily-tracker.png">
+<link rel="icon" type="image/png" href="lily-tracker.png" />
     <!-- Nom personnalisé sous l'icône de l'écran d'accueil -->
     <meta name="apple-mobile-web-app-title" content="LilyPlanner">
 
@@ -58,6 +59,14 @@
             }
             .mobile-day-col.mobile-visible {
                 display: table-cell !important;
+            }
+        }
+
+        /* Empêche le zoom automatique iOS/Android au focus d'un champ (déclenché quand
+           la taille de police est < 16px), qui provoquait un scroll horizontal indésirable */
+        @media (max-width: 767px) {
+            input, select, textarea {
+                font-size: 16px !important;
             }
         }
     </style>
@@ -198,7 +207,7 @@
                         <button onclick="navigateMobileDay(-1)" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-sm">
                             ←
                         </button>
-                        <span id="mobile-day-display" class="text-xs font-bold text-indigo-600 px-1 min-w-[60px] text-center">
+                        <span id="mobile-day-display" class="text-xs font-bold text-indigo-600 px-1 min-w-[80px] text-center">
                             Jour --
                         </span>
                         <button onclick="navigateMobileDay(1)" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-sm">
@@ -276,8 +285,8 @@
         <section id="recipes" class="tab-content space-y-8">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Mes Recettes Personnelles</h2>
-                    <p class="text-xs text-slate-400">Gérez vos recettes, leurs ingrédients et leurs valeurs nutritionnelles.</p>
+                    <h2 class="text-2xl font-bold text-slate-800">Recettes</h2>
+                    
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <button onclick="manageRecipeCategories()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
@@ -298,7 +307,10 @@
         <!-- ================= PARTIE 4: PLAN 2026 ================= -->
         <section id="plan-2026" class="tab-content space-y-6">
             <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h2 class="text-2xl font-bold text-slate-800">Plan 2026</h2>
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-bold text-slate-800">Plan 2026</h2>
+                    <span id="plan-completion-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">0% terminé</span>
+                </div>
                 <button onclick="managePlanCategories()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 font-semibold px-4 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 w-fit">
                     ⚙️ Gérer les catégories Plan
                 </button>
@@ -744,6 +756,10 @@
             const targetBtn = document.getElementById(`btn-${tabId}`);
             targetBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
             targetBtn.classList.remove('text-slate-600');
+
+            if (tabId === 'plan-2026' && typeof scrollGanttToJuly === 'function') {
+                requestAnimationFrame(scrollGanttToJuly);
+            }
         }
 
         function triggerConfetti() {
@@ -782,7 +798,10 @@
             container.innerHTML = '';
 
             const mobileDisplay = document.getElementById('mobile-day-display');
-            if (mobileDisplay) mobileDisplay.innerText = `Jour ${selectedMobileDay}`;
+            if (mobileDisplay) {
+                const prevDay = selectedMobileDay - 1;
+                mobileDisplay.innerText = prevDay >= 1 ? `Jours ${prevDay}-${selectedMobileDay}` : `Jour ${selectedMobileDay}`;
+            }
 
             const realToday = new Date();
             const realDay = realToday.getDate();
@@ -817,7 +836,7 @@
                                     const isToday = (realYear === 2026 && monthIndex === realMonth && d === realDay);
                                     const highlightClass = isToday ? 'bg-indigo-600 text-white rounded-full p-0.5 inline-block w-5 h-5 text-center leading-4 shadow-sm' : '';
                                     const weekendClass = isWeekend ? 'bg-slate-100' : '';
-                                    const isMobileVisible = (d === selectedMobileDay) ? 'mobile-visible' : '';
+                                    const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
 
                                     catHtml += `<th class="day-header py-2 ${weekendClass} mobile-day-col ${isMobileVisible}"><span class="${highlightClass}">${d}</span></th>`;
                                 }
@@ -842,7 +861,7 @@
                         const checkDate = new Date(2026, monthIndex, d);
                         const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
                         const weekendClass = isWeekend ? 'bg-slate-100/70' : '';
-                        const isMobileVisible = (d === selectedMobileDay) ? 'mobile-visible' : '';
+                        const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
 
                         daysHtml += `
                             <td class="day-cell py-3 ${weekendClass} mobile-day-col ${isMobileVisible}">
@@ -886,7 +905,7 @@
                     const checkDate = new Date(2026, monthIndex, d);
                     const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
                     const weekendClass = isWeekend ? 'bg-slate-200/50' : '';
-                    const isMobileVisible = (d === selectedMobileDay) ? 'mobile-visible' : '';
+                    const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
                     catHtml += `<td class="day-cell py-2 font-bold text-slate-600 ${weekendClass} mobile-day-col ${isMobileVisible}">${catColumnTotal}</td>`;
                 }
                 catHtml += `<td colspan="2"></td></tr></tbody></table></div></div>`;
@@ -1526,6 +1545,24 @@
         // --- AFFICHAGE DE LA SECTION PLAN 2026 ---
         const monthsList = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
+        // Centre le scroll horizontal du rétroplanning sur le mois de Juillet
+        function scrollGanttToJuly() {
+            const ganttChart = document.getElementById('plan-gantt-chart');
+            if (!ganttChart) return;
+            const scrollContainer = ganttChart.closest('.overflow-x-auto');
+            if (!scrollContainer) return;
+
+            const totalWidth = scrollContainer.scrollWidth;
+            const visibleWidth = scrollContainer.clientWidth;
+            if (totalWidth <= visibleWidth) return;
+
+            const julyIndex = monthsList.indexOf("Juillet"); // 6
+            const monthWidth = totalWidth / 12;
+            let target = (monthWidth * julyIndex) - (visibleWidth / 2) + (monthWidth / 2);
+            target = Math.max(0, Math.min(target, totalWidth - visibleWidth));
+            scrollContainer.scrollLeft = target;
+        }
+
         function renderGanttChart() {
             const ganttContainer = document.getElementById('plan-gantt-chart');
             if (!ganttContainer) return;
@@ -1574,6 +1611,14 @@
             planGoals.sort((a, b) => a.category.localeCompare(b.category));
             const catSelect = document.getElementById('new-plan-cat');
             if (catSelect) catSelect.innerHTML = planCategories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+            const completionBadge = document.getElementById('plan-completion-badge');
+            if (completionBadge) {
+                const totalGoals = planGoals.length;
+                const completedGoals = planGoals.filter(g => g.completed).length;
+                const percent = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
+                completionBadge.innerText = `${percent}% terminé`;
+            }
 
             const tbody = document.getElementById('plan-goals-tbody');
             if(!tbody) return;
