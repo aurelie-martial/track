@@ -408,15 +408,11 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Image (Upload local ou URL)</label>
-                    <div class="space-y-2">
-                        <input type="file" id="recipe-image-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer">
-                        <input type="text" id="recipe-image-url" placeholder="Ou coller une URL d'image (https://...)" class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-amber-400">
-                    </div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Image (Upload local)</label>
+                    <input type="file" id="recipe-image-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer">
                     <input type="hidden" id="recipe-image-base64">
-                    <div id="recipe-image-preview" class="mt-2 hidden relative inline-block">
+                    <div id="recipe-image-preview" class="mt-2 hidden">
                         <img id="recipe-image-preview-img" src="" alt="Aperçu" class="h-28 w-full object-cover rounded-xl border border-slate-200">
-                        <button type="button" onclick="clearRecipeImage()" class="absolute top-2 right-2 bg-rose-600 text-white rounded-full p-1 text-xs shadow-md hover:bg-rose-700">✕ Supprimer l'image</button>
                     </div>
                 </div>
 
@@ -706,15 +702,8 @@
                 title: "Pâtes au Pesto Maison",
                 categories: ["Plat principal", "Végétarien"],
                 image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80",
-                ingredients: "- 400g de pâtes
-- 50g de basilic frais
-- 50g de pignons de pin
-- 50g de parmesan râpé
-- 1 gousse d'ail
-- 10cl d'huile d'olive",
-                steps: "1. Cuire les pâtes dans une grande casserole d'eau salée.
-2. Mixer le basilic, les pignons, l'ail, le parmesan et l'huile d'olive.
-3. Mélanger le pesto aux pâtes égouttées.",
+                ingredients: "- 400g de pâtes\n- 50g de basilic frais\n- 50g de pignons de pin\n- 50g de parmesan râpé\n- 1 gousse d'ail\n- 10cl d'huile d'olive",
+                steps: "1. Cuire les pâtes dans une grande casserole d'eau salée.\n2. Mixer le basilic, les pignons, l'ail, le parmesan et l'huile d'olive.\n3. Mélanger le pesto aux pâtes égouttées.",
                 nutri1: "520 kcal",
                 nutri2: "Prot: 14g",
                 nutri3: "Lip: 22g",
@@ -1153,7 +1142,7 @@
             });
         }
 
-        // Ecouteurs d'upload image locale et URL pour recette (corrigé et robuste)
+        // Ecouteur d'upload image locale pour recette
         document.addEventListener('DOMContentLoaded', () => {
             const fileInput = document.getElementById('recipe-image-file');
             if (fileInput) {
@@ -1165,34 +1154,12 @@
                             document.getElementById('recipe-image-base64').value = evt.target.result;
                             document.getElementById('recipe-image-preview-img').src = evt.target.result;
                             document.getElementById('recipe-image-preview').classList.remove('hidden');
-                            document.getElementById('recipe-image-url').value = ''; // vider le champ URL si fichier choisi
                         };
                         reader.readAsDataURL(file);
                     }
                 });
             }
-
-            const urlInput = document.getElementById('recipe-image-url');
-            if (urlInput) {
-                urlInput.addEventListener('input', (e) => {
-                    const url = e.target.value.trim();
-                    if (url) {
-                        document.getElementById('recipe-image-base64').value = url;
-                        document.getElementById('recipe-image-preview-img').src = url;
-                        document.getElementById('recipe-image-preview').classList.remove('hidden');
-                        document.getElementById('recipe-image-file').value = ''; // vider le fichier si URL choisie
-                    }
-                });
-            }
         });
-
-        function clearRecipeImage() {
-            document.getElementById('recipe-image-base64').value = '';
-            document.getElementById('recipe-image-file').value = '';
-            document.getElementById('recipe-image-url').value = '';
-            document.getElementById('recipe-image-preview-img').src = '';
-            document.getElementById('recipe-image-preview').classList.add('hidden');
-        }
 
         function openRecipeModal(recipeId = null) {
             // Render category checkboxes
@@ -1218,8 +1185,6 @@
                     document.getElementById('recipe-nutri-3').value = recipe.nutri3 || '';
                     document.getElementById('recipe-link').value = recipe.link || '';
                     document.getElementById('recipe-image-base64').value = recipe.image || '';
-                    document.getElementById('recipe-image-file').value = '';
-                    document.getElementById('recipe-image-url').value = '';
                     
                     if (recipe.image) {
                         document.getElementById('recipe-image-preview-img').src = recipe.image;
@@ -1246,7 +1211,6 @@
                 document.getElementById('recipe-link').value = '';
                 document.getElementById('recipe-image-base64').value = '';
                 document.getElementById('recipe-image-file').value = '';
-                document.getElementById('recipe-image-url').value = '';
                 document.getElementById('recipe-image-preview').classList.add('hidden');
             }
 
@@ -1463,12 +1427,7 @@
 
         // --- GESTION DES CATÉGORIES ET OBJECTIFS PLAN 2026 ---
         function managePlanCategories() {
-            const action = prompt("Catégories actuelles : " + planCategories.join(', ') + "
-
-Tapez :
-- 'add' pour ajouter
-- 'edit' pour modifier
-- 'delete' pour supprimer");
+            const action = prompt("Catégories actuelles : " + planCategories.join(', ') + "\n\nTapez :\n- 'add' pour ajouter\n- 'edit' pour modifier\n- 'delete' pour supprimer");
             if (!action) return;
             
             const lowerAction = action.toLowerCase().trim();
@@ -1482,8 +1441,7 @@ Tapez :
                     renderPlanGoals();
                 }
             } else if (lowerAction === 'edit') {
-                const catToEdit = prompt(`Quelle catégorie voulez-vous modifier ?
-${planCategories.join(', ')}`);
+                const catToEdit = prompt(`Quelle catégorie voulez-vous modifier ?\n${planCategories.join(', ')}`);
                 if (catToEdit && planCategories.includes(catToEdit.trim())) {
                     const newName = prompt(`Nouveau nom pour "${catToEdit.trim()}" :`, catToEdit.trim());
                     if (newName && newName.trim() !== "" && !planCategories.includes(newName.trim())) {
@@ -1503,8 +1461,7 @@ ${planCategories.join(', ')}`);
                     }
                 }
             } else if (lowerAction === 'delete') {
-                const catToDelete = prompt(`Nom exact de la catégorie à supprimer :
-${planCategories.join(', ')}`);
+                const catToDelete = prompt(`Nom exact de la catégorie à supprimer :\n${planCategories.join(', ')}`);
                 if (catToDelete && planCategories.includes(catToDelete.trim())) {
                     const deletedCat = catToDelete.trim();
                     planCategories = planCategories.filter(c => c !== deletedCat);
