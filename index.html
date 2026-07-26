@@ -1434,7 +1434,7 @@
                     
                     catHtml += `
                         <tr class="hover:bg-slate-50/50 transition-colors">
-                            <td class="py-3 text-sm font-medium text-slate-700 truncate pr-2">${habit.title}</td>
+                            <td class="py-3 text-sm font-medium text-slate-700 truncate pr-2 cursor-pointer hover:text-indigo-600 transition-colors" onclick="editHabit(${habit.id})" title="Cliquer pour modifier">${habit.title}</td>
                             ${daysHtml}
                             <td class="py-3 text-right text-xs font-bold text-slate-500">
                                 <div class="flex items-center justify-end gap-1.5">
@@ -1492,6 +1492,17 @@
             titleInput.value = '';
             saveData();
             renderHabits();
+        }
+
+        function editHabit(id) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit) return;
+            const newTitle = prompt("Modifier l'habitude :", habit.title);
+            if (newTitle && newTitle.trim() !== "") {
+                habit.title = newTitle.trim();
+                saveData();
+                renderHabits();
+            }
         }
 
         function deleteHabit(id) {
