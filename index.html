@@ -198,35 +198,36 @@
         <section id="habit-tracker" class="tab-content active space-y-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Suivi des Habitudes</h2>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Suivi des Habitudes</h2>
                 </div>
-                <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex items-center gap-2 bg-indigo-50/50 text-indigo-700 px-4 py-2 rounded-xl border border-indigo-100">
-                        <span class="text-sm font-medium">Mois :</span>
-                        <select id="habit-month-select" onchange="changeMonth()" class="bg-transparent font-bold border-none text-indigo-700 focus:ring-0 cursor-pointer text-sm">
-                            <option value="0">Janvier 2026</option>
-                            <option value="1">Février 2026</option>
-                            <option value="2">Mars 2026</option>
-                            <option value="3">Avril 2026</option>
-                            <option value="4">Mai 2026</option>
-                            <option value="5">Juin 2026</option>
-                            <option value="6">Juillet 2026</option>
-                            <option value="7">Août 2026</option>
-                            <option value="8">Septembre 2026</option>
-                            <option value="9">Octobre 2026</option>
-                            <option value="10">Novembre 2026</option>
-                            <option value="11">Décembre 2026</option>
+                <div class="flex items-center flex-nowrap gap-2">
+                    <div class="flex items-center gap-1.5 bg-indigo-50/50 text-indigo-700 px-2.5 py-1.5 rounded-xl border border-indigo-100 shrink-0">
+                        <span class="hidden sm:inline text-sm font-medium">Mois :</span>
+                        <span class="sm:hidden text-sm">📅</span>
+                        <select id="habit-month-select" onchange="changeMonth()" class="bg-transparent font-bold border-none text-indigo-700 focus:ring-0 cursor-pointer text-xs sm:text-sm max-w-[92px] sm:max-w-none">
+                            <option value="0">Janv.</option>
+                            <option value="1">Févr.</option>
+                            <option value="2">Mars</option>
+                            <option value="3">Avr.</option>
+                            <option value="4">Mai</option>
+                            <option value="5">Juin</option>
+                            <option value="6">Juil.</option>
+                            <option value="7">Août</option>
+                            <option value="8">Sept.</option>
+                            <option value="9">Oct.</option>
+                            <option value="10">Nov.</option>
+                            <option value="11">Déc.</option>
                         </select>
                     </div>
 
-                    <div class="flex md:hidden items-center bg-slate-100 p-1 rounded-xl gap-2 border border-slate-200">
-                        <button onclick="navigateMobileDay(-1)" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-sm">
+                    <div class="flex md:hidden items-center bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200 shrink-0">
+                        <button onclick="navigateMobileDay(-1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-xs">
                             ←
                         </button>
-                        <span id="mobile-day-display" class="text-xs font-bold text-indigo-600 px-1 min-w-[80px] text-center">
+                        <span id="mobile-day-display" class="text-[11px] font-bold text-indigo-600 px-1 min-w-[64px] text-center">
                             Jour --
                         </span>
-                        <button onclick="navigateMobileDay(1)" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-sm">
+                        <button onclick="navigateMobileDay(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-xs">
                             →
                         </button>
                     </div>
@@ -284,7 +285,7 @@
         <section id="todo" class="tab-content space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Todo List</h2>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Todo List</h2>
                  </div>
                 <div class="flex gap-2">
                     <input type="text" id="new-todo-cat-input" placeholder="Nouveau bloc..." class="w-32 sm:w-auto px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
@@ -342,7 +343,7 @@
         <section id="recipes" class="tab-content space-y-8">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Recettes</h2>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Recettes</h2>
                     
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -365,7 +366,7 @@
         <section id="plan-2026" class="tab-content space-y-6">
             <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
-                    <h2 class="text-2xl font-bold text-slate-800">Plan 2026</h2>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Plan 2026</h2>
                     <span id="plan-completion-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">0% terminé</span>
                 </div>
                 <button onclick="managePlanCategories()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 font-semibold px-4 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 w-fit">
@@ -641,12 +642,19 @@
 
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Récurrence</label>
-                <select id="agenda-event-recurrence" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+                <select id="agenda-event-recurrence" onchange="updateAgendaRecurrenceFields()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
                     <option value="none">Aucune</option>
                     <option value="weekly">Toutes les semaines</option>
                     <option value="biweekly">1 semaine sur 2</option>
                     <option value="yearly">Tous les ans</option>
                 </select>
+            </div>
+
+            <div id="agenda-event-recurrence-hint" class="hidden text-[11px] text-slate-400 -mt-2">Début/Fin définissent le premier cycle (ex : la 1ère semaine "avec mon fils").</div>
+
+            <div id="agenda-event-until-wrapper" class="hidden min-w-0">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Se termine le (facultatif)</label>
+                <input type="date" id="agenda-event-until" class="compact-date w-full min-w-0 box-border px-2 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
             </div>
 
             <div class="flex justify-between items-center pt-2 border-t border-slate-100">
@@ -974,10 +982,14 @@
 
             if (recurrence === 'weekly' || recurrence === 'biweekly') {
                 if (dateStr < event.start) return false;
+                if (event.until && dateStr > event.until) return false;
                 const msPerDay = 86400000;
-                const rangeLengthDays = Math.round((new Date(end + 'T00:00:00') - start) / msPerDay);
-                const daysSinceStart = Math.round((new Date(dateStr + 'T00:00:00') - start) / msPerDay);
                 const cycle = recurrence === 'biweekly' ? 14 : 7;
+                // La longueur d'un cycle ne peut jamais dépasser (cycle - 1) jours, sinon les cycles
+                // se chevauchent et l'événement semble se répéter chaque semaine au lieu d'1 semaine sur 2.
+                const rawRangeLengthDays = Math.round((new Date(end + 'T00:00:00') - start) / msPerDay);
+                const rangeLengthDays = Math.max(0, Math.min(rawRangeLengthDays, cycle - 1));
+                const daysSinceStart = Math.round((new Date(dateStr + 'T00:00:00') - start) / msPerDay);
                 const positionInCycle = daysSinceStart % cycle;
                 return positionInCycle >= 0 && positionInCycle <= rangeLengthDays;
             }
@@ -1041,6 +1053,28 @@
             return `<div class="${sizeClasses} rounded-md font-semibold cursor-pointer mt-0.5" style="${agendaPillStyle(ev.color)}" title="${ev.title || ''}">${label}</div>`;
         }
 
+        function renderAgendaDayCell(dateObj, day, muted, todayStr) {
+            const dateStr = formatDateISO(dateObj);
+            const weekend = isWeekendDay(dateObj);
+            const isToday = dateStr === todayStr;
+            const events = getAgendaEventsForDate(dateObj);
+
+            const bgClass = muted ? 'bg-slate-50' : (weekend ? 'bg-slate-100' : 'bg-white');
+            const borderClass = isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : (muted ? 'border-dashed border-slate-200' : 'border-slate-100');
+            const mutedClass = muted ? 'opacity-40' : '';
+            const numberClass = isToday ? 'text-indigo-600' : (muted ? 'text-slate-400' : 'text-slate-600');
+
+            return `
+                <div class="min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} ${mutedClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden" onclick="openAgendaDayModal('${dateStr}')">
+                    <div class="text-[10px] sm:text-xs font-bold ${numberClass}">${day}</div>
+                    <div class="space-y-0.5">
+                        ${events.slice(0, 3).map(ev => renderAgendaEventPill(ev, true)).join('')}
+                        ${events.length > 3 ? `<div class="text-[9px] text-slate-400 font-medium">+${events.length - 3}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
         function renderAgendaMonthView() {
             const current = window.agendaCurrentDate;
             const year = current.getFullYear();
@@ -1061,30 +1095,28 @@
             const today = new Date();
             const todayStr = formatDateISO(today);
 
+            // Jours du mois précédent (affichés en plus léger)
+            const prevMonthDate = new Date(year, month, 0); // dernier jour du mois précédent
+            const prevMonthTotalDays = prevMonthDate.getDate();
+
             let html = '';
-            for (let i = 0; i < leadingBlanks; i++) {
-                html += `<div class="min-h-[70px] sm:min-h-[90px]"></div>`;
+            for (let i = leadingBlanks; i > 0; i--) {
+                const day = prevMonthTotalDays - i + 1;
+                const dateObj = new Date(prevMonthDate.getFullYear(), prevMonthDate.getMonth(), day);
+                html += renderAgendaDayCell(dateObj, day, true, todayStr);
             }
 
             for (let day = 1; day <= totalDays; day++) {
                 const dateObj = new Date(year, month, day);
-                const dateStr = formatDateISO(dateObj);
-                const weekend = isWeekendDay(dateObj);
-                const isToday = dateStr === todayStr;
-                const events = getAgendaEventsForDate(dateObj);
+                html += renderAgendaDayCell(dateObj, day, false, todayStr);
+            }
 
-                const bgClass = weekend ? 'bg-slate-100' : 'bg-white';
-                const borderClass = isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : 'border-slate-100';
-
-                html += `
-                    <div class="min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden" onclick="openAgendaDayModal('${dateStr}')">
-                        <div class="text-[10px] sm:text-xs font-bold ${isToday ? 'text-indigo-600' : 'text-slate-600'}">${day}</div>
-                        <div class="space-y-0.5">
-                            ${events.slice(0, 3).map(ev => renderAgendaEventPill(ev, true)).join('')}
-                            ${events.length > 3 ? `<div class="text-[9px] text-slate-400 font-medium">+${events.length - 3}</div>` : ''}
-                        </div>
-                    </div>
-                `;
+            // Jours du mois suivant pour compléter la dernière semaine (affichés en plus léger)
+            const cellsSoFar = leadingBlanks + totalDays;
+            const trailingCount = cellsSoFar % 7 === 0 ? 0 : 7 - (cellsSoFar % 7);
+            for (let day = 1; day <= trailingCount; day++) {
+                const dateObj = new Date(year, month + 1, day);
+                html += renderAgendaDayCell(dateObj, day, true, todayStr);
             }
 
             document.getElementById('agenda-month-grid').innerHTML = html;
@@ -1194,12 +1226,22 @@
             }
         }
 
+        function updateAgendaRecurrenceFields() {
+            const recurrence = document.getElementById('agenda-event-recurrence').value;
+            const untilWrapper = document.getElementById('agenda-event-until-wrapper');
+            const hint = document.getElementById('agenda-event-recurrence-hint');
+            const isWeeklyType = recurrence === 'weekly' || recurrence === 'biweekly';
+            untilWrapper.classList.toggle('hidden', !isWeeklyType);
+            hint.classList.toggle('hidden', !isWeeklyType);
+        }
+
         function openAgendaEventModal(dateStr = null, eventId = null) {
             document.getElementById('agenda-event-id').value = '';
             document.getElementById('agenda-event-title').value = '';
             document.getElementById('agenda-event-emoji').value = '';
             document.getElementById('agenda-event-color').value = '#6366f1';
             document.getElementById('agenda-event-recurrence').value = 'none';
+            document.getElementById('agenda-event-until').value = '';
             document.getElementById('btn-delete-agenda-event').classList.add('hidden');
 
             const today = formatDateISO(new Date());
@@ -1218,12 +1260,14 @@
                     document.getElementById('agenda-event-start').value = ev.start;
                     document.getElementById('agenda-event-end').value = ev.end || ev.start;
                     document.getElementById('agenda-event-recurrence').value = ev.recurring ? 'yearly' : (ev.recurrence || 'none');
+                    document.getElementById('agenda-event-until').value = ev.until || '';
                     document.getElementById('btn-delete-agenda-event').classList.remove('hidden');
                 }
             } else {
                 document.getElementById('agenda-modal-title').innerText = "Ajouter un événement";
             }
 
+            updateAgendaRecurrenceFields();
             document.getElementById('agenda-event-modal').classList.remove('hidden');
         }
 
@@ -1239,6 +1283,9 @@
             const start = document.getElementById('agenda-event-start').value;
             let end = document.getElementById('agenda-event-end').value || start;
             const recurrence = document.getElementById('agenda-event-recurrence').value;
+            const until = (recurrence === 'weekly' || recurrence === 'biweekly')
+                ? (document.getElementById('agenda-event-until').value || '')
+                : '';
 
             if (!start) {
                 alert("Merci de renseigner une date de début.");
@@ -1256,6 +1303,7 @@
                     ev.start = start;
                     ev.end = end;
                     ev.recurrence = recurrence;
+                    ev.until = until;
                     delete ev.recurring;
                 }
             } else {
@@ -1266,7 +1314,8 @@
                     title,
                     start,
                     end,
-                    recurrence
+                    recurrence,
+                    until
                 });
             }
 
