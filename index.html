@@ -192,19 +192,19 @@
     </div>
 
     <!-- Main Content Area -->
-    <main id="app-content" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main id="app-content" class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8">
         
         <!-- ================= PARTIE 1: HABIT TRACKER ================= -->
         <section id="habit-tracker" class="tab-content active space-y-8">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+            <div class="flex flex-col gap-2 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Suivi des Habitudes</h2>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-800">Suivi des Habitudes</h2>
                 </div>
                 <div class="flex items-center flex-nowrap gap-2">
-                    <div class="flex items-center gap-1.5 bg-indigo-50/50 text-indigo-700 px-2.5 py-1.5 rounded-xl border border-indigo-100 shrink-0">
-                        <span class="hidden sm:inline text-sm font-medium">Mois :</span>
-                        <span class="sm:hidden text-sm">📅</span>
-                        <select id="habit-month-select" onchange="changeMonth()" class="bg-transparent font-bold border-none text-indigo-700 focus:ring-0 cursor-pointer text-xs sm:text-sm max-w-[92px] sm:max-w-none">
+                    <div class="flex items-center gap-1.5 bg-indigo-50/50 text-indigo-700 px-2 py-1 rounded-xl border border-indigo-100 shrink-0">
+                        <span class="hidden sm:inline text-[11px] font-semibold">Mois :</span>
+                        <span class="sm:hidden text-[11px]">📅</span>
+                        <select id="habit-month-select" onchange="changeMonth()" class="bg-transparent font-semibold border-none text-indigo-700 focus:ring-0 cursor-pointer text-[11px] max-w-[80px] sm:max-w-none">
                             <option value="0">Janv.</option>
                             <option value="1">Févr.</option>
                             <option value="2">Mars</option>
@@ -221,13 +221,13 @@
                     </div>
 
                     <div class="flex md:hidden items-center bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200 shrink-0">
-                        <button onclick="navigateMobileDay(-1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-xs">
+                        <button onclick="navigateMobileDay(-1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">
                             ←
                         </button>
-                        <span id="mobile-day-display" class="text-[11px] font-bold text-indigo-600 px-1 min-w-[64px] text-center">
+                        <span id="mobile-day-display" class="text-[11px] font-semibold text-indigo-600 px-1 min-w-[60px] text-center">
                             Jour --
                         </span>
-                        <button onclick="navigateMobileDay(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-bold text-xs">
+                        <button onclick="navigateMobileDay(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">
                             →
                         </button>
                     </div>
@@ -283,9 +283,9 @@
 
         <!-- ================= PARTIE 2: TODO LIST ================= -->
         <section id="todo" class="tab-content space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Todo List</h2>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-800">Todo List</h2>
                  </div>
                 <div class="flex gap-2">
                     <input type="text" id="new-todo-cat-input" placeholder="Nouveau bloc..." class="w-32 sm:w-auto px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
@@ -300,10 +300,10 @@
 
         <!-- ================= PARTIE 3: AGENDA ================= -->
         <section id="agenda" class="tab-content space-y-6">
-            <div class="flex flex-col gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-xs">
+            <div class="flex flex-col gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Agenda</h2>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800">Agenda</h2>
                         <div class="flex bg-slate-100 p-1 rounded-xl">
                             <button onclick="switchAgendaView('month')" id="btn-agenda-view-month" class="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
                                 Mois
@@ -341,9 +341,9 @@
 
         <!-- ================= PARTIE 4: RECETTES ================= -->
         <section id="recipes" class="tab-content space-y-8">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Recettes</h2>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-800">Recettes</h2>
                     
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -364,9 +364,9 @@
 
         <!-- ================= PARTIE 5: PLAN 2026 ================= -->
         <section id="plan-2026" class="tab-content space-y-6">
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
-                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800">Plan 2026</h2>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-800">Plan 2026</h2>
                     <span id="plan-completion-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">0% terminé</span>
                 </div>
                 <button onclick="managePlanCategories()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 font-semibold px-4 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 w-fit">
