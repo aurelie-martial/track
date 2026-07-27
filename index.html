@@ -1401,7 +1401,7 @@
 
                 catHtml += `
                                         <th class="text-right font-medium text-xs py-2 w-16 sm:w-20">Réussite</th>
-                                        <th class="text-center font-medium text-xs py-2 w-8 sm:w-12"></th>
+                                        <th class="text-center font-medium text-xs py-2 w-14 sm:w-16">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
@@ -1445,9 +1445,17 @@
                                 </div>
                             </td>
                             <td class="py-3 text-center">
-                                <button onclick="deleteHabit(${habit.id})" class="text-slate-300 hover:text-rose-500 p-1 rounded-lg transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
+                                <div class="flex items-center justify-center gap-0.5">
+                                    <button onclick="moveHabit(${habit.id}, -1)" class="text-slate-300 hover:text-indigo-600 p-0.5 rounded transition-colors" title="Monter">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                                    </button>
+                                    <button onclick="moveHabit(${habit.id}, 1)" class="text-slate-300 hover:text-indigo-600 p-0.5 rounded transition-colors" title="Descendre">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                    </button>
+                                    <button onclick="deleteHabit(${habit.id})" class="text-slate-300 hover:text-rose-500 p-0.5 rounded-lg transition-colors" title="Supprimer">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     `;
@@ -1490,6 +1498,31 @@
 
             habits.push({ id: Date.now(), title: titleInput.value.trim(), category: catSelect.value, history: {} });
             titleInput.value = '';
+            saveData();
+            renderHabits();
+        }
+
+        function moveHabit(id, direction) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit) return;
+
+            // Positions (dans le tableau global) des habitudes de la même catégorie, dans l'ordre d'affichage
+            const sameCatIndices = habits
+                .map((h, i) => ({ h, i }))
+                .filter(o => o.h.category === habit.category)
+                .map(o => o.i);
+
+            const globalIdx = habits.indexOf(habit);
+            const posInCat = sameCatIndices.indexOf(globalIdx);
+            const targetPos = posInCat + direction;
+            if (targetPos < 0 || targetPos >= sameCatIndices.length) return;
+
+            const idxA = sameCatIndices[posInCat];
+            const idxB = sameCatIndices[targetPos];
+            const tmp = habits[idxA];
+            habits[idxA] = habits[idxB];
+            habits[idxB] = tmp;
+
             saveData();
             renderHabits();
         }
@@ -1583,7 +1616,9 @@
                                 <span class="text-sm truncate text-slate-700 ${task.completed ? 'line-through text-slate-400' : ''}" 
                                       onclick="editTodoText('${blockName}', ${task.id})">${task.text}</span>
                             </div>
-                            <div class="flex gap-1 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="flex gap-0.5 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="moveTodoItem('${blockName}', ${task.id}, -1)" class="text-slate-400 hover:text-indigo-500 p-1 text-xs" title="Monter">▲</button>
+                                <button onclick="moveTodoItem('${blockName}', ${task.id}, 1)" class="text-slate-400 hover:text-indigo-500 p-1 text-xs" title="Descendre">▼</button>
                                 <button onclick="editTodoText('${blockName}', ${task.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs">✏️</button>
                                 <button onclick="deleteSingleTodo('${blockName}', ${task.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs">✕</button>
                             </div>
@@ -1649,6 +1684,33 @@
                 saveData();
                 renderTodos();
             }
+        }
+
+        function moveTodoItem(categoryName, taskId, direction) {
+            const tasks = todoData[categoryName];
+            if (!tasks) return;
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            // On ne réordonne qu'au sein du même groupe (tâches en cours entre elles, terminées entre elles)
+            const sameStatusIndices = tasks
+                .map((t, i) => ({ t, i }))
+                .filter(o => o.t.completed === task.completed)
+                .map(o => o.i);
+
+            const globalIdx = tasks.indexOf(task);
+            const posInGroup = sameStatusIndices.indexOf(globalIdx);
+            const targetPos = posInGroup + direction;
+            if (targetPos < 0 || targetPos >= sameStatusIndices.length) return;
+
+            const idxA = sameStatusIndices[posInGroup];
+            const idxB = sameStatusIndices[targetPos];
+            const tmp = tasks[idxA];
+            tasks[idxA] = tasks[idxB];
+            tasks[idxB] = tmp;
+
+            saveData();
+            renderTodos();
         }
 
         function editTodoText(categoryName, taskId) {
