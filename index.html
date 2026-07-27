@@ -16,6 +16,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Canvas Confetti Library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- SortableJS for drag & drop reordering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1401,10 +1403,10 @@
 
                 catHtml += `
                                         <th class="text-right font-medium text-xs py-2 w-16 sm:w-20">Réussite</th>
-                                        <th class="text-center font-medium text-xs py-2 w-14 sm:w-16">Actions</th>
+                                        <th class="text-center font-medium text-xs py-2 w-10 sm:w-12"></th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-100">
+                                <tbody id="habit-tbody-${catIdx}" class="divide-y divide-slate-100">
                 `;
 
                 catHabits.forEach(habit => {
@@ -1433,8 +1435,13 @@
                     const progressPercent = totalDays > 0 ? Math.round((doneCount / totalDays) * 100) : 0;
                     
                     catHtml += `
-                        <tr class="hover:bg-slate-50/50 transition-colors">
-                            <td class="py-3 text-sm font-medium text-slate-700 truncate pr-2 cursor-pointer hover:text-indigo-600 transition-colors" onclick="editHabit(${habit.id})" title="Cliquer pour modifier">${habit.title}</td>
+                        <tr class="hover:bg-slate-50/50 transition-colors" data-habit-id="${habit.id}">
+                            <td class="py-3 text-sm font-medium text-slate-700 truncate pr-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 shrink-0 select-none" title="Glisser pour réordonner">⠿</span>
+                                    <span class="truncate cursor-pointer hover:text-indigo-600 transition-colors" onclick="editHabit(${habit.id})" title="Cliquer pour modifier">${habit.title}</span>
+                                </div>
+                            </td>
                             ${daysHtml}
                             <td class="py-3 text-right text-xs font-bold text-slate-500">
                                 <div class="flex items-center justify-end gap-1.5">
@@ -1445,21 +1452,15 @@
                                 </div>
                             </td>
                             <td class="py-3 text-center">
-                                <div class="flex items-center justify-center gap-0.5">
-                                    <button onclick="moveHabit(${habit.id}, -1)" class="text-slate-300 hover:text-indigo-600 p-0.5 rounded transition-colors" title="Monter">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
-                                    </button>
-                                    <button onclick="moveHabit(${habit.id}, 1)" class="text-slate-300 hover:text-indigo-600 p-0.5 rounded transition-colors" title="Descendre">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                                    </button>
-                                    <button onclick="deleteHabit(${habit.id})" class="text-slate-300 hover:text-rose-500 p-0.5 rounded-lg transition-colors" title="Supprimer">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                    </button>
-                                </div>
+                                <button onclick="deleteHabit(${habit.id})" class="text-slate-300 hover:text-rose-500 p-0.5 rounded-lg transition-colors" title="Supprimer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
                             </td>
                         </tr>
                     `;
                 });
+
+                catHtml += `</tbody><tfoot>`;
 
                 catHtml += `
                     <tr class="bg-slate-50/70 border-t border-slate-200">
@@ -1474,8 +1475,29 @@
                     const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
                     catHtml += `<td class="day-cell py-2 font-bold text-slate-600 ${weekendClass} mobile-day-col ${isMobileVisible}">${catColumnTotal}</td>`;
                 }
-                catHtml += `<td colspan="2"></td></tr></tbody></table></div></div>`;
+                catHtml += `<td colspan="2"></td></tr></tfoot></table></div></div>`;
                 container.innerHTML += catHtml;
+            });
+
+            // Initialise le glisser-déposer pour chaque catégorie d'habitudes
+            categories.forEach((cat, catIdx) => {
+                const tbodyEl = document.getElementById(`habit-tbody-${catIdx}`);
+                if (!tbodyEl || typeof Sortable === 'undefined') return;
+                Sortable.create(tbodyEl, {
+                    handle: '.drag-handle',
+                    animation: 150,
+                    ghostClass: 'opacity-40',
+                    onEnd: function() {
+                        const newIds = Array.from(tbodyEl.children).map(tr => parseInt(tr.dataset.habitId));
+                        const sameCatIndices = habits
+                            .map((h, i) => ({ h, i }))
+                            .filter(o => o.h.category === cat)
+                            .map(o => o.i);
+                        const newCatHabits = newIds.map(id => habits.find(h => h.id === id));
+                        sameCatIndices.forEach((globalIdx, k) => { habits[globalIdx] = newCatHabits[k]; });
+                        saveData();
+                    }
+                });
             });
 
             renderCategoriesManagementList();
@@ -1498,31 +1520,6 @@
 
             habits.push({ id: Date.now(), title: titleInput.value.trim(), category: catSelect.value, history: {} });
             titleInput.value = '';
-            saveData();
-            renderHabits();
-        }
-
-        function moveHabit(id, direction) {
-            const habit = habits.find(h => h.id === id);
-            if (!habit) return;
-
-            // Positions (dans le tableau global) des habitudes de la même catégorie, dans l'ordre d'affichage
-            const sameCatIndices = habits
-                .map((h, i) => ({ h, i }))
-                .filter(o => o.h.category === habit.category)
-                .map(o => o.i);
-
-            const globalIdx = habits.indexOf(habit);
-            const posInCat = sameCatIndices.indexOf(globalIdx);
-            const targetPos = posInCat + direction;
-            if (targetPos < 0 || targetPos >= sameCatIndices.length) return;
-
-            const idxA = sameCatIndices[posInCat];
-            const idxB = sameCatIndices[targetPos];
-            const tmp = habits[idxA];
-            habits[idxA] = habits[idxB];
-            habits[idxB] = tmp;
-
             saveData();
             renderHabits();
         }
@@ -1590,8 +1587,29 @@
             if(!container) return;
             container.innerHTML = '';
 
+            function renderTaskItem(blockName, task) {
+                return `
+                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group" data-task-id="${task.id}">
+                        <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                            <span class="todo-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 shrink-0 select-none px-0.5" title="Glisser pour réordonner">⠿</span>
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                                onclick="toggleTodoStatus('${blockName}', ${task.id}, this.checked)"
+                                class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-400 cursor-pointer shrink-0">
+                            <span class="text-sm truncate text-slate-700 ${task.completed ? 'line-through text-slate-400' : ''}" 
+                                  onclick="editTodoText('${blockName}', ${task.id})">${task.text}</span>
+                        </div>
+                        <div class="flex gap-0.5 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                            <button onclick="editTodoText('${blockName}', ${task.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs">✏️</button>
+                            <button onclick="deleteSingleTodo('${blockName}', ${task.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs">✕</button>
+                        </div>
+                    </div>
+                `;
+            }
+
             Object.keys(todoData).forEach((blockName, blockIdx) => {
                 const tasks = todoData[blockName];
+                const activeTasks = tasks.filter(t => !t.completed);
+                const doneTasks = tasks.filter(t => t.completed);
                 const blockColor = pastelColors[blockIdx % pastelColors.length];
 
                 let blockHtml = `
@@ -1603,28 +1621,14 @@
                                 <button onclick="deleteTodoCategory('${blockName}')" class="text-slate-400 hover:text-rose-600 p-1 rounded text-xs">❌</button>
                             </div>
                         </div>
-                        <div class="p-4 flex-1 space-y-2">
+                        <div class="p-4 flex-1">
+                            <div id="todo-active-${blockIdx}" class="space-y-2">
+                                ${activeTasks.map(t => renderTaskItem(blockName, t)).join('')}
+                            </div>
+                            <div id="todo-done-${blockIdx}" class="space-y-2 ${doneTasks.length > 0 ? 'mt-2 pt-2 border-t border-slate-100' : ''}">
+                                ${doneTasks.map(t => renderTaskItem(blockName, t)).join('')}
+                            </div>
                 `;
-
-                tasks.slice().sort((a, b) => (a.completed === b.completed) ? 0 : (a.completed ? 1 : -1)).forEach(task => {
-                    blockHtml += `
-                        <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group">
-                            <div class="flex items-center gap-2.5 flex-1 min-w-0">
-                                <input type="checkbox" ${task.completed ? 'checked' : ''} 
-                                    onclick="toggleTodoStatus('${blockName}', ${task.id}, this.checked)"
-                                    class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-400 cursor-pointer">
-                                <span class="text-sm truncate text-slate-700 ${task.completed ? 'line-through text-slate-400' : ''}" 
-                                      onclick="editTodoText('${blockName}', ${task.id})">${task.text}</span>
-                            </div>
-                            <div class="flex gap-0.5 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onclick="moveTodoItem('${blockName}', ${task.id}, -1)" class="text-slate-400 hover:text-indigo-500 p-1 text-xs" title="Monter">▲</button>
-                                <button onclick="moveTodoItem('${blockName}', ${task.id}, 1)" class="text-slate-400 hover:text-indigo-500 p-1 text-xs" title="Descendre">▼</button>
-                                <button onclick="editTodoText('${blockName}', ${task.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs">✏️</button>
-                                <button onclick="deleteSingleTodo('${blockName}', ${task.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs">✕</button>
-                            </div>
-                        </div>
-                    `;
-                });
 
                 if (tasks.length === 0) blockHtml += `<p class="text-xs text-center text-slate-400 py-6">Aucune tâche</p>`;
 
@@ -1640,6 +1644,33 @@
                 `;
                 container.innerHTML += blockHtml;
             });
+
+            // Initialise le glisser-déposer pour chaque bloc (tâches en cours / terminées séparément)
+            Object.keys(todoData).forEach((blockName, blockIdx) => {
+                if (typeof Sortable === 'undefined') return;
+                const onEnd = () => reorderTodoFromDOM(blockName, blockIdx);
+
+                const activeEl = document.getElementById(`todo-active-${blockIdx}`);
+                if (activeEl) {
+                    Sortable.create(activeEl, { handle: '.todo-drag-handle', animation: 150, ghostClass: 'opacity-40', onEnd });
+                }
+                const doneEl = document.getElementById(`todo-done-${blockIdx}`);
+                if (doneEl) {
+                    Sortable.create(doneEl, { handle: '.todo-drag-handle', animation: 150, ghostClass: 'opacity-40', onEnd });
+                }
+            });
+        }
+
+        function reorderTodoFromDOM(blockName, blockIdx) {
+            const tasks = todoData[blockName];
+            if (!tasks) return;
+            const activeEl = document.getElementById(`todo-active-${blockIdx}`);
+            const doneEl = document.getElementById(`todo-done-${blockIdx}`);
+            const activeIds = activeEl ? Array.from(activeEl.children).map(el => parseInt(el.dataset.taskId)) : [];
+            const doneIds = doneEl ? Array.from(doneEl.children).map(el => parseInt(el.dataset.taskId)) : [];
+            const byId = id => tasks.find(t => t.id === id);
+            todoData[blockName] = [...activeIds.map(byId), ...doneIds.map(byId)].filter(Boolean);
+            saveData();
         }
 
         function addTodoCategory() {
@@ -1684,33 +1715,6 @@
                 saveData();
                 renderTodos();
             }
-        }
-
-        function moveTodoItem(categoryName, taskId, direction) {
-            const tasks = todoData[categoryName];
-            if (!tasks) return;
-            const task = tasks.find(t => t.id === taskId);
-            if (!task) return;
-
-            // On ne réordonne qu'au sein du même groupe (tâches en cours entre elles, terminées entre elles)
-            const sameStatusIndices = tasks
-                .map((t, i) => ({ t, i }))
-                .filter(o => o.t.completed === task.completed)
-                .map(o => o.i);
-
-            const globalIdx = tasks.indexOf(task);
-            const posInGroup = sameStatusIndices.indexOf(globalIdx);
-            const targetPos = posInGroup + direction;
-            if (targetPos < 0 || targetPos >= sameStatusIndices.length) return;
-
-            const idxA = sameStatusIndices[posInGroup];
-            const idxB = sameStatusIndices[targetPos];
-            const tmp = tasks[idxA];
-            tasks[idxA] = tasks[idxB];
-            tasks[idxB] = tmp;
-
-            saveData();
-            renderTodos();
         }
 
         function editTodoText(categoryName, taskId) {
