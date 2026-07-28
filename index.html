@@ -1435,12 +1435,9 @@
                     const progressPercent = totalDays > 0 ? Math.round((doneCount / totalDays) * 100) : 0;
                     
                     catHtml += `
-                        <tr class="hover:bg-slate-50/50 transition-colors" data-habit-id="${habit.id}">
+                        <tr class="hover:bg-slate-50/50 transition-colors cursor-grab active:cursor-grabbing" data-habit-id="${habit.id}">
                             <td class="py-3 text-sm font-medium text-slate-700 truncate pr-2">
-                                <div class="drag-handle flex items-center gap-1.5 cursor-grab active:cursor-grabbing select-none" onclick="editHabit(${habit.id})" title="Glisser pour réordonner, cliquer pour modifier">
-                                    <span class="text-slate-300 hover:text-slate-500 shrink-0">⠿</span>
-                                    <span class="truncate hover:text-indigo-600 transition-colors">${habit.title}</span>
-                                </div>
+                                <span class="habit-edit-label cursor-pointer hover:text-indigo-600 transition-colors" onclick="editHabit(${habit.id})" title="Cliquer pour modifier">${habit.title}</span>
                             </td>
                             ${daysHtml}
                             <td class="py-3 text-right text-xs font-bold text-slate-500">
@@ -1484,9 +1481,10 @@
                 const tbodyEl = document.getElementById(`habit-tbody-${catIdx}`);
                 if (!tbodyEl || typeof Sortable === 'undefined') return;
                 Sortable.create(tbodyEl, {
-                    handle: '.drag-handle',
                     animation: 150,
                     ghostClass: 'opacity-40',
+                    filter: 'input, button, .habit-edit-label',
+                    preventOnFilter: false,
                     onEnd: function() {
                         const newIds = Array.from(tbodyEl.children).map(tr => parseInt(tr.dataset.habitId));
                         const sameCatIndices = habits
@@ -1589,15 +1587,13 @@
 
             function renderTaskItem(blockName, task) {
                 return `
-                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group" data-task-id="${task.id}">
-                        <div class="flex items-center gap-2 flex-1 min-w-0">
-                            <div class="todo-drag-handle flex items-center gap-1.5 flex-1 min-w-0 cursor-grab active:cursor-grabbing select-none" onclick="editTodoText('${blockName}', ${task.id})" title="Glisser pour réordonner, cliquer pour modifier">
-                                <span class="text-slate-300 hover:text-slate-500 shrink-0">⠿</span>
-                                <span class="text-sm truncate text-slate-700 ${task.completed ? 'line-through text-slate-400' : ''}">${task.text}</span>
-                            </div>
+                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group cursor-grab active:cursor-grabbing" data-task-id="${task.id}">
+                        <div class="flex items-center gap-2.5 flex-1 min-w-0">
                             <input type="checkbox" ${task.completed ? 'checked' : ''} 
                                 onclick="toggleTodoStatus('${blockName}', ${task.id}, this.checked)"
                                 class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-400 cursor-pointer shrink-0">
+                            <span class="todo-edit-label text-sm truncate text-slate-700 ${task.completed ? 'line-through text-slate-400' : ''}" 
+                                  onclick="editTodoText('${blockName}', ${task.id})">${task.text}</span>
                         </div>
                         <div class="flex gap-0.5 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                             <button onclick="editTodoText('${blockName}', ${task.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs">✏️</button>
@@ -1653,11 +1649,11 @@
 
                 const activeEl = document.getElementById(`todo-active-${blockIdx}`);
                 if (activeEl) {
-                    Sortable.create(activeEl, { handle: '.todo-drag-handle', animation: 150, ghostClass: 'opacity-40', onEnd });
+                    Sortable.create(activeEl, { animation: 150, ghostClass: 'opacity-40', filter: 'input, button, .todo-edit-label', preventOnFilter: false, onEnd });
                 }
                 const doneEl = document.getElementById(`todo-done-${blockIdx}`);
                 if (doneEl) {
-                    Sortable.create(doneEl, { handle: '.todo-drag-handle', animation: 150, ghostClass: 'opacity-40', onEnd });
+                    Sortable.create(doneEl, { animation: 150, ghostClass: 'opacity-40', filter: 'input, button, .todo-edit-label', preventOnFilter: false, onEnd });
                 }
             });
         }
