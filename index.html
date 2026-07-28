@@ -119,7 +119,7 @@
 <body class="text-slate-700 min-h-screen flex flex-col">
 
     <!-- Header & Navigation -->
-    <header id="main-header" class="bg-white border-b border-slate-100 sticky top-0 z-50 shadow-sm transition-transform duration-300 will-change-transform">
+    <header id="main-header" class="bg-white border-b border-slate-100 fixed top-0 left-0 right-0 w-full z-50 shadow-sm transition-transform duration-300 will-change-transform">
         <div id="header-inner-wrap" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between py-4 gap-4 transition-[padding] duration-300">
             
             <!-- En-tête : Logo + Menu Profil Mobile à droite -->
@@ -202,6 +202,7 @@
             </div>
         </div>
     </header>
+    <div id="header-spacer" class="transition-[height] duration-300"></div>
 
     <!-- Écran de connexion si non connecté -->
     <div id="logged-out-screen" class="hidden flex-1 max-w-md w-full mx-auto px-4 flex flex-col justify-center items-center text-center py-16">
@@ -2384,12 +2385,14 @@
         // au scroll vers le haut, et minimise le bloc logo/connexion pendant le scroll.
         (function() {
             const header = document.getElementById('main-header');
+            const spacer = document.getElementById('header-spacer');
             const headerInnerWrap = document.getElementById('header-inner-wrap');
             const logoHeader = document.getElementById('app-logo-header');
             if (!header) return;
 
             let lastScrollY = window.scrollY;
             let ticking = false;
+            let hidden = false;
 
             function isMobile() {
                 return window.innerWidth < 768;
@@ -2400,31 +2403,47 @@
                 if (logoHeader) logoHeader.classList.toggle('header-compact', isCompact);
             }
 
+            function updateSpacerHeight() {
+                if (!spacer) return;
+                spacer.style.height = hidden ? '0px' : header.offsetHeight + 'px';
+            }
+
+            function showHeader() {
+                hidden = false;
+                header.style.transform = 'translateY(0)';
+                updateSpacerHeight();
+            }
+
+            function hideHeader() {
+                hidden = true;
+                header.style.transform = 'translateY(-100%)';
+                updateSpacerHeight();
+            }
+
             function onScroll() {
                 if (!isMobile()) {
                     // Sur tablette/desktop : toujours visible, jamais minimisé
-                    header.style.transform = 'translateY(0)';
                     setCompact(false);
+                    showHeader();
                     lastScrollY = window.scrollY;
                     ticking = false;
                     return;
                 }
 
-                const currentScrollY = window.scrollY;
-                const headerHeight = header.offsetHeight;
+                const currentScrollY = Math.max(0, window.scrollY);
 
                 if (currentScrollY <= 10) {
                     // Tout en haut de la page : header plein et visible
-                    header.style.transform = 'translateY(0)';
                     setCompact(false);
+                    showHeader();
                 } else {
                     setCompact(true);
                     if (currentScrollY > lastScrollY) {
                         // Scroll vers le bas -> on masque le menu
-                        header.style.transform = `translateY(-${headerHeight}px)`;
+                        hideHeader();
                     } else {
                         // Scroll vers le haut -> on réaffiche le menu (en version minimisée)
-                        header.style.transform = 'translateY(0)';
+                        showHeader();
                     }
                 }
 
@@ -2445,6 +2464,23 @@
                     ticking = true;
                 }
             });
+
+            // État initial (avant tout scroll) : header visible, espace correctement réservé
+            onScroll();
+
+            // Recalcule une fois que tout est bien chargé (polices, styles Tailwind appliqués)
+            window.addEventListener('load', function() {
+                setTimeout(onScroll, 50);
+            });
+
+            // Garde le spacer synchronisé si la hauteur du header change pour une autre raison
+            // (rotation d'écran, chargement de polices, etc.)
+            if (window.ResizeObserver) {
+                const ro = new ResizeObserver(function() {
+                    if (!hidden) updateSpacerHeight();
+                });
+                ro.observe(header);
+            }
         })();
     </script>
 </body>
