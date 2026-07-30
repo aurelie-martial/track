@@ -1668,10 +1668,13 @@
                 const blockColor = pastelColors[blockIdx % pastelColors.length];
 
                 let blockHtml = `
-                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col h-full overflow-hidden">
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col h-full overflow-hidden" data-block-name="${blockName}">
                         <div class="px-5 py-4 ${blockColor} flex justify-between items-center border-b border-slate-100">
-                            <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase">${blockName}</h3>
-                            <div class="flex items-center gap-1">
+                            <div class="flex items-center gap-2 min-w-0 block-drag-handle cursor-grab active:cursor-grabbing">
+                                <span class="text-slate-400 select-none" title="Glisser pour réordonner">⠿</span>
+                                <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase truncate">${blockName}</h3>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
                                 <button onclick="clearAllCategoryTodos('${blockName}')" class="text-slate-500 hover:text-rose-600 p-1 rounded text-xs bg-white/50 hover:bg-white transition-colors">Vider</button>
                                 <button onclick="deleteTodoCategory('${blockName}')" class="text-slate-400 hover:text-rose-600 p-1 rounded text-xs">❌</button>
                             </div>
@@ -1714,6 +1717,38 @@
                     Sortable.create(doneEl, { animation: 150, ghostClass: 'opacity-40', filter: 'input, button, .todo-edit-label', preventOnFilter: false, onEnd });
                 }
             });
+
+            // TODO: permettre de réordonner les blocs eux-mêmes (drag & drop via la poignée ⠿)
+            if (typeof Sortable !== 'undefined') {
+                if (todoBlocksSortable) {
+                    todoBlocksSortable.destroy();
+                    todoBlocksSortable = null;
+                }
+                todoBlocksSortable = Sortable.create(container, {
+                    animation: 150,
+                    handle: '.block-drag-handle',
+                    ghostClass: 'opacity-40',
+                    onEnd: reorderTodoBlocksFromDOM
+                });
+            }
+        }
+
+        // Instance Sortable pour le réordonnancement des blocs de la Todo list
+        let todoBlocksSortable = null;
+
+        // Applique le nouvel ordre des blocs (déterminé par le DOM après un drag & drop) à todoData,
+        // en conservant le même objet (les autres fonctions gardent une référence directe à todoData)
+        function reorderTodoBlocksFromDOM() {
+            const container = document.getElementById('todo-blocks-container');
+            if (!container) return;
+            const newOrder = Array.from(container.children)
+                .map(el => el.dataset.blockName)
+                .filter(name => name && todoData[name]);
+            const snapshot = { ...todoData };
+            newOrder.forEach(name => delete todoData[name]);
+            newOrder.forEach(name => { todoData[name] = snapshot[name]; });
+            saveData();
+            renderTodos();
         }
 
         function reorderTodoFromDOM(blockName, blockIdx) {
