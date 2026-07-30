@@ -1645,8 +1645,9 @@
 
             function renderTaskItem(blockName, task) {
                 return `
-                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group cursor-grab active:cursor-grabbing" data-task-id="${task.id}">
-                        <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group" data-task-id="${task.id}">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <span class="task-drag-handle text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 select-none" title="Glisser pour réordonner">⠿</span>
                             <input type="checkbox" ${task.completed ? 'checked' : ''} 
                                 onclick="toggleTodoStatus('${blockName}', ${task.id}, this.checked)"
                                 class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-400 cursor-pointer shrink-0">
@@ -1710,11 +1711,11 @@
 
                 const activeEl = document.getElementById(`todo-active-${blockIdx}`);
                 if (activeEl) {
-                    Sortable.create(activeEl, { animation: 150, ghostClass: 'opacity-40', filter: 'input, button, .todo-edit-label', preventOnFilter: false, onEnd });
+                    Sortable.create(activeEl, { animation: 150, ghostClass: 'opacity-40', handle: '.task-drag-handle', onEnd });
                 }
                 const doneEl = document.getElementById(`todo-done-${blockIdx}`);
                 if (doneEl) {
-                    Sortable.create(doneEl, { animation: 150, ghostClass: 'opacity-40', filter: 'input, button, .todo-edit-label', preventOnFilter: false, onEnd });
+                    Sortable.create(doneEl, { animation: 150, ghostClass: 'opacity-40', handle: '.task-drag-handle', onEnd });
                 }
             });
 
