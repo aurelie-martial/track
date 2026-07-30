@@ -571,6 +571,32 @@
         </div>
     </div>
 
+    <!-- MODAL : MODIFIER UNE HABITUDE (titre + catégorie) -->
+    <div id="habit-edit-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-lg">Modifier l'habitude</h3>
+                <button onclick="closeHabitEditModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Titre</label>
+                    <input type="text" id="habit-edit-title" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Catégorie</label>
+                    <select id="habit-edit-category" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white"></select>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="deleteHabitFromModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">Supprimer</button>
+                <button onclick="saveHabitEdit()" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL : GESTION DES CATÉGORIES DE RECETTES -->
     <div id="recipe-cat-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full p-6 space-y-4">
@@ -1435,9 +1461,9 @@
                     const progressPercent = totalDays > 0 ? Math.round((doneCount / totalDays) * 100) : 0;
                     
                     catHtml += `
-                        <tr class="hover:bg-slate-50/50 transition-colors cursor-grab active:cursor-grabbing" data-habit-id="${habit.id}">
+                        <tr class="hover:bg-slate-50/50 transition-colors" data-habit-id="${habit.id}">
                             <td class="py-3 text-sm font-medium text-slate-700 truncate pr-2">
-                                <span class="habit-edit-label cursor-pointer hover:text-indigo-600 transition-colors" onclick="editHabit(${habit.id})" title="Cliquer pour modifier">${habit.title}</span>
+                                <span class="habit-edit-label habit-drag-handle cursor-grab active:cursor-grabbing hover:text-indigo-600 transition-colors" onclick="editHabit(${habit.id})" title="Maintenir pour déplacer, appuyer pour modifier">${habit.title}</span>
                             </td>
                             ${daysHtml}
                             <td class="py-3 text-right text-xs font-bold text-slate-500">
@@ -1483,8 +1509,10 @@
                 Sortable.create(tbodyEl, {
                     animation: 150,
                     ghostClass: 'opacity-40',
-                    filter: 'input, button, .habit-edit-label',
-                    preventOnFilter: false,
+                    handle: '.habit-drag-handle',
+                    delay: 150,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 5,
                     onEnd: function() {
                         const newIds = Array.from(tbodyEl.children).map(tr => parseInt(tr.dataset.habitId));
                         const sameCatIndices = habits
@@ -1522,15 +1550,44 @@
             renderHabits();
         }
 
+        let editingHabitId = null;
+
         function editHabit(id) {
             const habit = habits.find(h => h.id === id);
             if (!habit) return;
-            const newTitle = prompt("Modifier l'habitude :", habit.title);
-            if (newTitle && newTitle.trim() !== "") {
-                habit.title = newTitle.trim();
-                saveData();
-                renderHabits();
-            }
+            editingHabitId = id;
+
+            document.getElementById('habit-edit-title').value = habit.title;
+            const catSelect = document.getElementById('habit-edit-category');
+            catSelect.innerHTML = categories.map(cat => `<option value="${cat}" ${cat === habit.category ? 'selected' : ''}>${cat}</option>`).join('');
+
+            document.getElementById('habit-edit-modal').classList.remove('hidden');
+        }
+
+        function closeHabitEditModal() {
+            document.getElementById('habit-edit-modal').classList.add('hidden');
+            editingHabitId = null;
+        }
+
+        function saveHabitEdit() {
+            const habit = habits.find(h => h.id === editingHabitId);
+            if (!habit) return;
+
+            const newTitle = document.getElementById('habit-edit-title').value.trim();
+            const newCategory = document.getElementById('habit-edit-category').value;
+
+            if (newTitle !== "") habit.title = newTitle;
+            if (newCategory) habit.category = newCategory;
+
+            saveData();
+            closeHabitEditModal();
+            renderHabits();
+        }
+
+        function deleteHabitFromModal() {
+            if (editingHabitId === null) return;
+            deleteHabit(editingHabitId);
+            closeHabitEditModal();
         }
 
         function deleteHabit(id) {
