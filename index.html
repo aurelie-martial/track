@@ -461,6 +461,11 @@
 
     </main>
 
+    <!-- Indicateur discret du poids des photos (visible uniquement quand des recettes ont une photo) -->
+    <footer id="image-weight-footer" class="hidden text-center text-[11px] text-slate-300 pb-4 px-4 select-none">
+        <span id="image-weight-text"></span>
+    </footer>
+
     <!-- MODAL : CRÉER / MODIFIER UNE RECETTE -->
     <div id="recipe-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
@@ -1869,10 +1874,38 @@
             return found ? found.color : '#94a3b8';
         }
 
+        // Limite Firestore par document (1 Mo). Sert de référence pour le pourcentage affiché.
+        const FIRESTORE_DOC_LIMIT_KB = 1024;
+
+        // Calcule le poids total (Ko) des photos de recettes hébergées en base64 et met à jour
+        // le petit indicateur discret en bas de page. N'affiche rien s'il n'y a aucune photo.
+        function updateImageWeightFooter() {
+            const footer = document.getElementById('image-weight-footer');
+            const textEl = document.getElementById('image-weight-text');
+            if (!footer || !textEl) return;
+
+            const imagesTotalBytes = (window.recipes || [])
+                .filter(r => r.image && r.image.startsWith('data:image'))
+                .reduce((sum, r) => sum + Math.round((r.image.length - r.image.indexOf(',') - 1) * 0.75), 0);
+
+            if (imagesTotalBytes === 0) {
+                footer.classList.add('hidden');
+                return;
+            }
+
+            const totalKB = imagesTotalBytes / 1024;
+            const percent = (imagesTotalBytes / (FIRESTORE_DOC_LIMIT_KB * 1024)) * 100;
+
+            textEl.innerText = `📷 Photos : ${totalKB < 10 ? totalKB.toFixed(1) : Math.round(totalKB)} Ko (${percent.toFixed(1)}%)`;
+            footer.classList.remove('hidden');
+        }
+
         function renderRecipes() {
             const container = document.getElementById('recipes-grid');
             if(!container) return;
             container.innerHTML = '';
+
+            updateImageWeightFooter();
 
             if (recipes.length === 0) {
                 container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 bg-white rounded-2xl border border-slate-100">Aucune recette pour le moment. Cliquez sur "Nouvelle Recette" pour commencer !</div>`;
