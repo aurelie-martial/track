@@ -1888,24 +1888,62 @@
             });
         }
 
-        // Redimensionne + compresse une image avant de la stocker (Firestore limite un document à 1 Mo,
-        // une photo de téléphone non compressée dépasse très facilement cette limite)
-        function compressImageFile(file, maxWidth = 900, quality = 0.7) {
+        // Redimensionne + compresse une image avant de la stocker (Firestore limite un document à 1 Mo
+        // AU TOTAL pour toutes les recettes/habitudes/todos/agenda cumulés : une seule photo un peu lourde
+        // suffit donc à faire échouer la sauvegarde). Ici on réduit qualité puis dimensions, par paliers,
+        // jusqu'à obtenir une image dont le poids réel est sous maxSizeBytes.
+        function compressImageFile(file, options = {}) {
+            const {
+                maxWidth = 900,
+                initialQuality = 0.7,
+                maxSizeBytes = 250 * 1024, // ~250 Ko par photo : laisse de la marge pour plusieurs recettes
+                minQuality = 0.35,
+                minWidth = 500
+            } = options;
+
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (evt) => {
                     const img = new Image();
                     img.onload = () => {
-                        let { width, height } = img;
+                        let width = img.width;
+                        let height = img.height;
                         if (width > maxWidth) {
                             height = Math.round(height * (maxWidth / width));
                             width = maxWidth;
                         }
+
                         const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
+                        const ctx = canvas.getContext('2d');
+
+                        const tryCompress = (currentWidth, currentHeight, quality) => {
+                            canvas.width = currentWidth;
+                            canvas.height = currentHeight;
+                            ctx.clearRect(0, 0, currentWidth, currentHeight);
+                            ctx.drawImage(img, 0, 0, currentWidth, currentHeight);
+                            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                            // Poids réel approximatif du base64 (en octets)
+                            const approxBytes = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
+
+                            const atMinimum = quality <= minQuality && currentWidth <= minWidth;
+                            if (approxBytes <= maxSizeBytes || atMinimum) {
+                                resolve(dataUrl);
+                                return;
+                            }
+
+                            // On baisse d'abord la qualité, puis on réduit aussi les dimensions si besoin
+                            let nextQuality = Math.max(minQuality, quality - 0.1);
+                            let nextWidth = currentWidth;
+                            let nextHeight = currentHeight;
+                            if (nextQuality === quality) {
+                                nextWidth = Math.max(minWidth, Math.round(currentWidth * 0.85));
+                                nextHeight = Math.round(currentHeight * (nextWidth / currentWidth));
+                            }
+                            tryCompress(nextWidth, nextHeight, nextQuality);
+                        };
+
+                        tryCompress(width, height, initialQuality);
                     };
                     img.onerror = () => reject(new Error("Image illisible"));
                     img.src = evt.target.result;
@@ -1921,18 +1959,27 @@
             if (fileInput) {
                 fileInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
-                    if (file) {
-                        compressImageFile(file)
-                            .then(dataUrl => {
-                                document.getElementById('recipe-image-base64').value = dataUrl;
-                                document.getElementById('recipe-image-preview-img').src = dataUrl;
-                                document.getElementById('recipe-image-preview').classList.remove('hidden');
-                            })
-                            .catch(err => {
-                                console.error("Erreur de traitement de l'image :", err);
-                                alert("Impossible de charger cette photo, merci d'en essayer une autre.");
-                            });
-                    }
+                    if (!file) return;
+
+                    const previewImg = document.getElementById('recipe-image-preview-img');
+                    const previewBox = document.getElementById('recipe-image-preview');
+                    // Petit indicateur pendant la compression (peut prendre 1-2s sur les grosses photos)
+                    previewImg.src = '';
+                    previewBox.classList.remove('hidden');
+                    previewBox.classList.add('opacity-50');
+
+                    compressImageFile(file)
+                        .then(dataUrl => {
+                            document.getElementById('recipe-image-base64').value = dataUrl;
+                            previewImg.src = dataUrl;
+                            previewBox.classList.remove('opacity-50');
+                        })
+                        .catch(err => {
+                            console.error("Erreur de traitement de l'image :", err);
+                            previewBox.classList.add('hidden');
+                            previewBox.classList.remove('opacity-50');
+                            alert("Impossible de charger cette photo, merci d'en essayer une autre.");
+                        });
                 });
             }
         });
