@@ -19,6 +19,9 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <!-- SortableJS for drag & drop reordering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+    <!-- Cropper.js pour le recadrage des photos de recette avant compression -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -350,12 +353,6 @@
                     
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <button onclick="checkStorageSize()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
-                        📊 Vérifier l'espace
-                    </button>
-                    <button onclick="if(confirm('Recompresser toutes les photos de recettes existantes ? Ça peut prendre quelques secondes.')) compressExistingRecipeImages();" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
-                        🗜️ Compresser les photos existantes
-                    </button>
                     <button onclick="manageRecipeCategories()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
                         🏷️ Gérer les Catégories
                     </button>
@@ -535,8 +532,27 @@
         </div>
     </div>
 
+    <!-- MODAL : RECADRAGE PHOTO RECETTE -->
+    <div id="image-crop-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full flex flex-col overflow-hidden">
+            <div class="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-sm">Recadrer la photo</h3>
+                <button onclick="cancelImageCrop()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+            </div>
+            <div class="p-4 bg-slate-800">
+                <div class="max-h-[55vh] overflow-hidden">
+                    <img id="crop-source-image" src="" alt="À recadrer" class="max-w-full block">
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button onclick="cancelImageCrop()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-200 transition-colors">Annuler</button>
+                <button id="confirm-crop-btn" onclick="confirmImageCrop()" class="px-5 py-2 rounded-xl text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-white transition-colors shadow-xs">Valider le recadrage</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL : DÉTAIL D'UNE RECETTE -->
-    <div id="recipe-detail-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div id="recipe-detail-modal" onclick="if(event.target === this) closeRecipeDetailModal()" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             <div id="detail-header-image" class="h-48 w-full bg-slate-100 relative bg-cover bg-center">
                 <button onclick="closeRecipeDetailModal()" class="absolute top-3 right-3 bg-white/80 hover:bg-white text-slate-800 rounded-full w-8 h-8 flex items-center justify-center font-bold shadow-md">✕</button>
@@ -1910,174 +1926,106 @@
             });
         }
 
-        // Estime le poids réel (en Ko) qu'un objet JS occuperait une fois envoyé à Firestore
-        function estimateSizeKB(obj) {
-            try {
-                const str = typeof obj === 'string' ? obj : JSON.stringify(obj);
-                return new Blob([str]).size / 1024;
-            } catch (e) {
-                return 0;
-            }
-        }
+        // Aspect ratio final imposé au recadrage des photos de recette (format bannière large,
+        // cohérent avec les vignettes et l'en-tête de la fiche détail).
+        const RECIPE_IMAGE_ASPECT_RATIO = 16 / 9;
+        let recipeImageCropper = null;
 
-        // Diagnostic : affiche la taille totale des données et le classement des recettes
-        // les plus lourdes (photos), pour repérer facilement la cause d'un dépassement de la
-        // limite Firestore de 1 Mo (1024 Ko) par document.
-        window.checkStorageSize = function() {
-            const payload = {
-                categories: window.categories,
-                habits: window.habits,
-                todoData: window.todoData,
-                planCategories: window.planCategories,
-                planGoals: window.planGoals,
-                recipeCategories: window.recipeCategories,
-                recipes: window.recipes,
-                agendaEvents: window.agendaEvents
-            };
-            const limitKB = 1024;
-            const totalKB = estimateSizeKB(payload);
-
-            let message = `📦 Taille totale de tes données : ${Math.round(totalKB)} Ko sur ${limitKB} Ko (limite Firestore)\n\n`;
-            if (totalKB > limitKB) {
-                message += `⚠️ Tu dépasses la limite : c'est pour ça que la sauvegarde échoue.\n\n`;
-            } else if (totalKB > limitKB * 0.8) {
-                message += `⚠️ Tu approches de la limite, mieux vaut alléger quelques photos.\n\n`;
-            } else {
-                message += `✅ Tu es dans la limite pour le moment.\n\n`;
-            }
-
-            const recipesWithImages = (window.recipes || [])
-                .filter(r => r.image && r.image.startsWith('data:'))
-                .map(r => ({ title: r.title, kb: estimateSizeKB(r.image) }))
-                .sort((a, b) => b.kb - a.kb);
-
-            if (recipesWithImages.length > 0) {
-                message += `🖼️ Recettes avec photo (de la plus lourde à la plus légère) :\n`;
-                recipesWithImages.forEach((r, i) => {
-                    message += `${i + 1}. ${r.title} — ${Math.round(r.kb)} Ko\n`;
-                });
-            } else {
-                message += `Aucune recette avec photo hébergée localement pour le moment.`;
-            }
-
-            alert(message);
-        };
-
-        // Redimensionne + compresse une image avant de la stocker (Firestore limite un document à 1 Mo
-        // AU TOTAL pour toutes les recettes/habitudes/todos/agenda cumulés : une seule photo un peu lourde
-        // suffit donc à faire échouer la sauvegarde). Ici on réduit qualité puis dimensions, par paliers,
-        // jusqu'à obtenir une image dont le poids réel est sous maxSizeBytes.
-        // `source` peut être un File (upload) OU directement une dataURL "data:image/..." déjà stockée
-        // (cas de la recompression des photos existantes).
-        function compressImageFile(source, options = {}) {
+        // Compresse un canvas déjà recadré jusqu'à obtenir un poids maximum de maxSizeBytes (20 Ko par
+        // défaut), en réduisant d'abord la qualité JPEG puis, si ça ne suffit pas, les dimensions.
+        function compressCanvasToLimit(sourceCanvas, options = {}) {
             const {
-                maxWidth = 900,
-                initialQuality = 0.7,
-                maxSizeBytes = 250 * 1024, // ~250 Ko par photo : laisse de la marge pour plusieurs recettes
-                minQuality = 0.35,
-                minWidth = 500
+                initialQuality = 0.75,
+                maxSizeBytes = 20 * 1024, // 20 Ko cible
+                minQuality = 0.12,
+                minWidth = 200
             } = options;
 
-            function fromDataUrl(srcUrl) {
-                return new Promise((resolve, reject) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > maxWidth) {
-                            height = Math.round(height * (maxWidth / width));
-                            width = maxWidth;
-                        }
+            return new Promise((resolve) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const aspectRatio = sourceCanvas.width / sourceCanvas.height;
 
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
+                const tryCompress = (width, quality) => {
+                    const height = Math.round(width / aspectRatio);
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.drawImage(sourceCanvas, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
 
-                        const tryCompress = (currentWidth, currentHeight, quality) => {
-                            canvas.width = currentWidth;
-                            canvas.height = currentHeight;
-                            ctx.clearRect(0, 0, currentWidth, currentHeight);
-                            ctx.drawImage(img, 0, 0, currentWidth, currentHeight);
-                            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    // Poids réel approximatif du base64 (en octets)
+                    const approxBytes = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
 
-                            // Poids réel approximatif du base64 (en octets)
-                            const approxBytes = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
+                    const atMinimum = quality <= minQuality && width <= minWidth;
+                    if (approxBytes <= maxSizeBytes || atMinimum) {
+                        resolve(dataUrl);
+                        return;
+                    }
 
-                            const atMinimum = quality <= minQuality && currentWidth <= minWidth;
-                            if (approxBytes <= maxSizeBytes || atMinimum) {
-                                resolve(dataUrl);
-                                return;
-                            }
-
-                            // On baisse d'abord la qualité, puis on réduit aussi les dimensions si besoin
-                            let nextQuality = Math.max(minQuality, quality - 0.1);
-                            let nextWidth = currentWidth;
-                            let nextHeight = currentHeight;
-                            if (nextQuality === quality) {
-                                nextWidth = Math.max(minWidth, Math.round(currentWidth * 0.85));
-                                nextHeight = Math.round(currentHeight * (nextWidth / currentWidth));
-                            }
-                            tryCompress(nextWidth, nextHeight, nextQuality);
-                        };
-
-                        tryCompress(width, height, initialQuality);
-                    };
-                    img.onerror = () => reject(new Error("Image illisible"));
-                    img.src = srcUrl;
-                });
-            }
-
-            if (typeof source === 'string') {
-                return fromDataUrl(source);
-            }
-
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    fromDataUrl(evt.target.result).then(resolve).catch(reject);
+                    // On baisse d'abord la qualité, puis on réduit aussi les dimensions si besoin
+                    let nextQuality = Math.max(minQuality, quality - 0.08);
+                    let nextWidth = width;
+                    if (nextQuality === quality) {
+                        nextWidth = Math.max(minWidth, Math.round(width * 0.85));
+                    }
+                    tryCompress(nextWidth, nextQuality);
                 };
-                reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
-                reader.readAsDataURL(source);
+
+                tryCompress(sourceCanvas.width, initialQuality);
             });
         }
 
-        // Recompresse toutes les photos de recettes déjà enregistrées (utile pour les recettes créées
-        // avant la mise en place de la compression automatique, ou avec l'ancien réglage moins strict).
-        // Ignore les images externes (URL http/https, ex: photos Unsplash par défaut) : seules les
-        // photos hébergées en base64 dans le document sont concernées par la limite Firestore.
-        window.compressExistingRecipeImages = async function() {
-            const targets = (window.recipes || []).filter(r => r.image && r.image.startsWith('data:image'));
-            if (targets.length === 0) {
-                alert("Aucune photo de recette hébergée localement à compresser pour le moment.");
+        function cancelImageCrop() {
+            if (recipeImageCropper) {
+                recipeImageCropper.destroy();
+                recipeImageCropper = null;
+            }
+            document.getElementById('image-crop-modal').classList.add('hidden');
+            document.getElementById('recipe-image-file').value = '';
+        }
+
+        async function confirmImageCrop() {
+            if (!recipeImageCropper) return;
+
+            const croppedCanvas = recipeImageCropper.getCroppedCanvas({
+                width: 640,
+                height: Math.round(640 / RECIPE_IMAGE_ASPECT_RATIO),
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+
+            if (!croppedCanvas) {
+                alert("Le recadrage a échoué, merci de réessayer.");
                 return;
             }
 
-            const totalBeforeKB = targets.reduce((sum, r) => sum + estimateSizeKB(r.image), 0);
-            let changedCount = 0;
+            const modal = document.getElementById('image-crop-modal');
+            const confirmBtn = document.getElementById('confirm-crop-btn');
+            modal.classList.add('opacity-70', 'pointer-events-none');
+            confirmBtn.innerText = 'Compression...';
 
-            for (const recipe of targets) {
-                const beforeKB = estimateSizeKB(recipe.image);
-                try {
-                    const compressed = await compressImageFile(recipe.image);
-                    const afterKB = estimateSizeKB(compressed);
-                    // On ne remplace que si ça allège réellement l'image
-                    if (afterKB < beforeKB) {
-                        recipe.image = compressed;
-                        changedCount++;
-                    }
-                } catch (e) {
-                    console.error(`Impossible de recompresser la photo de "${recipe.title}" :`, e);
+            try {
+                const dataUrl = await compressCanvasToLimit(croppedCanvas);
+                document.getElementById('recipe-image-base64').value = dataUrl;
+                document.getElementById('recipe-image-preview-img').src = dataUrl;
+                document.getElementById('recipe-image-preview').classList.remove('hidden');
+            } catch (err) {
+                console.error("Erreur de compression de l'image :", err);
+                alert("Impossible de traiter cette photo, merci d'en essayer une autre.");
+            } finally {
+                modal.classList.remove('opacity-70', 'pointer-events-none');
+                confirmBtn.innerText = 'Valider le recadrage';
+                if (recipeImageCropper) {
+                    recipeImageCropper.destroy();
+                    recipeImageCropper = null;
                 }
+                modal.classList.add('hidden');
+                document.getElementById('recipe-image-file').value = '';
             }
+        }
 
-            const totalAfterKB = targets.reduce((sum, r) => sum + estimateSizeKB(r.image), 0);
-
-            renderRecipes();
-            await saveData();
-
-            alert(`✅ Compression terminée.\n\n${changedCount} photo(s) allégée(s) sur ${targets.length}.\nPoids total des photos : ${Math.round(totalBeforeKB)} Ko → ${Math.round(totalAfterKB)} Ko.`);
-        };
-
-        // Ecouteur d'upload image locale pour recette
+        // Ecouteur d'upload image locale pour recette : ouvre l'outil de recadrage avant compression
         document.addEventListener('DOMContentLoaded', () => {
             const fileInput = document.getElementById('recipe-image-file');
             if (fileInput) {
@@ -2085,28 +2033,35 @@
                     const file = e.target.files[0];
                     if (!file) return;
 
-                    const previewImg = document.getElementById('recipe-image-preview-img');
-                    const previewBox = document.getElementById('recipe-image-preview');
-                    // Petit indicateur pendant la compression (peut prendre 1-2s sur les grosses photos)
-                    previewImg.src = '';
-                    previewBox.classList.remove('hidden');
-                    previewBox.classList.add('opacity-50');
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        const cropImg = document.getElementById('crop-source-image');
+                        cropImg.src = evt.target.result;
+                        document.getElementById('image-crop-modal').classList.remove('hidden');
 
-                    compressImageFile(file)
-                        .then(dataUrl => {
-                            document.getElementById('recipe-image-base64').value = dataUrl;
-                            previewImg.src = dataUrl;
-                            previewBox.classList.remove('opacity-50');
-                        })
-                        .catch(err => {
-                            console.error("Erreur de traitement de l'image :", err);
-                            previewBox.classList.add('hidden');
-                            previewBox.classList.remove('opacity-50');
-                            alert("Impossible de charger cette photo, merci d'en essayer une autre.");
-                        });
+                        if (recipeImageCropper) {
+                            recipeImageCropper.destroy();
+                            recipeImageCropper = null;
+                        }
+                        // Cropper.js doit être initialisé une fois l'image chargée dans le DOM
+                        cropImg.onload = () => {
+                            recipeImageCropper = new Cropper(cropImg, {
+                                aspectRatio: RECIPE_IMAGE_ASPECT_RATIO,
+                                viewMode: 1,
+                                autoCropArea: 1,
+                                background: false,
+                                movable: true,
+                                zoomable: true,
+                                responsive: true
+                            });
+                        };
+                    };
+                    reader.onerror = () => alert("Impossible de lire cette photo, merci d'en essayer une autre.");
+                    reader.readAsDataURL(file);
                 });
             }
         });
+
 
         function openRecipeModal(recipeId = null) {
             // Render category checkboxes
