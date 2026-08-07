@@ -989,6 +989,10 @@
             targetBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
             targetBtn.classList.remove('text-slate-600');
 
+            if (typeof updateImageWeightFooter === 'function') {
+                updateImageWeightFooter();
+            }
+
             if (tabId === 'plan-2026' && typeof scrollGanttToCurrentMonth === 'function') {
                 requestAnimationFrame(scrollGanttToCurrentMonth);
             }
@@ -1878,11 +1882,21 @@
         const FIRESTORE_DOC_LIMIT_KB = 1024;
 
         // Calcule le poids total (Ko) des photos de recettes hébergées en base64 et met à jour
-        // le petit indicateur discret en bas de page. N'affiche rien s'il n'y a aucune photo.
+        // le petit indicateur discret en bas de la page Recettes. N'affiche rien s'il n'y a aucune
+        // photo, ET n'affiche rien si l'onglet Recettes n'est pas actuellement affiché (contrôle
+        // explicite en JS, indépendant du CSS des onglets, pour éviter toute fuite vers les autres onglets).
         function updateImageWeightFooter() {
             const footer = document.getElementById('image-weight-footer');
             const textEl = document.getElementById('image-weight-text');
             if (!footer || !textEl) return;
+
+            const recipesSection = document.getElementById('recipes');
+            const isRecipesTabActive = recipesSection && recipesSection.classList.contains('active');
+
+            if (!isRecipesTabActive) {
+                footer.classList.add('hidden');
+                return;
+            }
 
             const imagesTotalBytes = (window.recipes || [])
                 .filter(r => r.image && r.image.startsWith('data:image'))
