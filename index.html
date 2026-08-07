@@ -353,6 +353,9 @@
                     <button onclick="checkStorageSize()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
                         📊 Vérifier l'espace
                     </button>
+                    <button onclick="if(confirm('Recompresser toutes les photos de recettes existantes ? Ça peut prendre quelques secondes.')) compressExistingRecipeImages();" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
+                        🗜️ Compresser les photos existantes
+                    </button>
                     <button onclick="manageRecipeCategories()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
                         🏷️ Gérer les Catégories
                     </button>
@@ -1964,7 +1967,9 @@
         // AU TOTAL pour toutes les recettes/habitudes/todos/agenda cumulés : une seule photo un peu lourde
         // suffit donc à faire échouer la sauvegarde). Ici on réduit qualité puis dimensions, par paliers,
         // jusqu'à obtenir une image dont le poids réel est sous maxSizeBytes.
-        function compressImageFile(file, options = {}) {
+        // `source` peut être un File (upload) OU directement une dataURL "data:image/..." déjà stockée
+        // (cas de la recompression des photos existantes).
+        function compressImageFile(source, options = {}) {
             const {
                 maxWidth = 900,
                 initialQuality = 0.7,
@@ -1973,9 +1978,8 @@
                 minWidth = 500
             } = options;
 
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (evt) => {
+            function fromDataUrl(srcUrl) {
+                return new Promise((resolve, reject) => {
                     const img = new Image();
                     img.onload = () => {
                         let width = img.width;
@@ -2018,12 +2022,60 @@
                         tryCompress(width, height, initialQuality);
                     };
                     img.onerror = () => reject(new Error("Image illisible"));
-                    img.src = evt.target.result;
+                    img.src = srcUrl;
+                });
+            }
+
+            if (typeof source === 'string') {
+                return fromDataUrl(source);
+            }
+
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    fromDataUrl(evt.target.result).then(resolve).catch(reject);
                 };
                 reader.onerror = () => reject(new Error("Lecture du fichier impossible"));
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(source);
             });
         }
+
+        // Recompresse toutes les photos de recettes déjà enregistrées (utile pour les recettes créées
+        // avant la mise en place de la compression automatique, ou avec l'ancien réglage moins strict).
+        // Ignore les images externes (URL http/https, ex: photos Unsplash par défaut) : seules les
+        // photos hébergées en base64 dans le document sont concernées par la limite Firestore.
+        window.compressExistingRecipeImages = async function() {
+            const targets = (window.recipes || []).filter(r => r.image && r.image.startsWith('data:image'));
+            if (targets.length === 0) {
+                alert("Aucune photo de recette hébergée localement à compresser pour le moment.");
+                return;
+            }
+
+            const totalBeforeKB = targets.reduce((sum, r) => sum + estimateSizeKB(r.image), 0);
+            let changedCount = 0;
+
+            for (const recipe of targets) {
+                const beforeKB = estimateSizeKB(recipe.image);
+                try {
+                    const compressed = await compressImageFile(recipe.image);
+                    const afterKB = estimateSizeKB(compressed);
+                    // On ne remplace que si ça allège réellement l'image
+                    if (afterKB < beforeKB) {
+                        recipe.image = compressed;
+                        changedCount++;
+                    }
+                } catch (e) {
+                    console.error(`Impossible de recompresser la photo de "${recipe.title}" :`, e);
+                }
+            }
+
+            const totalAfterKB = targets.reduce((sum, r) => sum + estimateSizeKB(r.image), 0);
+
+            renderRecipes();
+            await saveData();
+
+            alert(`✅ Compression terminée.\n\n${changedCount} photo(s) allégée(s) sur ${targets.length}.\nPoids total des photos : ${Math.round(totalBeforeKB)} Ko → ${Math.round(totalAfterKB)} Ko.`);
+        };
 
         // Ecouteur d'upload image locale pour recette
         document.addEventListener('DOMContentLoaded', () => {
