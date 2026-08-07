@@ -350,6 +350,9 @@
                     
                 </div>
                 <div class="flex flex-wrap gap-2">
+                    <button onclick="checkStorageSize()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
+                        📊 Vérifier l'espace
+                    </button>
                     <button onclick="manageRecipeCategories()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
                         🏷️ Gérer les Catégories
                     </button>
@@ -850,17 +853,33 @@
 
         window.saveData = async function() {
             if (!currentUserDocRef) return;
+
+            const payload = {
+                categories: window.categories,
+                habits: window.habits,
+                todoData: window.todoData,
+                planCategories: window.planCategories,
+                planGoals: window.planGoals,
+                recipeCategories: window.recipeCategories,
+                recipes: window.recipes,
+                agendaEvents: window.agendaEvents
+            };
+
+            // Vérification préventive AVANT l'envoi : Firestore limite un document à 1 Mo (≈1024 Ko)
+            // pour TOUTES les données cumulées (recettes, habitudes, todos, agenda...). Sans ce contrôle,
+            // on découvre le dépassement uniquement après l'échec de setDoc, avec un message vague.
             try {
-                await setDoc(currentUserDocRef, {
-                    categories: window.categories,
-                    habits: window.habits,
-                    todoData: window.todoData,
-                    planCategories: window.planCategories,
-                    planGoals: window.planGoals,
-                    recipeCategories: window.recipeCategories,
-                    recipes: window.recipes,
-                    agendaEvents: window.agendaEvents
-                });
+                const sizeKB = new Blob([JSON.stringify(payload)]).size / 1024;
+                if (sizeKB > 950) {
+                    alert(`⚠️ Sauvegarde bloquée : tes données pèsent environ ${Math.round(sizeKB)} Ko, la limite Firestore est de 1024 Ko.\n\nUtilise le bouton "📊 Vérifier l'espace" dans l'onglet Recettes pour voir quelles photos sont les plus lourdes, et en supprimer ou remplacer une.`);
+                    return;
+                }
+            } catch (e) {
+                console.warn("Impossible d'estimer la taille des données avant sauvegarde :", e);
+            }
+
+            try {
+                await setDoc(currentUserDocRef, payload);
             } catch (e) {
                 console.error("Erreur de sauvegarde Firebase: ", e);
                 alert("⚠️ La sauvegarde a échoué. Vos derniers changements (peut-être une photo trop volumineuse) n'ont pas été enregistrés.");
@@ -1887,6 +1906,59 @@
                 container.innerHTML += cardHtml;
             });
         }
+
+        // Estime le poids réel (en Ko) qu'un objet JS occuperait une fois envoyé à Firestore
+        function estimateSizeKB(obj) {
+            try {
+                const str = typeof obj === 'string' ? obj : JSON.stringify(obj);
+                return new Blob([str]).size / 1024;
+            } catch (e) {
+                return 0;
+            }
+        }
+
+        // Diagnostic : affiche la taille totale des données et le classement des recettes
+        // les plus lourdes (photos), pour repérer facilement la cause d'un dépassement de la
+        // limite Firestore de 1 Mo (1024 Ko) par document.
+        window.checkStorageSize = function() {
+            const payload = {
+                categories: window.categories,
+                habits: window.habits,
+                todoData: window.todoData,
+                planCategories: window.planCategories,
+                planGoals: window.planGoals,
+                recipeCategories: window.recipeCategories,
+                recipes: window.recipes,
+                agendaEvents: window.agendaEvents
+            };
+            const limitKB = 1024;
+            const totalKB = estimateSizeKB(payload);
+
+            let message = `📦 Taille totale de tes données : ${Math.round(totalKB)} Ko sur ${limitKB} Ko (limite Firestore)\n\n`;
+            if (totalKB > limitKB) {
+                message += `⚠️ Tu dépasses la limite : c'est pour ça que la sauvegarde échoue.\n\n`;
+            } else if (totalKB > limitKB * 0.8) {
+                message += `⚠️ Tu approches de la limite, mieux vaut alléger quelques photos.\n\n`;
+            } else {
+                message += `✅ Tu es dans la limite pour le moment.\n\n`;
+            }
+
+            const recipesWithImages = (window.recipes || [])
+                .filter(r => r.image && r.image.startsWith('data:'))
+                .map(r => ({ title: r.title, kb: estimateSizeKB(r.image) }))
+                .sort((a, b) => b.kb - a.kb);
+
+            if (recipesWithImages.length > 0) {
+                message += `🖼️ Recettes avec photo (de la plus lourde à la plus légère) :\n`;
+                recipesWithImages.forEach((r, i) => {
+                    message += `${i + 1}. ${r.title} — ${Math.round(r.kb)} Ko\n`;
+                });
+            } else {
+                message += `Aucune recette avec photo hébergée localement pour le moment.`;
+            }
+
+            alert(message);
+        };
 
         // Redimensionne + compresse une image avant de la stocker (Firestore limite un document à 1 Mo
         // AU TOTAL pour toutes les recettes/habitudes/todos/agenda cumulés : une seule photo un peu lourde
