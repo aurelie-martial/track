@@ -366,6 +366,11 @@
             <div id="recipes-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 <!-- Généré par JS -->
             </div>
+
+            <!-- Indicateur discret du poids des photos (visible uniquement quand des recettes ont une photo) -->
+            <footer id="image-weight-footer" class="hidden text-center text-[11px] text-slate-300 pt-2 pb-1 px-4 select-none">
+                <span id="image-weight-text"></span>
+            </footer>
         </section>
 
         <!-- ================= PARTIE 5: PLAN 2026 ================= -->
@@ -460,11 +465,6 @@
         </section>
 
     </main>
-
-    <!-- Indicateur discret du poids des photos (visible uniquement quand des recettes ont une photo) -->
-    <footer id="image-weight-footer" class="hidden text-center text-[11px] text-slate-300 pb-4 px-4 select-none">
-        <span id="image-weight-text"></span>
-    </footer>
 
     <!-- MODAL : CRÉER / MODIFIER UNE RECETTE -->
     <div id="recipe-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
