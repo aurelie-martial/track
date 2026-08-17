@@ -470,12 +470,23 @@
             <!-- Graphiques -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
-                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Poids, masse grasse & masse musculaire
-                    </h3>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Poids, masse grasse & masse musculaire
+                        </h3>
+                        <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+                            <button onclick="switchSportChartMode('absolute')" id="btn-sport-mode-absolute" class="px-2.5 py-1 text-[10px] sm:text-xs font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                                Valeurs réelles
+                            </button>
+                            <button onclick="switchSportChartMode('indexed')" id="btn-sport-mode-indexed" class="px-2.5 py-1 text-[10px] sm:text-xs font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                                Évolution (%)
+                            </button>
+                        </div>
+                    </div>
                     <div class="h-56">
                         <canvas id="sport-measurements-chart"></canvas>
                     </div>
+                    <p id="sport-mode-caption" class="hidden text-[10px] text-slate-400 mt-2">Base 100 = premier relevé de chaque courbe, pour comparer leur évolution malgré leurs échelles différentes (kg vs %).</p>
                 </div>
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
@@ -532,7 +543,8 @@
                             <div>
                                 <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Type</label>
                                 <select id="new-activity-type" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-emerald-400">
-                                    <option value="Sport">🏋️ Sport</option>
+                                    <option value="Renfo">🏋️ Renfo</option>
+                                    <option value="Run">🏃 Run</option>
                                     <option value="Marche">🚶 Marche</option>
                                     <option value="Autre">✨ Autre activité</option>
                                 </select>
@@ -2919,6 +2931,11 @@
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
         }
 
+        // Anciennes activités enregistrées avec le type "Sport" (avant le renommage en "Renfo")
+        function normalizeActivityType(type) {
+            return type === 'Sport' ? 'Renfo' : type;
+        }
+
         function addSportMeasurement() {
             const dateInput = document.getElementById('new-measure-date');
             const weightInput = document.getElementById('new-measure-weight');
@@ -3018,11 +3035,11 @@
             if (sorted.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-xs text-slate-400">Aucune activité enregistrée.</td></tr>`;
             } else {
-                const typeIcon = { Sport: '🏋️', Marche: '🚶', Autre: '✨' };
+                const typeIcon = { Renfo: '🏋️', Run: '🏃', Marche: '🚶', Autre: '✨' };
                 tbody.innerHTML = sorted.map(a => `
                     <tr class="hover:bg-slate-50/50 transition-colors">
                         <td class="py-2 px-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">${formatDateFR(a.date)}</td>
-                        <td class="py-2 px-1.5 text-xs">${typeIcon[a.type] || '✨'} ${a.name}</td>
+                        <td class="py-2 px-1.5 text-xs">${typeIcon[normalizeActivityType(a.type)] || '✨'} ${a.name}</td>
                         <td class="py-2 px-1.5 text-xs">${a.duration !== null && a.duration !== undefined ? a.duration + ' min' : '-'}</td>
                         <td class="py-2 px-1.5 text-xs font-semibold text-emerald-600">${a.calories !== null && a.calories !== undefined ? a.calories : '-'}</td>
                         <td class="py-2 px-1.5 text-right">
@@ -3044,6 +3061,36 @@
             }
         }
 
+        // Bascule entre "valeurs réelles" (kg / %) et "évolution indexée" (base 100 = 1er relevé)
+        // pour le graphique combiné poids / masse grasse / masse musculaire. Utile car ces trois
+        // séries n'ont pas la même échelle (kg vs %) : indexer permet de comparer leurs tendances
+        // sur un seul axe sans recourir à un graphique à double axe (à éviter en dataviz).
+        window.sportChartMode = 'absolute';
+
+        function switchSportChartMode(mode) {
+            window.sportChartMode = mode;
+            const btnAbsolute = document.getElementById('btn-sport-mode-absolute');
+            const btnIndexed = document.getElementById('btn-sport-mode-indexed');
+            [btnAbsolute, btnIndexed].forEach(b => b.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm'));
+            [btnAbsolute, btnIndexed].forEach(b => b.classList.add('text-slate-600'));
+            const activeBtn = mode === 'absolute' ? btnAbsolute : btnIndexed;
+            activeBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+            activeBtn.classList.remove('text-slate-600');
+
+            const caption = document.getElementById('sport-mode-caption');
+            if (caption) caption.classList.toggle('hidden', mode !== 'indexed');
+
+            renderSportCharts();
+        }
+
+        // Indexe une série sur une base 100 = première valeur non nulle (variation en %)
+        function indexSeriesToBase100(values) {
+            const baseIndex = values.findIndex(v => v !== null && v !== undefined && !isNaN(v) && v !== 0);
+            if (baseIndex === -1) return values.map(() => null);
+            const base = values[baseIndex];
+            return values.map(v => (v === null || v === undefined || isNaN(v)) ? null : Math.round((v / base) * 1000) / 10);
+        }
+
         function renderSportCharts() {
             if (typeof Chart === 'undefined') return;
 
@@ -3054,62 +3101,71 @@
             // --- Graphique combiné : poids, masse grasse, masse musculaire ---
             const sortedMeasurements = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
             const measurementLabels = sortedMeasurements.map(m => formatDateFR(m.date));
+            const isIndexed = window.sportChartMode === 'indexed';
+
+            const rawWeight = sortedMeasurements.map(m => m.weight);
+            const rawBodyFat = sortedMeasurements.map(m => m.bodyFat);
+            const rawMuscleMass = sortedMeasurements.map(m => m.muscleMass);
+
+            const measurementSeries = [
+                { label: 'Poids', unit: 'kg', raw: rawWeight, color: '#6366f1' },
+                { label: 'Masse grasse', unit: '%', raw: rawBodyFat, color: '#f59e0b' },
+                { label: 'Masse musculaire', unit: '%', raw: rawMuscleMass, color: '#10b981' }
+            ];
 
             if (sportMeasurementsChartInstance) sportMeasurementsChartInstance.destroy();
             sportMeasurementsChartInstance = new Chart(measurementsCanvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: measurementLabels,
-                    datasets: [
-                        {
-                            label: 'Poids (kg)',
-                            data: sortedMeasurements.map(m => m.weight),
-                            borderColor: '#6366f1',
-                            backgroundColor: '#6366f11f',
-                            borderWidth: 2,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#6366f1',
-                            tension: 0.3,
-                            spanGaps: true
-                        },
-                        {
-                            label: 'Masse grasse (%)',
-                            data: sortedMeasurements.map(m => m.bodyFat),
-                            borderColor: '#f59e0b',
-                            backgroundColor: '#f59e0b1f',
-                            borderWidth: 2,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#f59e0b',
-                            tension: 0.3,
-                            spanGaps: true
-                        },
-                        {
-                            label: 'Masse musculaire (%)',
-                            data: sortedMeasurements.map(m => m.muscleMass),
-                            borderColor: '#10b981',
-                            backgroundColor: '#10b9811f',
-                            borderWidth: 2,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#10b981',
-                            tension: 0.3,
-                            spanGaps: true
-                        }
-                    ]
+                    datasets: measurementSeries.map(s => ({
+                        label: isIndexed ? `${s.label} (indice)` : `${s.label} (${s.unit})`,
+                        data: isIndexed ? indexSeriesToBase100(s.raw) : s.raw,
+                        rawValues: s.raw,
+                        unit: s.unit,
+                        borderColor: s.color,
+                        backgroundColor: s.color + '1f',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: s.color,
+                        tension: 0.3,
+                        spanGaps: true
+                    }))
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
+                    plugins: {
+                        legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const ds = context.dataset;
+                                    if (isIndexed) {
+                                        const rawVal = ds.rawValues ? ds.rawValues[context.dataIndex] : null;
+                                        const rawText = (rawVal !== null && rawVal !== undefined) ? ` (${rawVal} ${ds.unit})` : '';
+                                        return `${ds.label}: ${context.formattedValue}${rawText}`;
+                                    }
+                                    return `${ds.label}: ${context.formattedValue} ${ds.unit}`;
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { size: 10 } },
+                            title: isIndexed ? { display: true, text: 'Indice (base 100)', font: { size: 10 } } : { display: false }
+                        }
                     }
                 }
             });
 
             // --- Graphique des séances : calories dépensées par activité, groupées par type ---
             const activityTypes = [
-                { key: 'Sport', label: '🏋️ Sport', color: '#6366f1' },
+                { key: 'Renfo', label: '🏋️ Renfo', color: '#6366f1' },
+                { key: 'Run', label: '🏃 Run', color: '#f43f5e' },
                 { key: 'Marche', label: '🚶 Marche', color: '#10b981' },
                 { key: 'Autre', label: '✨ Autre', color: '#f59e0b' }
             ];
@@ -3119,7 +3175,7 @@
             const activityDatasets = activityTypes.map(t => ({
                 label: t.label,
                 data: sortedActivityDates.map(d => {
-                    const entriesForDay = window.sportActivities.filter(a => a.date === d && a.type === t.key);
+                    const entriesForDay = window.sportActivities.filter(a => a.date === d && normalizeActivityType(a.type) === t.key);
                     if (entriesForDay.length === 0) return null;
                     return entriesForDay.reduce((sum, a) => sum + (a.calories || 0), 0);
                 }),
