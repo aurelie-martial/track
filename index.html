@@ -3114,30 +3114,40 @@
             const rawBodyFat = sortedMeasurements.map(m => m.bodyFat);
             const rawMuscleMass = sortedMeasurements.map(m => m.muscleMass);
 
-            const measurementSeries = [
-                { label: 'Poids', unit: 'kg', raw: rawWeight, color: '#6366f1' },
-                { label: 'Masse grasse', unit: '%', raw: rawBodyFat, color: '#f59e0b' },
-                { label: 'Masse musculaire', unit: '%', raw: rawMuscleMass, color: '#10b981' }
-            ];
+            // En mode "valeurs réelles" : le poids reste une simple courbe (rien à remplir en dessous),
+            // tandis que masse grasse et masse musculaire sont remplies en aplat de couleur sous leur
+            // propre courbe. Elles sont placées avant le poids dans le tableau de datasets pour être
+            // dessinées "sous" la courbe de poids, tracée par-dessus en dernier.
+            const weightSeries = { key: 'weight', label: 'Poids', unit: 'kg', raw: rawWeight, color: '#6366f1' };
+            const bodyFatSeries = { key: 'bodyFat', label: 'Masse grasse', unit: '%', raw: rawBodyFat, color: '#f59e0b' };
+            const muscleSeries = { key: 'muscleMass', label: 'Masse musculaire', unit: '%', raw: rawMuscleMass, color: '#10b981' };
+
+            const measurementSeries = isIndexed
+                ? [weightSeries, bodyFatSeries, muscleSeries]
+                : [bodyFatSeries, muscleSeries, weightSeries];
 
             if (sportMeasurementsChartInstance) sportMeasurementsChartInstance.destroy();
             sportMeasurementsChartInstance = new Chart(measurementsCanvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: measurementLabels,
-                    datasets: measurementSeries.map(s => ({
-                        label: isIndexed ? `${s.label} (indice)` : `${s.label} (${s.unit})`,
-                        data: isIndexed ? indexSeriesToBase100(s.raw) : s.raw,
-                        rawValues: s.raw,
-                        unit: s.unit,
-                        borderColor: s.color,
-                        backgroundColor: s.color + '1f',
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: s.color,
-                        tension: 0.3,
-                        spanGaps: true
-                    }))
+                    datasets: measurementSeries.map(s => {
+                        const isFillSeries = !isIndexed && s.key !== 'weight';
+                        return {
+                            label: isIndexed ? `${s.label} (indice)` : `${s.label} (${s.unit})`,
+                            data: isIndexed ? indexSeriesToBase100(s.raw) : s.raw,
+                            rawValues: s.raw,
+                            unit: s.unit,
+                            borderColor: s.color,
+                            backgroundColor: isFillSeries ? s.color + '40' : s.color + '1f',
+                            borderWidth: (!isIndexed && s.key === 'weight') ? 2.5 : 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: s.color,
+                            tension: 0.3,
+                            spanGaps: true,
+                            fill: isFillSeries ? 'origin' : false
+                        };
+                    })
                 },
                 options: {
                     responsive: true,
