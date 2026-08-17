@@ -19,6 +19,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <!-- SortableJS for drag & drop reordering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+    <!-- Chart.js pour les graphiques de suivi sport -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
     <!-- Cropper.js pour le recadrage des photos de recette avant compression -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
@@ -35,6 +37,12 @@
             display: none;
         }
         .tab-content.active {
+            display: block;
+        }
+        .subtab-content {
+            display: none;
+        }
+        .subtab-content.active {
             display: block;
         }
         /* Custom pastel theme overrides & scrollbars */
@@ -149,11 +157,11 @@
                     <button onclick="switchTab('agenda')" id="btn-agenda" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
                         🗓️ Agenda
                     </button>
+                    <button onclick="switchTab('sport')" id="btn-sport" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        💪 Sport
+                    </button>
                     <button onclick="switchTab('recipes')" id="btn-recipes" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
                         🍳 Recette
-                    </button>
-                    <button onclick="switchTab('plan-2026')" id="btn-plan-2026" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                        📅 2026
                     </button>
                 </nav>
 
@@ -207,10 +215,11 @@
                     <h2 class="text-base sm:text-lg font-bold text-slate-800">Suivi des Habitudes</h2>
                 </div>
                 <div class="flex items-center flex-nowrap gap-2">
-                    <div class="flex items-center gap-1.5 bg-indigo-50/50 text-indigo-700 px-2 py-1 rounded-xl border border-indigo-100 shrink-0">
-                        <span class="hidden sm:inline text-[11px] font-semibold">Mois :</span>
-                        <span class="sm:hidden text-[11px]">📅</span>
-                        <select id="habit-month-select" onchange="changeMonth()" class="bg-transparent font-semibold border-none text-indigo-700 focus:ring-0 cursor-pointer text-[11px] max-w-[80px] sm:max-w-none">
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200 shrink-0">
+                        <button onclick="navigateMonth(-1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">
+                            ←
+                        </button>
+                        <select id="habit-month-select" onchange="changeMonth()" class="bg-transparent font-semibold border-none text-indigo-700 focus:ring-0 cursor-pointer text-[11px] text-center max-w-[70px]">
                             <option value="0">Janv.</option>
                             <option value="1">Févr.</option>
                             <option value="2">Mars</option>
@@ -224,6 +233,9 @@
                             <option value="10">Nov.</option>
                             <option value="11">Déc.</option>
                         </select>
+                        <button onclick="navigateMonth(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">
+                            →
+                        </button>
                     </div>
 
                     <div class="flex md:hidden items-center bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200 shrink-0">
@@ -287,21 +299,124 @@
             </div>
         </section>
 
-        <!-- ================= PARTIE 2: TODO LIST ================= -->
+        <!-- ================= PARTIE 2: TODO LIST & PLAN 2026 ================= -->
         <section id="todo" class="tab-content space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
-                <div>
-                    <h2 class="text-base sm:text-lg font-bold text-slate-800">Todo List</h2>
-                 </div>
-                <div class="flex gap-2">
-                    <input type="text" id="new-todo-cat-input" placeholder="Nouveau bloc..." class="w-32 sm:w-auto px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
-                    <button onclick="addTodoCategory()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">
-                        + Ajouter
-                    </button>
-                </div>
+            <div class="flex bg-slate-100 p-1 rounded-xl w-fit gap-1">
+                <button onclick="switchTodoSubTab('todo-list')" id="btn-subtab-todo-list" class="subtab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                    🎯 Todo
+                </button>
+                <button onclick="switchTodoSubTab('plan-2026')" id="btn-subtab-plan-2026" class="subtab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                    📅 2026
+                </button>
             </div>
 
-            <div id="todo-blocks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <!-- SOUS-ONGLET: TODO LIST -->
+            <div id="subtab-todo-list" class="subtab-content active space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800">Todo List</h2>
+                     </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-todo-cat-input" placeholder="Nouveau bloc..." class="w-32 sm:w-auto px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                        <button onclick="addTodoCategory()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">
+                            + Ajouter
+                        </button>
+                    </div>
+                </div>
+
+                <div id="todo-blocks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+
+            <!-- SOUS-ONGLET: PLAN 2026 -->
+            <div id="subtab-plan-2026" class="subtab-content space-y-6">
+                <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800">Plan 2026</h2>
+                        <span id="plan-completion-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">0% terminé</span>
+                    </div>
+                    <button onclick="managePlanCategories()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 font-semibold px-4 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 w-fit">
+                        ⚙️ Gérer les catégories Plan
+                    </button>
+                </div>
+
+                <!-- Rétroplanning Visuel (Gantt) -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Rétroplanning Visuel
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <div class="min-w-[800px]">
+                            <!-- En-tête des mois -->
+                            <div class="grid grid-cols-12 border-b border-slate-200 pb-2 text-center font-bold text-xs text-slate-500 uppercase tracking-wider">
+                                <div>Jan</div>
+                                <div>Fév</div>
+                                <div>Mar</div>
+                                <div>Avr</div>
+                                <div>Mai</div>
+                                <div>Juin</div>
+                                <div>Juil</div>
+                                <div>Aoû</div>
+                                <div>Sep</div>
+                                <div>Oct</div>
+                                <div>Nov</div>
+                                <div>Déc</div>
+                            </div>
+
+                            <!-- Grille du Rétroplanning -->
+                            <div id="plan-gantt-chart" class="py-4 space-y-3 min-h-[120px]">
+                                <!-- Généré par JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div class="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h3 class="font-bold text-slate-800">Ajouter un objectif annuel</h3>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <input type="text" id="new-plan-title" placeholder="Ex: Finir le storyboard..." class="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 min-w-[240px]">
+                            <div class="flex items-center gap-1">
+                                <select id="new-plan-cat" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"></select>
+                            </div>
+                            <select id="new-plan-month" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
+                                <option value="">Non planifié (Mois)</option>
+                                <option value="Janvier">Janvier</option>
+                                <option value="Février">Février</option>
+                                <option value="Mars">Mars</option>
+                                <option value="Avril">Avril</option>
+                                <option value="Mai">Mai</option>
+                                <option value="Juin">Juin</option>
+                                <option value="Juillet">Juillet</option>
+                                <option value="Août">Août</option>
+                                <option value="Septembre">Septembre</option>
+                                <option value="Octobre">Octobre</option>
+                                <option value="Novembre">Novembre</option>
+                                <option value="Décembre">Décembre</option>
+                            </select>
+                            <button onclick="addPlanGoal()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-5 py-2 rounded-xl text-sm transition-colors">
+                                Ajouter
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                        <th class="py-2 px-2">Statut</th>
+                                        <th class="py-2 px-2">Objectif</th>
+                                        <th class="py-2 px-2">Catégorie</th>
+                                        <th class="py-2 px-2">Planification</th>
+                                        <th class="py-2 px-2 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="plan-goals-tbody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- ================= PARTIE 3: AGENDA ================= -->
@@ -345,6 +460,151 @@
             </div>
         </section>
 
+        <!-- ================= PARTIE SPORT ================= -->
+        <section id="sport" class="tab-content space-y-6">
+            <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
+                <h2 class="text-base sm:text-lg font-bold text-slate-800">Suivi Sport & Corps</h2>
+                <p class="text-xs text-slate-400 mt-0.5">Poids, composition corporelle et activités physiques</p>
+            </div>
+
+            <!-- Graphiques -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Évolution du poids
+                    </h3>
+                    <div class="h-56">
+                        <canvas id="sport-weight-chart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-emerald-500 rounded-xs inline-block"></span> Masse grasse & masse musculaire
+                    </h3>
+                    <div class="h-56">
+                        <canvas id="sport-composition-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulaires d'ajout -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-sky-400 rounded-xs inline-block"></span> Nouvelle mesure
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+                            <input type="date" id="new-measure-date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Poids (kg)</label>
+                                <input type="number" step="0.1" id="new-measure-weight" placeholder="65.5" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Masse grasse (%)</label>
+                                <input type="number" step="0.1" id="new-measure-fat" placeholder="22" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Masse musc. (%)</label>
+                                <input type="number" step="0.1" id="new-measure-muscle" placeholder="35" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                            </div>
+                        </div>
+                        <button onclick="addSportMeasurement()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            Enregistrer la mesure
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-emerald-400 rounded-xs inline-block"></span> Nouvelle activité
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+                                <input type="date" id="new-activity-date" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Type</label>
+                                <select id="new-activity-type" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-emerald-400">
+                                    <option value="Sport">🏋️ Sport</option>
+                                    <option value="Marche">🚶 Marche</option>
+                                    <option value="Autre">✨ Autre activité</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nom / description</label>
+                            <input type="text" id="new-activity-name" placeholder="Ex: Course à pied, Musculation..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Durée (min)</label>
+                                <input type="number" id="new-activity-duration" placeholder="30" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Calories (kcal)</label>
+                                <input type="number" id="new-activity-calories" placeholder="250" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                            </div>
+                        </div>
+                        <button onclick="addSportActivity()" class="w-full bg-emerald-400 hover:bg-emerald-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            Enregistrer l'activité
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historiques -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div class="p-4 bg-slate-50/50 border-b border-slate-100">
+                        <h3 class="font-bold text-slate-800 text-sm">Historique des mesures</h3>
+                    </div>
+                    <div class="p-4 overflow-x-auto max-h-80 overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-2 px-1.5">Date</th>
+                                    <th class="py-2 px-1.5">Poids</th>
+                                    <th class="py-2 px-1.5">Gr.</th>
+                                    <th class="py-2 px-1.5">Musc.</th>
+                                    <th class="py-2 px-1.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sport-measurements-tbody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between gap-2">
+                        <h3 class="font-bold text-slate-800 text-sm">Historique des activités</h3>
+                        <span id="sport-calories-week-badge" class="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 whitespace-nowrap">0 kcal / 7j</span>
+                    </div>
+                    <div class="p-4 overflow-x-auto max-h-80 overflow-y-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-2 px-1.5">Date</th>
+                                    <th class="py-2 px-1.5">Activité</th>
+                                    <th class="py-2 px-1.5">Durée</th>
+                                    <th class="py-2 px-1.5">Kcal</th>
+                                    <th class="py-2 px-1.5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sport-activities-tbody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- ================= PARTIE 4: RECETTES ================= -->
         <section id="recipes" class="tab-content space-y-8">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
@@ -362,6 +622,24 @@
                 </div>
             </div>
 
+            <!-- Semainier / Planning de repas de la semaine -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="p-4 sm:p-6 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-amber-400 rounded-xs inline-block"></span> Semainier - Planning de repas
+                    </h3>
+                    <div class="flex items-center gap-1.5 sm:gap-2">
+                        <button onclick="navigateMealWeek(-1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">←</button>
+                        <span id="meal-week-label" class="text-xs sm:text-sm font-bold text-amber-700 min-w-[140px] text-center"></span>
+                        <button onclick="navigateMealWeek(1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">→</button>
+                        <button onclick="goToMealCurrentWeek()" class="ml-1 px-2 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap">Semaine en cours</button>
+                    </div>
+                </div>
+                <div id="meal-planner-grid" class="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
+                    <!-- Généré par JS -->
+                </div>
+            </div>
+
             <!-- Grille des Mini-Fiches Recettes -->
             <div id="recipes-grid" class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                 <!-- Généré par JS -->
@@ -371,97 +649,6 @@
             <footer id="image-weight-footer" class="hidden text-center text-[11px] text-slate-300 pt-2 pb-1 px-4 select-none">
                 <span id="image-weight-text"></span>
             </footer>
-        </section>
-
-        <!-- ================= PARTIE 5: PLAN 2026 ================= -->
-        <section id="plan-2026" class="tab-content space-y-6">
-            <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex items-center gap-3">
-                    <h2 class="text-base sm:text-lg font-bold text-slate-800">Plan 2026</h2>
-                    <span id="plan-completion-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">0% terminé</span>
-                </div>
-                <button onclick="managePlanCategories()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-indigo-200 font-semibold px-4 py-2 rounded-xl text-xs transition-colors flex items-center gap-1.5 w-fit">
-                    ⚙️ Gérer les catégories Plan
-                </button>
-            </div>
-
-            <!-- Rétroplanning Visuel (Gantt) -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Rétroplanning Visuel
-                </h3>
-                <div class="overflow-x-auto">
-                    <div class="min-w-[800px]">
-                        <!-- En-tête des mois -->
-                        <div class="grid grid-cols-12 border-b border-slate-200 pb-2 text-center font-bold text-xs text-slate-500 uppercase tracking-wider">
-                            <div>Jan</div>
-                            <div>Fév</div>
-                            <div>Mar</div>
-                            <div>Avr</div>
-                            <div>Mai</div>
-                            <div>Juin</div>
-                            <div>Juil</div>
-                            <div>Aoû</div>
-                            <div>Sep</div>
-                            <div>Oct</div>
-                            <div>Nov</div>
-                            <div>Déc</div>
-                        </div>
-
-                        <!-- Grille du Rétroplanning -->
-                        <div id="plan-gantt-chart" class="py-4 space-y-3 min-h-[120px]">
-                            <!-- Généré par JavaScript -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div class="p-6 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <h3 class="font-bold text-slate-800">Ajouter un objectif annuel</h3>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <input type="text" id="new-plan-title" placeholder="Ex: Finir le storyboard..." class="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 min-w-[240px]">
-                        <div class="flex items-center gap-1">
-                            <select id="new-plan-cat" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white"></select>
-                        </div>
-                        <select id="new-plan-month" class="px-3 py-2 rounded-xl border border-slate-200 text-sm bg-white">
-                            <option value="">Non planifié (Mois)</option>
-                            <option value="Janvier">Janvier</option>
-                            <option value="Février">Février</option>
-                            <option value="Mars">Mars</option>
-                            <option value="Avril">Avril</option>
-                            <option value="Mai">Mai</option>
-                            <option value="Juin">Juin</option>
-                            <option value="Juillet">Juillet</option>
-                            <option value="Août">Août</option>
-                            <option value="Septembre">Septembre</option>
-                            <option value="Octobre">Octobre</option>
-                            <option value="Novembre">Novembre</option>
-                            <option value="Décembre">Décembre</option>
-                        </select>
-                        <button onclick="addPlanGoal()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-5 py-2 rounded-xl text-sm transition-colors">
-                            Ajouter
-                        </button>
-                    </div>
-                </div>
-
-                <div class="p-6">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="border-b border-slate-200 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                    <th class="py-2 px-2">Statut</th>
-                                    <th class="py-2 px-2">Objectif</th>
-                                    <th class="py-2 px-2">Catégorie</th>
-                                    <th class="py-2 px-2">Planification</th>
-                                    <th class="py-2 px-2 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="plan-goals-tbody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
         </section>
 
     </main>
@@ -849,12 +1036,17 @@
                         window.recipeCategories = data.recipeCategories || window.recipeCategories;
                         window.recipes = data.recipes || window.recipes;
                         window.agendaEvents = data.agendaEvents || window.agendaEvents;
+                        window.sportMeasurements = data.sportMeasurements || window.sportMeasurements;
+                        window.sportActivities = data.sportActivities || window.sportActivities;
+                        window.mealPlans = data.mealPlans || window.mealPlans;
 
                         renderHabits();
                         renderTodos();
                         renderRecipes();
+                        renderMealPlanner();
                         renderPlanGoals();
                         renderAgenda();
+                        renderSport();
                     } else {
                         saveData(); // Première sauvegarde si les données n'existent pas encore pour cet utilisateur
                     }
@@ -886,7 +1078,10 @@
                 planGoals: window.planGoals,
                 recipeCategories: window.recipeCategories,
                 recipes: window.recipes,
-                agendaEvents: window.agendaEvents
+                agendaEvents: window.agendaEvents,
+                sportMeasurements: window.sportMeasurements,
+                sportActivities: window.sportActivities,
+                mealPlans: window.mealPlans
             };
 
             // Vérification préventive AVANT l'envoi : Firestore limite un document à 1 Mo (≈1024 Ko)
@@ -956,6 +1151,14 @@
             }
         ];
 
+        // --- DONNÉES SPORT (poids, composition corporelle, activités) ---
+        window.sportMeasurements = []; // { id, date: 'YYYY-MM-DD', weight, bodyFat, muscleMass }
+        window.sportActivities = [];   // { id, date: 'YYYY-MM-DD', type, name, duration, calories }
+
+        // --- DONNÉES SEMAINIER (planning de repas) ---
+        // Clé = date ISO ('YYYY-MM-DD') du jour concerné -> { lunch, dinner }
+        window.mealPlans = {};
+
         const pastelColors = ['bg-pastel-blue', 'bg-pastel-green', 'bg-pastel-purple', 'bg-pastel-pink', 'bg-pastel-orange'];
         
         // Palette de couleurs pour les catégories du Plan 2026
@@ -993,12 +1196,29 @@
                 updateImageWeightFooter();
             }
 
-            if (tabId === 'plan-2026' && typeof scrollGanttToCurrentMonth === 'function') {
-                requestAnimationFrame(scrollGanttToCurrentMonth);
-            }
-
             if (tabId === 'agenda' && typeof renderAgenda === 'function') {
                 renderAgenda();
+            }
+
+            if (tabId === 'sport' && typeof renderSportCharts === 'function') {
+                requestAnimationFrame(renderSportCharts);
+            }
+        }
+
+        function switchTodoSubTab(subtabId) {
+            document.querySelectorAll('#todo .subtab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#todo .subtab-btn').forEach(el => {
+                el.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                el.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`subtab-${subtabId}`).classList.add('active');
+            const targetBtn = document.getElementById(`btn-subtab-${subtabId}`);
+            targetBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+            targetBtn.classList.remove('text-slate-600');
+
+            if (subtabId === 'plan-2026' && typeof scrollGanttToCurrentMonth === 'function') {
+                requestAnimationFrame(scrollGanttToCurrentMonth);
             }
         }
 
@@ -1414,6 +1634,15 @@
             const totalDays = getDaysInMonth(monthIndex, 2026);
             if (selectedMobileDay > totalDays) selectedMobileDay = totalDays;
             renderHabits();
+        }
+
+        function navigateMonth(delta) {
+            const select = document.getElementById('habit-month-select');
+            let monthIndex = parseInt(select.value) + delta;
+            if (monthIndex < 0) monthIndex = 11;
+            if (monthIndex > 11) monthIndex = 0;
+            select.value = monthIndex.toString();
+            changeMonth();
         }
 
         function navigateMobileDay(delta) {
@@ -1912,6 +2141,80 @@
 
             textEl.innerText = `📷 Photos : ${totalKB < 10 ? totalKB.toFixed(1) : Math.round(totalKB)} Ko (${percent.toFixed(1)}%)`;
             footer.classList.remove('hidden');
+        }
+
+        // --- SEMAINIER / PLANNING DE REPAS ---
+        window.mealWeekOffset = 0; // décalage en semaines par rapport à la semaine en cours
+
+        function getMealWeekMonday() {
+            const base = new Date();
+            base.setDate(base.getDate() + window.mealWeekOffset * 7);
+            return getMondayOfWeek(base);
+        }
+
+        function navigateMealWeek(delta) {
+            window.mealWeekOffset += delta;
+            renderMealPlanner();
+        }
+
+        function goToMealCurrentWeek() {
+            window.mealWeekOffset = 0;
+            renderMealPlanner();
+        }
+
+        function updateMealPlan(dateStr, field, value) {
+            if (!window.mealPlans[dateStr]) window.mealPlans[dateStr] = { lunch: '', dinner: '' };
+            window.mealPlans[dateStr][field] = value;
+            saveData();
+        }
+
+        const mealDayHeaders = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+        function renderMealPlanner() {
+            const grid = document.getElementById('meal-planner-grid');
+            const label = document.getElementById('meal-week-label');
+            if (!grid || !label) return;
+
+            const monday = getMealWeekMonday();
+            const sunday = new Date(monday);
+            sunday.setDate(sunday.getDate() + 6);
+
+            const sameMonth = monday.getMonth() === sunday.getMonth();
+            label.innerText = sameMonth
+                ? `${monday.getDate()} - ${sunday.getDate()} ${agendaMonthNames[monday.getMonth()]}`
+                : `${monday.getDate()} ${agendaMonthNames[monday.getMonth()]} - ${sunday.getDate()} ${agendaMonthNames[sunday.getMonth()]}`;
+
+            const today = new Date();
+            const todayStr = formatDateISO(today);
+
+            let html = '';
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(monday);
+                dateObj.setDate(monday.getDate() + i);
+                const dateStr = formatDateISO(dateObj);
+                const isToday = dateStr === todayStr;
+                const plan = window.mealPlans[dateStr] || { lunch: '', dinner: '' };
+                const borderClass = isToday ? 'border-amber-400 ring-1 ring-amber-200' : 'border-slate-100';
+
+                html += `
+                    <div class="rounded-xl border ${borderClass} bg-slate-50/50 p-2.5 flex flex-col gap-1.5">
+                        <div class="text-center">
+                            <div class="text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-amber-600' : 'text-slate-400'}">${mealDayHeaders[i]}</div>
+                            <div class="text-xs font-bold ${isToday ? 'text-amber-700' : 'text-slate-600'}">${dateObj.getDate()}</div>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">🍽️ Déjeuner</label>
+                            <textarea rows="2" placeholder="..." onchange="updateMealPlan('${dateStr}', 'lunch', this.value)" class="w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white resize-none">${plan.lunch || ''}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">🌙 Dîner</label>
+                            <textarea rows="2" placeholder="..." onchange="updateMealPlan('${dateStr}', 'dinner', this.value)" class="w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white resize-none">${plan.dinner || ''}</textarea>
+                        </div>
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
         }
 
         function renderRecipes() {
@@ -2607,10 +2910,240 @@
             renderPlanGoals();
         }
 
+        // --- SUIVI SPORT : MESURES CORPORELLES & ACTIVITÉS ---
+        let sportWeightChartInstance = null;
+        let sportCompositionChartInstance = null;
+
+        function formatDateFR(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        }
+
+        function addSportMeasurement() {
+            const dateInput = document.getElementById('new-measure-date');
+            const weightInput = document.getElementById('new-measure-weight');
+            const fatInput = document.getElementById('new-measure-fat');
+            const muscleInput = document.getElementById('new-measure-muscle');
+
+            const date = dateInput.value || formatDateISO(new Date());
+            const weight = weightInput.value !== '' ? parseFloat(weightInput.value) : null;
+            const bodyFat = fatInput.value !== '' ? parseFloat(fatInput.value) : null;
+            const muscleMass = muscleInput.value !== '' ? parseFloat(muscleInput.value) : null;
+
+            if (weight === null && bodyFat === null && muscleMass === null) {
+                alert("Merci de renseigner au moins une valeur (poids, masse grasse ou masse musculaire).");
+                return;
+            }
+
+            window.sportMeasurements.push({ id: Date.now(), date, weight, bodyFat, muscleMass });
+
+            weightInput.value = '';
+            fatInput.value = '';
+            muscleInput.value = '';
+
+            saveData();
+            renderSport();
+        }
+
+        function deleteSportMeasurement(id) {
+            window.sportMeasurements = window.sportMeasurements.filter(m => m.id !== id);
+            saveData();
+            renderSport();
+        }
+
+        function addSportActivity() {
+            const dateInput = document.getElementById('new-activity-date');
+            const typeInput = document.getElementById('new-activity-type');
+            const nameInput = document.getElementById('new-activity-name');
+            const durationInput = document.getElementById('new-activity-duration');
+            const caloriesInput = document.getElementById('new-activity-calories');
+
+            const date = dateInput.value || formatDateISO(new Date());
+            const type = typeInput.value;
+            const name = nameInput.value.trim();
+            const duration = durationInput.value !== '' ? parseFloat(durationInput.value) : null;
+            const calories = caloriesInput.value !== '' ? parseFloat(caloriesInput.value) : null;
+
+            if (!name) {
+                alert("Merci d'indiquer un nom pour cette activité.");
+                return;
+            }
+
+            window.sportActivities.push({ id: Date.now(), date, type, name, duration, calories });
+
+            nameInput.value = '';
+            durationInput.value = '';
+            caloriesInput.value = '';
+
+            saveData();
+            renderSport();
+        }
+
+        function deleteSportActivity(id) {
+            window.sportActivities = window.sportActivities.filter(a => a.id !== id);
+            saveData();
+            renderSport();
+        }
+
+        function renderSportMeasurementsTable() {
+            const tbody = document.getElementById('sport-measurements-tbody');
+            if (!tbody) return;
+
+            const sorted = [...window.sportMeasurements].sort((a, b) => b.date.localeCompare(a.date));
+
+            if (sorted.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-xs text-slate-400">Aucune mesure enregistrée.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = sorted.map(m => `
+                <tr class="hover:bg-slate-50/50 transition-colors">
+                    <td class="py-2 px-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">${formatDateFR(m.date)}</td>
+                    <td class="py-2 px-1.5 text-xs">${m.weight !== null && m.weight !== undefined ? m.weight + ' kg' : '-'}</td>
+                    <td class="py-2 px-1.5 text-xs">${m.bodyFat !== null && m.bodyFat !== undefined ? m.bodyFat + '%' : '-'}</td>
+                    <td class="py-2 px-1.5 text-xs">${m.muscleMass !== null && m.muscleMass !== undefined ? m.muscleMass + '%' : '-'}</td>
+                    <td class="py-2 px-1.5 text-right">
+                        <button onclick="deleteSportMeasurement(${m.id})" class="text-slate-300 hover:text-rose-500 p-0.5" title="Supprimer">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderSportActivitiesTable() {
+            const tbody = document.getElementById('sport-activities-tbody');
+            if (!tbody) return;
+
+            const sorted = [...window.sportActivities].sort((a, b) => b.date.localeCompare(a.date));
+
+            if (sorted.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-xs text-slate-400">Aucune activité enregistrée.</td></tr>`;
+            } else {
+                const typeIcon = { Sport: '🏋️', Marche: '🚶', Autre: '✨' };
+                tbody.innerHTML = sorted.map(a => `
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="py-2 px-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">${formatDateFR(a.date)}</td>
+                        <td class="py-2 px-1.5 text-xs">${typeIcon[a.type] || '✨'} ${a.name}</td>
+                        <td class="py-2 px-1.5 text-xs">${a.duration !== null && a.duration !== undefined ? a.duration + ' min' : '-'}</td>
+                        <td class="py-2 px-1.5 text-xs font-semibold text-emerald-600">${a.calories !== null && a.calories !== undefined ? a.calories : '-'}</td>
+                        <td class="py-2 px-1.5 text-right">
+                            <button onclick="deleteSportActivity(${a.id})" class="text-slate-300 hover:text-rose-500 p-0.5" title="Supprimer">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+
+            const badge = document.getElementById('sport-calories-week-badge');
+            if (badge) {
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+                const sevenDaysAgoStr = formatDateISO(sevenDaysAgo);
+                const totalCalories = window.sportActivities
+                    .filter(a => a.date >= sevenDaysAgoStr && a.calories)
+                    .reduce((sum, a) => sum + (a.calories || 0), 0);
+                badge.innerText = `${totalCalories} kcal / 7j`;
+            }
+        }
+
+        function renderSportCharts() {
+            if (typeof Chart === 'undefined') return;
+
+            const weightCanvas = document.getElementById('sport-weight-chart');
+            const compositionCanvas = document.getElementById('sport-composition-chart');
+            if (!weightCanvas || !compositionCanvas) return;
+
+            const sorted = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
+            const labels = sorted.map(m => formatDateFR(m.date));
+
+            if (sportWeightChartInstance) sportWeightChartInstance.destroy();
+            sportWeightChartInstance = new Chart(weightCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Poids (kg)',
+                        data: sorted.map(m => m.weight),
+                        borderColor: '#6366f1',
+                        backgroundColor: '#6366f11f',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#6366f1',
+                        tension: 0.3,
+                        spanGaps: true,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+
+            if (sportCompositionChartInstance) sportCompositionChartInstance.destroy();
+            sportCompositionChartInstance = new Chart(compositionCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Masse grasse (%)',
+                            data: sorted.map(m => m.bodyFat),
+                            borderColor: '#f59e0b',
+                            backgroundColor: '#f59e0b1f',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#f59e0b',
+                            tension: 0.3,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Masse musculaire (%)',
+                            data: sorted.map(m => m.muscleMass),
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b9811f',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#10b981',
+                            tension: 0.3,
+                            spanGaps: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        function renderSport() {
+            renderSportMeasurementsTable();
+            renderSportActivitiesTable();
+            const sportSection = document.getElementById('sport');
+            if (sportSection && sportSection.classList.contains('active')) {
+                renderSportCharts();
+            }
+        }
+
         window.onload = function() {
             switchTab('habit-tracker');
             const currentRealMonth = new Date().getMonth();
             document.getElementById('habit-month-select').value = currentRealMonth.toString();
+
+            const todayISO = formatDateISO(new Date());
+            const measureDateEl = document.getElementById('new-measure-date');
+            if (measureDateEl) measureDateEl.value = todayISO;
+            const activityDateEl = document.getElementById('new-activity-date');
+            if (activityDateEl) activityDateEl.value = todayISO;
         }
     </script>
 </body>
