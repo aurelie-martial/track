@@ -471,18 +471,18 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Évolution du poids
+                        <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Poids, masse grasse & masse musculaire
                     </h3>
                     <div class="h-56">
-                        <canvas id="sport-weight-chart"></canvas>
+                        <canvas id="sport-measurements-chart"></canvas>
                     </div>
                 </div>
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <span class="w-2 h-5 bg-emerald-500 rounded-xs inline-block"></span> Masse grasse & masse musculaire
+                        <span class="w-2 h-5 bg-emerald-500 rounded-xs inline-block"></span> Séances de sport & calories dépensées
                     </h3>
                     <div class="h-56">
-                        <canvas id="sport-composition-chart"></canvas>
+                        <canvas id="sport-activity-chart"></canvas>
                     </div>
                 </div>
             </div>
@@ -2911,8 +2911,8 @@
         }
 
         // --- SUIVI SPORT : MESURES CORPORELLES & ACTIVITÉS ---
-        let sportWeightChartInstance = null;
-        let sportCompositionChartInstance = null;
+        let sportMeasurementsChartInstance = null;
+        let sportActivityChartInstance = null;
 
         function formatDateFR(dateStr) {
             const d = new Date(dateStr + 'T00:00:00');
@@ -3047,51 +3047,34 @@
         function renderSportCharts() {
             if (typeof Chart === 'undefined') return;
 
-            const weightCanvas = document.getElementById('sport-weight-chart');
-            const compositionCanvas = document.getElementById('sport-composition-chart');
-            if (!weightCanvas || !compositionCanvas) return;
+            const measurementsCanvas = document.getElementById('sport-measurements-chart');
+            const activityCanvas = document.getElementById('sport-activity-chart');
+            if (!measurementsCanvas || !activityCanvas) return;
 
-            const sorted = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
-            const labels = sorted.map(m => formatDateFR(m.date));
+            // --- Graphique combiné : poids, masse grasse, masse musculaire ---
+            const sortedMeasurements = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
+            const measurementLabels = sortedMeasurements.map(m => formatDateFR(m.date));
 
-            if (sportWeightChartInstance) sportWeightChartInstance.destroy();
-            sportWeightChartInstance = new Chart(weightCanvas.getContext('2d'), {
+            if (sportMeasurementsChartInstance) sportMeasurementsChartInstance.destroy();
+            sportMeasurementsChartInstance = new Chart(measurementsCanvas.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels,
-                    datasets: [{
-                        label: 'Poids (kg)',
-                        data: sorted.map(m => m.weight),
-                        borderColor: '#6366f1',
-                        backgroundColor: '#6366f11f',
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointBackgroundColor: '#6366f1',
-                        tension: 0.3,
-                        spanGaps: true,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
-                    }
-                }
-            });
-
-            if (sportCompositionChartInstance) sportCompositionChartInstance.destroy();
-            sportCompositionChartInstance = new Chart(compositionCanvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels,
+                    labels: measurementLabels,
                     datasets: [
                         {
+                            label: 'Poids (kg)',
+                            data: sortedMeasurements.map(m => m.weight),
+                            borderColor: '#6366f1',
+                            backgroundColor: '#6366f11f',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#6366f1',
+                            tension: 0.3,
+                            spanGaps: true
+                        },
+                        {
                             label: 'Masse grasse (%)',
-                            data: sorted.map(m => m.bodyFat),
+                            data: sortedMeasurements.map(m => m.bodyFat),
                             borderColor: '#f59e0b',
                             backgroundColor: '#f59e0b1f',
                             borderWidth: 2,
@@ -3102,7 +3085,7 @@
                         },
                         {
                             label: 'Masse musculaire (%)',
-                            data: sorted.map(m => m.muscleMass),
+                            data: sortedMeasurements.map(m => m.muscleMass),
                             borderColor: '#10b981',
                             backgroundColor: '#10b9811f',
                             borderWidth: 2,
@@ -3120,6 +3103,49 @@
                     scales: {
                         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
                         y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // --- Graphique des séances : calories dépensées par activité, groupées par type ---
+            const activityTypes = [
+                { key: 'Sport', label: '🏋️ Sport', color: '#6366f1' },
+                { key: 'Marche', label: '🚶 Marche', color: '#10b981' },
+                { key: 'Autre', label: '✨ Autre', color: '#f59e0b' }
+            ];
+            const sortedActivityDates = [...new Set(window.sportActivities.map(a => a.date))].sort();
+            const activityLabels = sortedActivityDates.map(d => formatDateFR(d));
+
+            const activityDatasets = activityTypes.map(t => ({
+                label: t.label,
+                data: sortedActivityDates.map(d => {
+                    const entriesForDay = window.sportActivities.filter(a => a.date === d && a.type === t.key);
+                    if (entriesForDay.length === 0) return null;
+                    return entriesForDay.reduce((sum, a) => sum + (a.calories || 0), 0);
+                }),
+                backgroundColor: t.color,
+                borderRadius: 4,
+                maxBarThickness: 28
+            }));
+
+            if (sportActivityChartInstance) sportActivityChartInstance.destroy();
+            sportActivityChartInstance = new Chart(activityCanvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: activityLabels,
+                    datasets: activityDatasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { size: 10 } },
+                            title: { display: true, text: 'Calories (kcal)', font: { size: 10 } }
+                        }
                     }
                 }
             });
