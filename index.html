@@ -3164,9 +3164,18 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    // Survol/clic n'importe où sur une même date affiche les 3 valeurs ensemble
+                    // (poids + masse musculaire + masse grasse), pas seulement celle du trait
+                    // exactement pointé (utile car les aires grasse/musculaire n'ont pas de point visible).
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
                         tooltip: {
+                            // Ordre d'affichage dans l'infobulle : Poids, puis Masse musculaire, puis Masse grasse
+                            itemSort: function(a, b) {
+                                const order = { 2: 0, 1: 1, 0: 2 };
+                                return order[a.datasetIndex] - order[b.datasetIndex];
+                            },
                             callbacks: {
                                 label: function(context) {
                                     const idx = context.dataIndex;
@@ -3183,7 +3192,8 @@
                                         return `Masse musculaire : ${kg} kg${pct !== null ? ' (' + pct + '%)' : ''}`;
                                     }
                                     const w = comp.weightArr[idx];
-                                    return `Poids : ${w !== null && w !== undefined ? w + ' kg' : '-'}`;
+                                    if (w === null || w === undefined) return null;
+                                    return `Poids : ${w} kg`;
                                 }
                             }
                         }
