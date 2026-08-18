@@ -475,23 +475,13 @@
             <!-- Graphiques -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                            <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Poids, masse grasse & masse musculaire
-                        </h3>
-                        <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
-                            <button onclick="switchSportChartMode('absolute')" id="btn-sport-mode-absolute" class="px-2.5 py-1 text-[10px] sm:text-xs font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
-                                Valeurs réelles
-                            </button>
-                            <button onclick="switchSportChartMode('indexed')" id="btn-sport-mode-indexed" class="px-2.5 py-1 text-[10px] sm:text-xs font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                                Évolution (%)
-                            </button>
-                        </div>
-                    </div>
+                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Poids & répartition muscle / gras
+                    </h3>
                     <div class="h-56">
                         <canvas id="sport-measurements-chart"></canvas>
                     </div>
-                    <p id="sport-mode-caption" class="hidden text-[10px] text-slate-400 mt-2">Base 100 = premier relevé de chaque courbe, pour comparer leur évolution malgré leurs échelles différentes (kg vs %).</p>
+                    <p class="text-[10px] text-slate-400 mt-2">La courbe trace le poids ; la zone en dessous répartit la masse musculaire (vert) et la masse grasse (orange) selon leurs proportions.</p>
                 </div>
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
@@ -3068,34 +3058,54 @@
             }
         }
 
-        // Bascule entre "valeurs réelles" (kg / %) et "évolution indexée" (base 100 = 1er relevé)
-        // pour le graphique combiné poids / masse grasse / masse musculaire. Utile car ces trois
-        // séries n'ont pas la même échelle (kg vs %) : indexer permet de comparer leurs tendances
-        // sur un seul axe sans recourir à un graphique à double axe (à éviter en dataviz).
-        window.sportChartMode = 'absolute';
+        // Construit, pour chaque relevé, la répartition masse grasse / masse musculaire en kg,
+        // normalisée pour que les deux parts couvrent exactement tout le poids (répartition
+        // relative entre les deux, puisque leur somme brute ne correspond pas forcément à 100%
+        // du poids réel : eau, os, organes... ne sont pas suivis ici).
+        function buildBodyCompositionSeries(sortedMeasurements) {
+            const weightArr = [];
+            const fatKg = [];            // limite basse de la zone empilée (masse grasse seule)
+            const stackedTopKg = [];     // limite haute de la zone empilée (grasse + musculaire cumulées)
+            const fatKgRaw = [];
+            const muscleKgRaw = [];
+            const fatPercentArr = [];
+            const musclePercentArr = [];
 
-        function switchSportChartMode(mode) {
-            window.sportChartMode = mode;
-            const btnAbsolute = document.getElementById('btn-sport-mode-absolute');
-            const btnIndexed = document.getElementById('btn-sport-mode-indexed');
-            [btnAbsolute, btnIndexed].forEach(b => b.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm'));
-            [btnAbsolute, btnIndexed].forEach(b => b.classList.add('text-slate-600'));
-            const activeBtn = mode === 'absolute' ? btnAbsolute : btnIndexed;
-            activeBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
-            activeBtn.classList.remove('text-slate-600');
+            sortedMeasurements.forEach(m => {
+                const w = (m.weight !== null && m.weight !== undefined) ? m.weight : null;
+                weightArr.push(w);
 
-            const caption = document.getElementById('sport-mode-caption');
-            if (caption) caption.classList.toggle('hidden', mode !== 'indexed');
+                const fatPct = (m.bodyFat !== null && m.bodyFat !== undefined) ? m.bodyFat : null;
+                const musclePct = (m.muscleMass !== null && m.muscleMass !== undefined) ? m.muscleMass : null;
+                fatPercentArr.push(fatPct);
+                musclePercentArr.push(musclePct);
 
-            renderSportCharts();
-        }
+                if (w === null || (fatPct === null && musclePct === null)) {
+                    fatKg.push(null);
+                    stackedTopKg.push(null);
+                    fatKgRaw.push(null);
+                    muscleKgRaw.push(null);
+                    return;
+                }
 
-        // Indexe une série sur une base 100 = première valeur non nulle (variation en %)
-        function indexSeriesToBase100(values) {
-            const baseIndex = values.findIndex(v => v !== null && v !== undefined && !isNaN(v) && v !== 0);
-            if (baseIndex === -1) return values.map(() => null);
-            const base = values[baseIndex];
-            return values.map(v => (v === null || v === undefined || isNaN(v)) ? null : Math.round((v / base) * 1000) / 10);
+                const totalPct = (fatPct || 0) + (musclePct || 0);
+                let fatShareKg = 0;
+                let muscleShareKg = 0;
+                if (totalPct > 0) {
+                    fatShareKg = w * ((fatPct || 0) / totalPct);
+                    muscleShareKg = w * ((musclePct || 0) / totalPct);
+                }
+
+                fatShareKg = Math.round(fatShareKg * 10) / 10;
+                muscleShareKg = Math.round(muscleShareKg * 10) / 10;
+
+                fatKg.push(fatShareKg);
+                stackedTopKg.push(Math.round((fatShareKg + muscleShareKg) * 10) / 10);
+                fatKgRaw.push(fatShareKg);
+                muscleKgRaw.push(muscleShareKg);
+            });
+
+            return { weightArr, fatKg, stackedTopKg, fatKgRaw, muscleKgRaw, fatPercentArr, musclePercentArr };
         }
 
         function renderSportCharts() {
@@ -3105,49 +3115,51 @@
             const activityCanvas = document.getElementById('sport-activity-chart');
             if (!measurementsCanvas || !activityCanvas) return;
 
-            // --- Graphique combiné : poids, masse grasse, masse musculaire ---
+            // --- Graphique combiné : une seule courbe (le poids), la zone en dessous étant
+            // répartie entre masse grasse et masse musculaire selon leurs proportions respectives.
             const sortedMeasurements = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
             const measurementLabels = sortedMeasurements.map(m => formatDateFR(m.date));
-            const isIndexed = window.sportChartMode === 'indexed';
-
-            const rawWeight = sortedMeasurements.map(m => m.weight);
-            const rawBodyFat = sortedMeasurements.map(m => m.bodyFat);
-            const rawMuscleMass = sortedMeasurements.map(m => m.muscleMass);
-
-            // En mode "valeurs réelles" : le poids reste une simple courbe (rien à remplir en dessous),
-            // tandis que masse grasse et masse musculaire sont remplies en aplat de couleur sous leur
-            // propre courbe. Elles sont placées avant le poids dans le tableau de datasets pour être
-            // dessinées "sous" la courbe de poids, tracée par-dessus en dernier.
-            const weightSeries = { key: 'weight', label: 'Poids', unit: 'kg', raw: rawWeight, color: '#6366f1' };
-            const bodyFatSeries = { key: 'bodyFat', label: 'Masse grasse', unit: '%', raw: rawBodyFat, color: '#f59e0b' };
-            const muscleSeries = { key: 'muscleMass', label: 'Masse musculaire', unit: '%', raw: rawMuscleMass, color: '#10b981' };
-
-            const measurementSeries = isIndexed
-                ? [weightSeries, bodyFatSeries, muscleSeries]
-                : [bodyFatSeries, muscleSeries, weightSeries];
+            const comp = buildBodyCompositionSeries(sortedMeasurements);
 
             if (sportMeasurementsChartInstance) sportMeasurementsChartInstance.destroy();
             sportMeasurementsChartInstance = new Chart(measurementsCanvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: measurementLabels,
-                    datasets: measurementSeries.map(s => {
-                        const isFillSeries = !isIndexed && s.key !== 'weight';
-                        return {
-                            label: isIndexed ? `${s.label} (indice)` : `${s.label} (${s.unit})`,
-                            data: isIndexed ? indexSeriesToBase100(s.raw) : s.raw,
-                            rawValues: s.raw,
-                            unit: s.unit,
-                            borderColor: s.color,
-                            backgroundColor: isFillSeries ? s.color + '40' : s.color + '1f',
-                            borderWidth: (!isIndexed && s.key === 'weight') ? 2.5 : 2,
+                    datasets: [
+                        {
+                            label: 'Masse grasse (kg)',
+                            data: comp.fatKg,
+                            borderColor: '#f59e0b',
+                            backgroundColor: '#f59e0b55',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            tension: 0.3,
+                            fill: 'origin'
+                        },
+                        {
+                            label: 'Masse musculaire (kg)',
+                            data: comp.stackedTopKg,
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b98155',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            tension: 0.3,
+                            fill: '-1'
+                        },
+                        {
+                            label: 'Poids (kg)',
+                            data: comp.weightArr,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2.5,
                             pointRadius: 3,
-                            pointBackgroundColor: s.color,
+                            pointBackgroundColor: '#6366f1',
                             tension: 0.3,
                             spanGaps: true,
-                            fill: isFillSeries ? 'origin' : false
-                        };
-                    })
+                            fill: false
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
@@ -3157,13 +3169,21 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    const ds = context.dataset;
-                                    if (isIndexed) {
-                                        const rawVal = ds.rawValues ? ds.rawValues[context.dataIndex] : null;
-                                        const rawText = (rawVal !== null && rawVal !== undefined) ? ` (${rawVal} ${ds.unit})` : '';
-                                        return `${ds.label}: ${context.formattedValue}${rawText}`;
+                                    const idx = context.dataIndex;
+                                    if (context.datasetIndex === 0) {
+                                        const kg = comp.fatKgRaw[idx];
+                                        const pct = comp.fatPercentArr[idx];
+                                        if (kg === null || kg === undefined) return null;
+                                        return `Masse grasse : ${kg} kg${pct !== null ? ' (' + pct + '%)' : ''}`;
                                     }
-                                    return `${ds.label}: ${context.formattedValue} ${ds.unit}`;
+                                    if (context.datasetIndex === 1) {
+                                        const kg = comp.muscleKgRaw[idx];
+                                        const pct = comp.musclePercentArr[idx];
+                                        if (kg === null || kg === undefined) return null;
+                                        return `Masse musculaire : ${kg} kg${pct !== null ? ' (' + pct + '%)' : ''}`;
+                                    }
+                                    const w = comp.weightArr[idx];
+                                    return `Poids : ${w !== null && w !== undefined ? w + ' kg' : '-'}`;
                                 }
                             }
                         }
@@ -3171,9 +3191,9 @@
                     scales: {
                         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
                         y: {
+                            beginAtZero: true,
                             grid: { color: '#f1f5f9' },
-                            ticks: { font: { size: 10 } },
-                            title: isIndexed ? { display: true, text: 'Indice (base 100)', font: { size: 10 } } : { display: false }
+                            ticks: { font: { size: 10 } }
                         }
                     }
                 }
