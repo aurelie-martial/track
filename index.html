@@ -2296,8 +2296,21 @@
             renderMoodTracker();
         }
 
-        // Bloc dédié au suivi d'humeur, rendu dans le même format visuel que les blocs de catégories
-        // (mêmes colonnes de jours, même style de carte), mais indépendant du glisser-déposer des catégories.
+        // Couleur de fond/bordure associée à chaque niveau d'humeur, du rouge (mauvais) au vert (bon) —
+        // effet "heatmap" : la couleur donne la tendance en un coup d'œil, l'émoji confirme le détail.
+        function getMoodColorClasses(level) {
+            switch (level) {
+                case 1: return 'bg-rose-200 border-rose-300';
+                case 2: return 'bg-orange-200 border-orange-300';
+                case 3: return 'bg-amber-200 border-amber-300';
+                case 4: return 'bg-lime-200 border-lime-300';
+                case 5: return 'bg-emerald-300 border-emerald-400';
+                default: return 'bg-slate-50 border-slate-100';
+            }
+        }
+
+        // Bloc dédié au suivi d'humeur : mini calendrier du mois (comme la vue mensuelle de l'Agenda),
+        // où chaque jour est colorié selon l'humeur renseignée (heatmap rouge → orange → vert).
         function renderMoodTracker() {
             const block = document.getElementById('mood-tracker-block');
             const monthSelect = document.getElementById('habit-month-select');
@@ -2311,41 +2324,31 @@
             const realMonth = realToday.getMonth();
             const realYear = realToday.getFullYear();
 
+            const firstOfMonth = new Date(2026, monthIndex, 1);
+            const firstDow = firstOfMonth.getDay(); // 0 = dimanche
+            const leadingBlanks = firstDow === 0 ? 6 : firstDow - 1;
+            const cellsSoFar = leadingBlanks + totalDays;
+            const trailingBlanks = cellsSoFar % 7 === 0 ? 0 : 7 - (cellsSoFar % 7);
+
+            let sumLevels = 0;
+            let countLevels = 0;
+
             let html = `
                 <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                     <div class="px-6 py-4 bg-pastel-pink border-b border-slate-100 flex items-center justify-between">
                         <span class="font-bold text-slate-800 tracking-wide text-sm uppercase">😊 Humeur</span>
                         <span class="text-xs font-semibold px-2.5 py-1 bg-white/80 rounded-full text-slate-600">Clique un jour pour la renseigner</span>
                     </div>
-                    <div class="p-4 overflow-x-auto">
-                        <table class="w-full table-fixed">
-                            <thead>
-                                <tr class="text-slate-400">
-                                    <th class="text-left font-medium text-xs py-2 w-36 sm:w-48">Humeur du jour</th>
+                    <div class="p-4 sm:p-6">
+                        <div class="grid grid-cols-7 gap-1 sm:gap-1.5 text-center text-[9px] sm:text-[10px] font-bold uppercase text-slate-400 mb-1.5">
+                            <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+                        </div>
+                        <div class="grid grid-cols-7 gap-1 sm:gap-1.5">
             `;
 
-            for (let d = 1; d <= totalDays; d++) {
-                const checkDate = new Date(2026, monthIndex, d);
-                const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
-                const isToday = (realYear === 2026 && monthIndex === realMonth && d === realDay);
-                const highlightClass = isToday ? 'bg-indigo-600 text-white rounded-full p-0.5 inline-block w-5 h-5 text-center leading-4 shadow-sm' : '';
-                const weekendClass = isWeekend ? 'bg-slate-100' : '';
-                const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
-                html += `<th class="day-header py-2 ${weekendClass} mobile-day-col ${isMobileVisible}"><span class="${highlightClass}">${d}</span></th>`;
+            for (let i = 0; i < leadingBlanks; i++) {
+                html += `<div></div>`;
             }
-
-            html += `
-                                    <th class="text-right font-medium text-xs py-2 w-16 sm:w-20">Moyenne</th>
-                                    <th class="text-center font-medium text-xs py-2 w-10 sm:w-12"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="py-3 text-sm font-medium text-slate-700 truncate pr-2">Humeur du jour</td>
-            `;
-
-            let sumLevels = 0;
-            let countLevels = 0;
 
             for (let d = 1; d <= totalDays; d++) {
                 const key = `2026-${monthIndex}-${d}`;
@@ -2353,29 +2356,33 @@
                 const emoji = getMoodEmoji(level);
                 if (level) { sumLevels += level; countLevels++; }
 
-                const checkDate = new Date(2026, monthIndex, d);
-                const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
-                const weekendClass = isWeekend ? 'bg-slate-100/70' : '';
-                const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
+                const isToday = (realYear === 2026 && monthIndex === realMonth && d === realDay);
+                const todayRing = isToday ? 'ring-2 ring-indigo-400' : '';
+                const colorClasses = getMoodColorClasses(level);
 
                 html += `
-                    <td class="day-cell py-3 ${weekendClass} mobile-day-col ${isMobileVisible}">
-                        <button onclick="cycleMoodDay('${key}')" class="text-lg leading-none hover:scale-125 transition-transform duration-100" title="Clique pour changer l'humeur">${emoji || '<span class="text-slate-200 text-sm">·</span>'}</button>
-                    </td>
+                    <button onclick="cycleMoodDay('${key}')" class="aspect-square rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform duration-100" title="Clique pour changer l'humeur du ${d}">
+                        <span class="text-[9px] sm:text-[10px] font-bold text-slate-500">${d}</span>
+                        <span class="text-xs sm:text-sm leading-none">${emoji || ''}</span>
+                    </button>
                 `;
+            }
+
+            for (let i = 0; i < trailingBlanks; i++) {
+                html += `<div></div>`;
             }
 
             const avgLevel = countLevels > 0 ? Math.round(sumLevels / countLevels) : 0;
             const avgEmoji = getMoodEmoji(avgLevel);
 
             html += `
-                                    <td class="py-3 text-right text-xs font-bold text-slate-500">
-                                        ${avgEmoji ? `<span title="Humeur moyenne du mois">${avgEmoji}</span>` : '<span class="text-slate-300">-</span>'}
-                                    </td>
-                                    <td class="py-3 text-center"></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        </div>
+                        <div class="flex items-center justify-center gap-3 mt-4 pt-3 border-t border-slate-100 text-[10px] text-slate-400">
+                            ${MOOD_LEVELS.map(m => `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full border ${getMoodColorClasses(m.level)}"></span>${m.emoji}</span>`).join('')}
+                            <span class="ml-2 font-semibold text-slate-500">
+                                ${avgEmoji ? `Moyenne du mois : ${avgEmoji}` : 'Aucune humeur renseignée ce mois-ci'}
+                            </span>
+                        </div>
                     </div>
                 </div>
             `;
