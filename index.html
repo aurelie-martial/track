@@ -162,11 +162,8 @@
                     <button onclick="switchTab('agenda')" id="btn-agenda" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
                         🗓️ Agenda
                     </button>
-                    <button onclick="switchTab('sport')" id="btn-sport" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                        💪 Sport
-                    </button>
-                    <button onclick="switchTab('recipes')" id="btn-recipes" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
-                        🍳 Recette
+                    <button onclick="switchTab('sport-nutrition')" id="btn-sport-nutrition" class="tab-btn flex-1 md:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                        💪 Sport & Nutrition
                     </button>
                 </nav>
 
@@ -465,11 +462,38 @@
             </div>
         </section>
 
-        <!-- ================= PARTIE SPORT ================= -->
-        <section id="sport" class="tab-content space-y-6">
+        <!-- ================= PARTIE SPORT & NUTRITION ================= -->
+        <section id="sport-nutrition" class="tab-content space-y-6">
+            <div class="flex bg-slate-100 p-1 rounded-xl w-fit gap-1">
+                <button onclick="switchSportNutritionSubTab('sport')" id="btn-subtab-sport" class="subtab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                    💪 Sport
+                </button>
+                <button onclick="switchSportNutritionSubTab('recipes')" id="btn-subtab-recipes" class="subtab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                    🍳 Recette
+                </button>
+            </div>
+
+            <!-- SOUS-ONGLET: SPORT -->
+            <div id="subtab-sport" class="subtab-content active space-y-6">
             <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
                 <h2 class="text-base sm:text-lg font-bold text-slate-800">Suivi Sport & Corps</h2>
                 <p class="text-xs text-slate-400 mt-0.5">Poids, composition corporelle et activités physiques</p>
+            </div>
+
+            <!-- Connexion balance Withings -->
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">⚖️ Balance Withings</h3>
+                    <p id="withings-status" class="text-xs mt-1 text-slate-400">Non connecté</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="connectWithings()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-xl text-xs sm:text-sm transition-colors whitespace-nowrap">
+                        Connecter mon compte Withings
+                    </button>
+                    <button id="btn-withings-sync" onclick="syncWithingsNow()" class="bg-sky-500 hover:bg-sky-600 text-white font-medium px-4 py-2 rounded-xl text-xs sm:text-sm transition-colors whitespace-nowrap">
+                        🔄 Synchroniser maintenant
+                    </button>
+                </div>
             </div>
 
             <!-- Graphiques -->
@@ -610,10 +634,11 @@
                     </div>
                 </div>
             </div>
-        </section>
+            </div>
+            <!-- /SOUS-ONGLET: SPORT -->
 
-        <!-- ================= PARTIE 4: RECETTES ================= -->
-        <section id="recipes" class="tab-content space-y-8">
+            <!-- SOUS-ONGLET: RECETTES -->
+            <div id="subtab-recipes" class="subtab-content space-y-8">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
                 <div>
                     <h2 class="text-base sm:text-lg font-bold text-slate-800">Recettes</h2>
@@ -658,6 +683,8 @@
             <footer id="image-weight-footer" class="hidden text-center text-[11px] text-slate-300 pt-2 pb-1 px-4 select-none">
                 <span id="image-weight-text"></span>
             </footer>
+            </div>
+            <!-- /SOUS-ONGLET: RECETTES -->
         </section>
 
     </main>
@@ -946,6 +973,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
+
+        // ==== CONFIGURATION WITHINGS (à compléter — voir WITHINGS_SETUP.md) ====
+        // Client ID de ton appli sur https://developer.withings.com/dashboard/ (PAS le secret)
+        const WITHINGS_CLIENT_ID = "COLLE_ICI_TON_CLIENT_ID_WITHINGS";
+        // URL de la Cloud Function "withingsCallback" une fois déployée (affichée à la fin de
+        // `firebase deploy --only functions`), à recopier aussi comme "Callback URL" côté Withings.
+        const WITHINGS_REDIRECT_URI = "COLLE_ICI_L_URL_DE_TA_CLOUD_FUNCTION_withingsCallback";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDCn3grH6ldSbadZzd05nsfkdvI76BMXIY",
@@ -960,9 +995,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const functionsInstance = getFunctions(app); // région par défaut us-central1 (adapte si tu as déployé ailleurs)
         const provider = new GoogleAuthProvider();
 
         let unsubscribeSnapshot = null;
+        let unsubscribeWithingsSnapshot = null;
         let currentUserDocRef = null;
 
         // Connexion Google
@@ -1033,6 +1070,18 @@
                 currentUserDocRef = doc(db, "users", user.uid);
 
                 if (unsubscribeSnapshot) unsubscribeSnapshot();
+                if (unsubscribeWithingsSnapshot) unsubscribeWithingsSnapshot();
+
+                // Statut de connexion Withings : stocké à PART du document principal
+                // (voir functions/index.js) pour ne jamais être écrasé par saveData().
+                unsubscribeWithingsSnapshot = onSnapshot(
+                    doc(db, "users", user.uid, "integrations", "withings"),
+                    (snap) => {
+                        window.withingsStatus = snap.exists() ? snap.data() : null;
+                        if (typeof renderWithingsStatus === 'function') renderWithingsStatus();
+                    },
+                    (err) => console.warn("Écoute du statut Withings indisponible :", err)
+                );
 
                 unsubscribeSnapshot = onSnapshot(currentUserDocRef, (docSnap) => {
                     if (docSnap.exists()) {
@@ -1072,9 +1121,54 @@
                 loggedOutScreen.classList.remove('hidden');
 
                 if (unsubscribeSnapshot) unsubscribeSnapshot();
+                if (unsubscribeWithingsSnapshot) unsubscribeWithingsSnapshot();
                 currentUserDocRef = null;
+                window.withingsStatus = null;
             }
         });
+
+        // --- Connexion / synchronisation Withings ---
+        window.connectWithings = function() {
+            if (!auth.currentUser) {
+                alert("Connecte-toi d'abord à LilyPlanner.");
+                return;
+            }
+            if (WITHINGS_CLIENT_ID.startsWith("COLLE_ICI") || WITHINGS_REDIRECT_URI.startsWith("COLLE_ICI")) {
+                alert("La connexion Withings n'est pas encore configurée : suis les instructions de WITHINGS_SETUP.md pour renseigner WITHINGS_CLIENT_ID et WITHINGS_REDIRECT_URI en haut du script.");
+                return;
+            }
+
+            const state = `${auth.currentUser.uid}.${Math.random().toString(36).slice(2)}`;
+            const params = new URLSearchParams({
+                response_type: "code",
+                client_id: WITHINGS_CLIENT_ID,
+                state,
+                scope: "user.metrics",
+                redirect_uri: WITHINGS_REDIRECT_URI
+            });
+            window.open(`https://account.withings.com/oauth2_user/authorize2?${params.toString()}`, "_blank");
+        };
+
+        window.syncWithingsNow = async function() {
+            if (!auth.currentUser) {
+                alert("Connecte-toi d'abord à LilyPlanner.");
+                return;
+            }
+            const btn = document.getElementById('btn-withings-sync');
+            const originalLabel = btn ? btn.innerText : '';
+            if (btn) { btn.disabled = true; btn.innerText = "Synchronisation..."; }
+
+            try {
+                const syncFn = httpsCallable(functionsInstance, 'withingsSyncNow');
+                const result = await syncFn();
+                alert(`✅ Synchronisation terminée : ${result.data.syncedDates} date(s) mise(s) à jour depuis Withings.`);
+            } catch (e) {
+                console.error("Erreur de synchronisation Withings :", e);
+                alert("⚠️ La synchronisation a échoué : " + (e.message || e));
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerText = originalLabel || "🔄 Synchroniser maintenant"; }
+            }
+        };
 
         window.saveData = async function() {
             if (!currentUserDocRef) return;
@@ -1209,8 +1303,11 @@
                 renderAgenda();
             }
 
-            if (tabId === 'sport' && typeof renderSportCharts === 'function') {
-                requestAnimationFrame(renderSportCharts);
+            if (tabId === 'sport-nutrition') {
+                const sportSubtab = document.getElementById('subtab-sport');
+                if (sportSubtab && sportSubtab.classList.contains('active') && typeof renderSportCharts === 'function') {
+                    requestAnimationFrame(renderSportCharts);
+                }
             }
         }
 
@@ -1228,6 +1325,27 @@
 
             if (subtabId === 'plan-2026' && typeof scrollGanttToCurrentMonth === 'function') {
                 requestAnimationFrame(scrollGanttToCurrentMonth);
+            }
+        }
+
+        function switchSportNutritionSubTab(subtabId) {
+            document.querySelectorAll('#sport-nutrition .subtab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#sport-nutrition .subtab-btn').forEach(el => {
+                el.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                el.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`subtab-${subtabId}`).classList.add('active');
+            const targetBtn = document.getElementById(`btn-subtab-${subtabId}`);
+            targetBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+            targetBtn.classList.remove('text-slate-600');
+
+            if (typeof updateImageWeightFooter === 'function') {
+                updateImageWeightFooter();
+            }
+
+            if (subtabId === 'sport' && typeof renderSportCharts === 'function') {
+                requestAnimationFrame(renderSportCharts);
             }
         }
 
@@ -2128,8 +2246,9 @@
             const textEl = document.getElementById('image-weight-text');
             if (!footer || !textEl) return;
 
-            const recipesSection = document.getElementById('recipes');
-            const isRecipesTabActive = recipesSection && recipesSection.classList.contains('active');
+            const recipesParentSection = document.getElementById('sport-nutrition');
+            const recipesSubtab = document.getElementById('subtab-recipes');
+            const isRecipesTabActive = recipesParentSection && recipesParentSection.classList.contains('active') && recipesSubtab && recipesSubtab.classList.contains('active');
 
             if (!isRecipesTabActive) {
                 footer.classList.add('hidden');
@@ -3257,10 +3376,29 @@
         function renderSport() {
             renderSportMeasurementsTable();
             renderSportActivitiesTable();
-            const sportSection = document.getElementById('sport');
-            if (sportSection && sportSection.classList.contains('active')) {
+            renderWithingsStatus();
+            const sportParentSection = document.getElementById('sport-nutrition');
+            const sportSubtab = document.getElementById('subtab-sport');
+            if (sportParentSection && sportParentSection.classList.contains('active') && sportSubtab && sportSubtab.classList.contains('active')) {
                 renderSportCharts();
             }
+        }
+
+        function renderWithingsStatus() {
+            const el = document.getElementById('withings-status');
+            if (!el) return;
+
+            const s = window.withingsStatus;
+            if (!s) {
+                el.innerHTML = `<span class="text-slate-400">Non connecté</span>`;
+                return;
+            }
+
+            const lastSyncDate = (s.lastSyncAt && typeof s.lastSyncAt.toDate === 'function') ? s.lastSyncAt.toDate() : null;
+            const lastSyncText = lastSyncDate ? lastSyncDate.toLocaleString('fr-FR') : 'jamais encore';
+            const statusIcon = s.lastSyncStatus === 'error' ? '⚠️' : '✅';
+
+            el.innerHTML = `<span class="text-emerald-600 font-semibold">${statusIcon} Connecté</span> · Dernière synchro : ${lastSyncText}`;
         }
 
         window.onload = function() {
