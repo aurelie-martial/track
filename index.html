@@ -199,6 +199,9 @@
         </div>
         <h2 class="text-2xl font-bold text-slate-800 mb-2">Espace sécurisé</h2>
         <p class="text-sm text-slate-500 mb-6">Connecte-toi avec ton compte Google pour accéder à ton suivi d'habitudes et synchroniser tes données.</p>
+        <p id="unauthorized-message" class="hidden text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 mb-6">
+            ⚠️ Ce compte Google n'est pas autorisé à accéder à cette application. Reconnecte-toi avec le bon compte.
+        </p>
         <button id="btn-login-main" class="flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-all shadow-md hover:shadow-lg">
             <svg class="w-5 h-5 bg-white rounded-full p-0.5" viewBox="0 0 24 24">
                 <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.2 9 5 12 5z"/>
@@ -1133,6 +1136,13 @@
         const functionsInstance = getFunctions(app); // région par défaut us-central1 (adapte si tu as déployé ailleurs)
         const provider = new GoogleAuthProvider();
 
+        // Seul ce compte Google (identifié par son UID Firebase) est autorisé à utiliser l'app.
+        // Doit correspondre EXACTEMENT à l'UID autorisé dans les règles Firestore (firestore.rules) :
+        // allow read, write: if request.auth != null && request.auth.uid == "...";
+        // Ce contrôle côté client évite d'afficher l'app à un autre compte le temps qu'il se
+        // fasse refuser par les règles ; la vraie protection des données reste la règle Firestore.
+        const ALLOWED_UID = "7SSaq8H8ZTV3Gek7rVDsV7sZ2r33";
+
         let unsubscribeSnapshot = null;
         let unsubscribeWithingsSnapshot = null;
         let currentUserDocRef = null;
@@ -1188,6 +1198,18 @@
             const loggedOutScreen = document.getElementById('logged-out-screen');
 
             if (user) {
+                // Refuse tout compte Google autre que le tien : déconnexion immédiate,
+                // avant même d'afficher le contenu de l'app.
+                if (user.uid !== ALLOWED_UID) {
+                    console.warn("Connexion refusée : compte Google non autorisé (" + user.email + ").");
+                    const unauthorizedMsg = document.getElementById('unauthorized-message');
+                    if (unauthorizedMsg) unauthorizedMsg.classList.remove('hidden');
+                    signOut(auth);
+                    return;
+                }
+                const unauthorizedMsg = document.getElementById('unauthorized-message');
+                if (unauthorizedMsg) unauthorizedMsg.classList.add('hidden');
+
                 // Utilisateur connecté
                 loginBtn.classList.add('hidden');
                 loginBtnMobile.classList.add('hidden');
