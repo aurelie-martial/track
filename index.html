@@ -12,6 +12,12 @@
     <!-- Masquer la barre de navigateur Safari pour un effet "Application native" -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+    <!-- Équivalent Android/Chrome : sans ce manifest, "Ajouter à l'écran d'accueil"
+         ignore l'icône personnalisée et prend une icône générique. -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#4f46e5">
     <title>Lily Tracker 2026</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -589,10 +595,15 @@
                                 <input type="number" id="new-activity-calories" placeholder="250" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
                             </div>
                         </div>
-                        <button onclick="addSportActivity()" class="w-full bg-emerald-400 hover:bg-emerald-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                            Enregistrer l'activité
-                        </button>
+                        <div class="flex gap-2">
+                            <button id="btn-save-activity" onclick="addSportActivity()" class="flex-1 bg-emerald-400 hover:bg-emerald-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                <span id="btn-save-activity-label">Enregistrer l'activité</span>
+                            </button>
+                            <button id="btn-cancel-activity-edit" onclick="cancelEditSportActivity()" class="hidden px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl text-sm transition-colors">
+                                Annuler
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3231,6 +3242,13 @@
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
         }
 
+        // Format court (sans année) utilisé pour les libellés de dates dans les graphiques,
+        // où l'année alourdit l'affichage sans apporter d'info utile (toujours la même).
+        function formatDateFRShort(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+
         // Anciennes activités enregistrées avec le type "Sport" (avant le renommage en "Renfo")
         function normalizeActivityType(type) {
             return type === 'Sport' ? 'Renfo' : type;
@@ -3268,6 +3286,8 @@
             renderSport();
         }
 
+        window.editingSportActivityId = null; // id de l'activité en cours de modification, ou null si mode "ajout"
+
         function addSportActivity() {
             const dateInput = document.getElementById('new-activity-date');
             const typeInput = document.getElementById('new-activity-type');
@@ -3286,18 +3306,57 @@
                 return;
             }
 
-            window.sportActivities.push({ id: Date.now(), date, type, name, duration, calories });
-
-            nameInput.value = '';
-            durationInput.value = '';
-            caloriesInput.value = '';
+            if (window.editingSportActivityId !== null) {
+                const activity = window.sportActivities.find(a => a.id === window.editingSportActivityId);
+                if (activity) {
+                    activity.date = date;
+                    activity.type = type;
+                    activity.name = name;
+                    activity.duration = duration;
+                    activity.calories = calories;
+                }
+                cancelEditSportActivity(); // sort du mode édition et remet le formulaire à zéro
+            } else {
+                window.sportActivities.push({ id: Date.now(), date, type, name, duration, calories });
+                nameInput.value = '';
+                durationInput.value = '';
+                caloriesInput.value = '';
+            }
 
             saveData();
             renderSport();
         }
 
+        function editSportActivity(id) {
+            const activity = window.sportActivities.find(a => a.id === id);
+            if (!activity) return;
+
+            window.editingSportActivityId = id;
+            document.getElementById('new-activity-date').value = activity.date;
+            document.getElementById('new-activity-type').value = normalizeActivityType(activity.type);
+            document.getElementById('new-activity-name').value = activity.name;
+            document.getElementById('new-activity-duration').value = activity.duration !== null && activity.duration !== undefined ? activity.duration : '';
+            document.getElementById('new-activity-calories').value = activity.calories !== null && activity.calories !== undefined ? activity.calories : '';
+
+            document.getElementById('btn-save-activity-label').innerText = "Modifier l'activité";
+            document.getElementById('btn-cancel-activity-edit').classList.remove('hidden');
+            document.getElementById('new-activity-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelEditSportActivity() {
+            window.editingSportActivityId = null;
+            document.getElementById('new-activity-date').value = formatDateISO(new Date());
+            document.getElementById('new-activity-type').value = 'Renfo';
+            document.getElementById('new-activity-name').value = '';
+            document.getElementById('new-activity-duration').value = '';
+            document.getElementById('new-activity-calories').value = '';
+            document.getElementById('btn-save-activity-label').innerText = "Enregistrer l'activité";
+            document.getElementById('btn-cancel-activity-edit').classList.add('hidden');
+        }
+
         function deleteSportActivity(id) {
             window.sportActivities = window.sportActivities.filter(a => a.id !== id);
+            if (window.editingSportActivityId === id) cancelEditSportActivity();
             saveData();
             renderSport();
         }
@@ -3342,7 +3401,8 @@
                         <td class="py-2 px-1.5 text-xs">${typeIcon[normalizeActivityType(a.type)] || '✨'} ${a.name}</td>
                         <td class="py-2 px-1.5 text-xs">${a.duration !== null && a.duration !== undefined ? a.duration + ' min' : '-'}</td>
                         <td class="py-2 px-1.5 text-xs font-semibold text-emerald-600">${a.calories !== null && a.calories !== undefined ? a.calories : '-'}</td>
-                        <td class="py-2 px-1.5 text-right">
+                        <td class="py-2 px-1.5 text-right whitespace-nowrap">
+                            <button onclick="editSportActivity(${a.id})" class="text-slate-300 hover:text-indigo-500 p-0.5" title="Modifier">✏️</button>
                             <button onclick="deleteSportActivity(${a.id})" class="text-slate-300 hover:text-rose-500 p-0.5" title="Supprimer">🗑️</button>
                         </td>
                     </tr>
@@ -3421,7 +3481,7 @@
             // --- Graphique combiné : une seule courbe (le poids), la zone en dessous étant
             // répartie entre masse grasse et masse musculaire selon leurs proportions respectives.
             const sortedMeasurements = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
-            const measurementLabels = sortedMeasurements.map(m => formatDateFR(m.date));
+            const measurementLabels = sortedMeasurements.map(m => formatDateFRShort(m.date));
             const comp = buildBodyCompositionSeries(sortedMeasurements);
 
             if (sportMeasurementsChartInstance) sportMeasurementsChartInstance.destroy();
@@ -3520,7 +3580,7 @@
                 { key: 'Autre', label: '✨ Autre', color: '#f59e0b' }
             ];
             const sortedActivityDates = [...new Set(window.sportActivities.map(a => a.date))].sort();
-            const activityLabels = sortedActivityDates.map(d => formatDateFR(d));
+            const activityLabels = sortedActivityDates.map(d => formatDateFRShort(d));
 
             const activityDatasets = activityTypes.map(t => ({
                 label: t.label,
