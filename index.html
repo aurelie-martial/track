@@ -720,7 +720,7 @@
             </div>
 
             <!-- Cartes récapitulatives -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
                     <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Revenus</p>
                     <p id="budget-total-revenus" class="text-2xl font-bold text-emerald-600 mt-1">0 €</p>
@@ -728,6 +728,14 @@
                 <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
                     <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Dépenses</p>
                     <p id="budget-total-depenses" class="text-2xl font-bold text-rose-500 mt-1">0 €</p>
+                </div>
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">dont Fixes</p>
+                    <p id="budget-total-depenses-fixes" class="text-2xl font-bold text-slate-600 mt-1">0 €</p>
+                </div>
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">dont Variables</p>
+                    <p id="budget-total-depenses-variables" class="text-2xl font-bold text-slate-600 mt-1">0 €</p>
                 </div>
                 <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
                     <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Solde</p>
@@ -758,14 +766,14 @@
                 <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <span class="w-2 h-5 bg-indigo-400 rounded-xs inline-block"></span> Nouvelle transaction
                 </h3>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 items-end">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 items-end">
                     <div>
                         <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
                         <input type="date" id="new-budget-date" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
                     </div>
                     <div>
                         <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Type</label>
-                        <select id="new-budget-type" onchange="refreshBudgetCategoryOptions()" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-400">
+                        <select id="new-budget-type" onchange="onBudgetTypeChange()" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-400">
                             <option value="depense">Dépense</option>
                             <option value="revenu">Revenu</option>
                         </select>
@@ -773,6 +781,13 @@
                     <div>
                         <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Catégorie</label>
                         <select id="new-budget-category" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-400"></select>
+                    </div>
+                    <div id="new-budget-nature-wrapper">
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Nature</label>
+                        <select id="new-budget-nature" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-400">
+                            <option value="variable">Variable</option>
+                            <option value="fixe">Fixe</option>
+                        </select>
                     </div>
                     <div class="col-span-2 sm:col-span-1">
                         <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Libellé</label>
@@ -824,6 +839,7 @@
                             <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                                 <th class="py-2 px-1.5">Date</th>
                                 <th class="py-2 px-1.5">Type</th>
+                                <th class="py-2 px-1.5">Nature</th>
                                 <th class="py-2 px-1.5">Catégorie</th>
                                 <th class="py-2 px-1.5">Libellé</th>
                                 <th class="py-2 px-1.5 text-right">Montant</th>
@@ -3684,10 +3700,21 @@
             catEl.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
         }
 
+        // La nature fixe/variable ne concerne que les dépenses : on masque le champ pour un revenu.
+        function onBudgetTypeChange() {
+            refreshBudgetCategoryOptions();
+            const typeEl = document.getElementById('new-budget-type');
+            const natureWrapper = document.getElementById('new-budget-nature-wrapper');
+            if (natureWrapper) {
+                natureWrapper.classList.toggle('hidden', typeEl.value !== 'depense');
+            }
+        }
+
         function addBudgetTransaction() {
             const date = document.getElementById('new-budget-date').value;
             const type = document.getElementById('new-budget-type').value;
             const category = document.getElementById('new-budget-category').value;
+            const nature = type === 'depense' ? document.getElementById('new-budget-nature').value : null;
             const label = document.getElementById('new-budget-label').value.trim();
             const amount = parseFloat(document.getElementById('new-budget-amount').value);
 
@@ -3696,7 +3723,7 @@
                 return;
             }
 
-            window.budgetTransactions.push({ id: Date.now(), date, type, category, label, amount });
+            window.budgetTransactions.push({ id: Date.now(), date, type, category, nature, label, amount });
             document.getElementById('new-budget-label').value = '';
             document.getElementById('new-budget-amount').value = '';
             saveData();
@@ -3764,11 +3791,17 @@
             const monthTransactions = window.budgetTransactions.filter(t => t.date && t.date.startsWith(monthKey));
 
             const totalRevenus = monthTransactions.filter(t => t.type === 'revenu').reduce((s, t) => s + t.amount, 0);
-            const totalDepenses = monthTransactions.filter(t => t.type === 'depense').reduce((s, t) => s + t.amount, 0);
+            const depenseTransactions = monthTransactions.filter(t => t.type === 'depense');
+            const totalDepenses = depenseTransactions.reduce((s, t) => s + t.amount, 0);
+            // Transactions sans nature enregistrée (anciennes données) comptées en "Variable" par défaut.
+            const totalDepensesFixes = depenseTransactions.filter(t => t.nature === 'fixe').reduce((s, t) => s + t.amount, 0);
+            const totalDepensesVariables = depenseTransactions.filter(t => t.nature !== 'fixe').reduce((s, t) => s + t.amount, 0);
             const solde = totalRevenus - totalDepenses;
 
             document.getElementById('budget-total-revenus').innerText = formatEuro(totalRevenus);
             document.getElementById('budget-total-depenses').innerText = formatEuro(totalDepenses);
+            document.getElementById('budget-total-depenses-fixes').innerText = formatEuro(totalDepensesFixes);
+            document.getElementById('budget-total-depenses-variables').innerText = formatEuro(totalDepensesVariables);
             const soldeEl = document.getElementById('budget-solde');
             soldeEl.innerText = `${solde < 0 ? '-' : ''}${formatEuro(Math.abs(solde))}`;
             soldeEl.className = `text-2xl font-bold mt-1 ${solde < 0 ? 'text-rose-500' : 'text-indigo-600'}`;
@@ -3836,7 +3869,7 @@
             if (tbody) {
                 const sorted = [...monthTransactions].sort((a, b) => b.date.localeCompare(a.date));
                 if (sorted.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400">Aucune transaction ce mois-ci.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" class="py-4 text-center text-slate-400">Aucune transaction ce mois-ci.</td></tr>`;
                 } else {
                     tbody.innerHTML = sorted.map(t => `
                         <tr>
@@ -3845,6 +3878,11 @@
                                 <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${t.type === 'revenu' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'}">
                                     ${t.type === 'revenu' ? 'Revenu' : 'Dépense'}
                                 </span>
+                            </td>
+                            <td class="py-2 px-1.5">
+                                ${t.type === 'depense'
+                                    ? `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${t.nature === 'fixe' ? 'bg-slate-100 text-slate-600' : 'bg-sky-50 text-sky-600'}">${t.nature === 'fixe' ? 'Fixe' : 'Variable'}</span>`
+                                    : '<span class="text-slate-300">—</span>'}
                             </td>
                             <td class="py-2 px-1.5">${t.category}</td>
                             <td class="py-2 px-1.5 text-slate-500">${t.label || '—'}</td>
@@ -3905,7 +3943,7 @@
             if (activityDateEl) activityDateEl.value = todayISO;
             const budgetDateEl = document.getElementById('new-budget-date');
             if (budgetDateEl) budgetDateEl.value = todayISO;
-            refreshBudgetCategoryOptions();
+            onBudgetTypeChange();
         }
     </script>
 </body>
