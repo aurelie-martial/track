@@ -266,8 +266,17 @@
                 </div>
             </div>
 
-            <!-- Suivi d'humeur : bloc dédié, même format que les blocs d'habitudes -->
-            <div id="mood-tracker-block"></div>
+            <div class="flex bg-slate-100 p-1 rounded-xl w-fit gap-1">
+                <button onclick="switchHabitTrackerSubTab('habits')" id="btn-subtab-habits" class="subtab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                    🌱 Habitudes
+                </button>
+                <button onclick="switchHabitTrackerSubTab('mood')" id="btn-subtab-mood" class="subtab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                    😊 Humeur
+                </button>
+            </div>
+
+            <!-- SOUS-ONGLET: HABITUDES -->
+            <div id="subtab-habits" class="subtab-content active space-y-8">
 
             <div id="habits-by-category-container" class="space-y-8"></div>
 
@@ -314,6 +323,14 @@
                     </div>
                 </div>
             </div>
+            </div>
+            <!-- /SOUS-ONGLET: HABITUDES -->
+
+            <!-- SOUS-ONGLET: HUMEUR -->
+            <div id="subtab-mood" class="subtab-content space-y-6">
+                <div id="mood-tracker-block"></div>
+            </div>
+            <!-- /SOUS-ONGLET: HUMEUR -->
         </section>
 
         <!-- ================= PARTIE 2: TODO LIST & PLAN 2026 ================= -->
@@ -1585,6 +1602,19 @@
             if (subtabId === 'sport' && typeof renderSportCharts === 'function') {
                 requestAnimationFrame(renderSportCharts);
             }
+        }
+
+        function switchHabitTrackerSubTab(subtabId) {
+            document.querySelectorAll('#habit-tracker .subtab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#habit-tracker .subtab-btn').forEach(el => {
+                el.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                el.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`subtab-${subtabId}`).classList.add('active');
+            const targetBtn = document.getElementById(`btn-subtab-${subtabId}`);
+            targetBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+            targetBtn.classList.remove('text-slate-600');
         }
 
         function triggerConfetti() {
