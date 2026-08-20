@@ -1325,6 +1325,7 @@
                         window.categories = data.categories || window.categories;
                         window.habits = data.habits || window.habits;
                         window.moodHistory = data.moodHistory || window.moodHistory;
+                        window.moodComments = data.moodComments || window.moodComments;
                         window.todoData = data.todoData || window.todoData;
                         window.todoStarBlocks = data.todoStarBlocks || window.todoStarBlocks;
                         window.planCategories = data.planCategories || window.planCategories;
@@ -1421,6 +1422,7 @@
                 categories: window.categories,
                 habits: window.habits,
                 moodHistory: window.moodHistory,
+                moodComments: window.moodComments,
                 todoData: window.todoData,
                 todoStarBlocks: window.todoStarBlocks,
                 planCategories: window.planCategories,
@@ -1470,6 +1472,8 @@
 
         // --- SUIVI D'HUMEUR --- Clé = '2026-{mois}-{jour}' -> niveau 1 (😞) à 5 (😄)
         window.moodHistory = {};
+        // Commentaire libre associé à une journée d'humeur, même clé que moodHistory.
+        window.moodComments = {};
         window.todoData = {
             "Airbnb": [{ id: 101, text: "Répondre aux messages", completed: false }],
             "TODO": [{ id: 105, text: "Exemple de tâche", completed: false }]
@@ -2386,6 +2390,22 @@
             renderMoodTracker();
         }
 
+        // Ajoute/modifie/supprime le commentaire libre associé à une journée d'humeur.
+        function promptMoodComment(key) {
+            const current = window.moodComments[key] || '';
+            const day = key.split('-')[2];
+            const text = prompt(`Commentaire pour le ${day} :`, current);
+            if (text === null) return; // annulé
+            const trimmed = text.trim();
+            if (trimmed === '') {
+                delete window.moodComments[key];
+            } else {
+                window.moodComments[key] = trimmed;
+            }
+            saveData();
+            renderMoodTracker();
+        }
+
         // Couleur de fond/bordure associée à chaque niveau d'humeur, du rouge (mauvais) au vert (bon) —
         // effet "heatmap" : la couleur donne la tendance en un coup d'œil, l'émoji confirme le détail.
         function getMoodColorClasses(level) {
@@ -2449,11 +2469,12 @@
                 const isToday = (realYear === 2026 && monthIndex === realMonth && d === realDay);
                 const todayRing = isToday ? 'ring-2 ring-indigo-400' : '';
                 const colorClasses = getMoodColorClasses(level);
+                const comment = window.moodComments[key] || '';
 
                 html += `
-                    <button onclick="cycleMoodDay('${key}')" class="aspect-square rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform duration-100" title="Clique pour changer l'humeur du ${d}">
-                        <span class="text-[9px] sm:text-[10px] font-bold text-slate-500">${d}</span>
+                    <button onclick="cycleMoodDay('${key}')" class="relative aspect-square rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform duration-100" title="Clique pour changer l'humeur du ${d}">
                         <span class="text-xs sm:text-sm leading-none">${emoji || ''}</span>
+                        <span onclick="event.stopPropagation(); promptMoodComment('${key}')" class="absolute bottom-0.5 right-0.5 text-[8px] sm:text-[9px] leading-none ${comment ? 'text-indigo-600' : 'text-slate-300'}" title="${comment ? ('Commentaire : ' + comment.replace(/"/g, '&quot;')) : 'Ajouter un commentaire'}">💬</span>
                     </button>
                 `;
             }
@@ -4507,8 +4528,8 @@
         // flèches d'incrémentation natives.
         function budgetEuroInput(value, onchange, width, extraClass) {
             return `
-                <div class="flex items-center justify-start gap-0.5">
-                    <input type="text" inputmode="decimal" value="${formatAmountForInput(value)}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} ${extraClass || ''} bg-transparent text-xs text-slate-700 text-left focus:outline-none focus:border-b focus:border-indigo-300">
+                <div class="flex items-center justify-end gap-0.5">
+                    <input type="text" inputmode="decimal" value="${formatAmountForInput(value)}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} ${extraClass || ''} bg-transparent text-xs text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
                     <span class="text-slate-400 text-xs">€</span>
                 </div>
             `;
@@ -4558,7 +4579,7 @@
                         <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="budget-text-input w-full bg-transparent text-xs text-slate-700 ${struckClass} focus:outline-none focus:border-b focus:border-indigo-300">
                     </td>
                     <td class="px-1 py-1.5 ${montantWidth}">
-                        <div class="flex items-center justify-start gap-0.5">
+                        <div class="flex items-center justify-end gap-0.5">
                             ${section === 'fixe' ? `<button onclick="addFixeLineAsTransaction(${l.id})" class="shrink-0 w-4 h-4 flex items-center justify-center rounded-full bg-slate-200 hover:bg-emerald-200 text-slate-500 hover:text-emerald-700 text-[10px] font-bold leading-none transition-colors" title="Ajouter comme transaction du jour">+</button>` : ''}
                             ${budgetEuroInput(l.prevu, `updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)`, null, struckClass)}
                         </div>
@@ -4577,8 +4598,8 @@
             tbody.innerHTML = rowsHtml + `
                 <tr class="bg-slate-800 text-white font-bold">
                     <td class="px-1.5 py-1.5 text-xs uppercase">Total</td>
-                    <td class="px-1 py-1.5 text-left ${montantWidth}">${formatEuro(totalPrevu)}</td>
-                    ${showReel ? `<td class="px-1 py-1.5 text-left ${montantWidth}">${formatEuro(totalReel)}</td>` : ''}
+                    <td class="px-1 py-1.5 text-right ${montantWidth}">${formatEuro(totalPrevu)}</td>
+                    ${showReel ? `<td class="px-1 py-1.5 text-right ${montantWidth}">${formatEuro(totalReel)}</td>` : ''}
                     <td class="${actionWidth}"></td>
                 </tr>
             `;
@@ -4609,7 +4630,7 @@
                 <tr class="border-b border-slate-100">
                     <td class="px-4 py-2 text-slate-600">${label}</td>
                     <td class="px-4 py-2">
-                        <div class="flex items-center justify-start">
+                        <div class="flex items-center justify-end">
                             <span class="text-slate-500">-</span>
                             ${budgetEuroInput(value, `updateBudgetPlanRessource('${field}', this.value)`, 'w-16')}
                         </div>
@@ -4619,7 +4640,7 @@
             const readonlyRow = (label, value) => `
                 <tr class="border-b border-slate-100">
                     <td class="px-4 py-2 text-slate-600">${label}</td>
-                    <td class="px-4 py-2 text-left text-slate-700">-${formatEuro(value)}</td>
+                    <td class="px-4 py-2 text-right text-slate-700">-${formatEuro(value)}</td>
                 </tr>
             `;
 
@@ -4627,8 +4648,8 @@
                 <tr class="bg-slate-800 text-white">
                     <td class="px-4 py-2 font-bold">SALAIRE</td>
                     <td class="px-4 py-2">
-                        <div class="flex items-center justify-start gap-0.5">
-                            <input type="text" inputmode="decimal" value="${formatAmountForInput(r.salaire)}" onchange="updateBudgetPlanRessource('salaire', this.value)" class="budget-amount-input w-16 bg-transparent text-left font-bold text-white focus:outline-none">
+                        <div class="flex items-center justify-end gap-0.5">
+                            <input type="text" inputmode="decimal" value="${formatAmountForInput(r.salaire)}" onchange="updateBudgetPlanRessource('salaire', this.value)" class="budget-amount-input w-16 bg-transparent text-right font-bold text-white focus:outline-none">
                             <span class="text-xs text-white/70">€</span>
                         </div>
                     </td>
@@ -4639,15 +4660,15 @@
                 ${readonlyRow('Epargne', epargnePrevu)}
                 <tr class="bg-slate-800 text-white font-bold">
                     <td class="px-4 py-2">Restant total avant transactions</td>
-                    <td class="px-4 py-2 text-left">${formatEuro(restantAvant)}</td>
+                    <td class="px-4 py-2 text-right">${formatEuro(restantAvant)}</td>
                 </tr>
                 <tr class="border-b border-slate-100">
                     <td class="px-4 py-2 text-slate-600">Transactions (hors Fixe)</td>
-                    <td class="px-4 py-2 text-left text-slate-700">-${formatEuro(nonFixeTransactionsTotal)}</td>
+                    <td class="px-4 py-2 text-right text-slate-700">-${formatEuro(nonFixeTransactionsTotal)}</td>
                 </tr>
                 <tr class="bg-slate-800 text-white font-bold">
                     <td class="px-4 py-2">Restant total après transactions</td>
-                    <td class="px-4 py-2 text-left">${formatEuro(restantApres)}</td>
+                    <td class="px-4 py-2 text-right">${formatEuro(restantApres)}</td>
                 </tr>
             `;
 
@@ -4675,8 +4696,8 @@
                     </tr>
                     <tr class="bg-slate-800 text-white font-bold">
                         <td class="px-2 py-1.5 text-xs uppercase">Total</td>
-                        <td class="px-2 py-1.5 text-left w-[4.5rem]">${formatEuro(epargnePrevu)}</td>
-                        <td class="px-2 py-1.5 text-left w-[4.5rem]">${formatEuro(window.budgetPlan.epargne.reel || 0)}</td>
+                        <td class="px-2 py-1.5 text-right w-[4.5rem]">${formatEuro(epargnePrevu)}</td>
+                        <td class="px-2 py-1.5 text-right w-[4.5rem]">${formatEuro(window.budgetPlan.epargne.reel || 0)}</td>
                     </tr>
                 `;
             }
