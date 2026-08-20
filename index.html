@@ -110,6 +110,9 @@
                 font-size: 12px !important;
                 padding-right: 1px !important;
             }
+            input.budget-text-input {
+                font-size: 12px !important;
+            }
         }
 
         /* Champs montants du budget (Ressources/Fixe/Variable/Épargne) : pas de flèches
@@ -121,6 +124,12 @@
         }
         .budget-amount-input {
             -moz-appearance: textfield;
+            font-size: 12px !important;
+        }
+        /* Libellés (Crédit, Syndic, Course, Boucherie...) dans Fixe/Variable : même taille que le
+           reste du plan budgétaire (Découvert, Total fixe...), y compris sur mobile où la règle
+           anti-zoom forcerait sinon 16px sur ces champs texte. */
+        .budget-text-input {
             font-size: 12px !important;
         }
     </style>
@@ -745,11 +754,45 @@
                 </div>
             </div>
 
-            <!-- Budget : Plan (Résumé + Fixe/Variable/Épargne) à gauche, Transactions à droite -->
+            <!-- Budget : Plan (Résumé + Fixe/Variable/Épargne) à gauche, Transactions à droite sur
+                 desktop. Sur mobile, l'ajout de transaction + l'historique passent en premier
+                 (ordre géré via "order", la position en colonnes via "lg:col-start"). -->
             <div class="grid grid-cols-1 lg:grid-cols-[1.8fr_3.2fr] gap-6 items-start">
 
-                <!-- COLONNE GAUCHE : Plan budgétaire (saisie manuelle, façon tableur) -->
-                <div class="space-y-6 min-w-0">
+                <!-- BLOC TRANSACTIONS : en premier sur mobile, colonne de droite sur desktop -->
+                <div class="order-1 lg:order-2 lg:col-start-2 space-y-6">
+                    <!-- Nouvelle transaction : un simple bouton, les champs s'ouvrent en overlay -->
+                    <div class="pb-2">
+                        <button onclick="openNewTransactionOverlay()" class="w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            Ajouter une transaction
+                        </button>
+                    </div>
+
+                    <!-- Historique des transactions -->
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div class="p-4 bg-slate-50/50 border-b border-slate-100">
+                            <h3 class="font-bold text-slate-800 text-sm">Historique des transactions</h3>
+                        </div>
+                        <div class="p-4 overflow-x-auto max-h-[34rem] overflow-y-auto">
+                            <table class="w-full text-left border-collapse table-fixed">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                        <th class="py-2 px-1.5 w-14">Date</th>
+                                        <th class="py-2 px-1.5 w-16">Cat.</th>
+                                        <th class="py-2 px-1.5">Libellé</th>
+                                        <th class="py-2 px-1.5 text-right w-16">Montant</th>
+                                        <th class="py-2 px-1.5 text-right w-10">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budget-transactions-tbody" class="divide-y divide-slate-100 text-xs text-slate-600"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLOC PLAN BUDGÉTAIRE (saisie manuelle, façon tableur) : en second sur mobile, colonne de gauche sur desktop -->
+                <div class="order-2 lg:order-1 lg:col-start-1 space-y-6 min-w-0">
                     <!-- Résumé -->
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                         <div class="px-4 py-3 bg-slate-800 text-white font-bold text-center text-xs uppercase tracking-wide">Résumé</div>
@@ -822,62 +865,14 @@
                     </div>
                 </div>
 
-                <!-- COLONNE DROITE : Transactions -->
-                <div class="space-y-6">
-                    <!-- Formulaire nouvelle transaction (pas de bloc blanc, champs alignés sur une ligne) -->
-                    <div class="pb-2">
-                        <div class="flex flex-wrap items-end gap-2">
-                            <div class="flex-1 min-w-[110px]">
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
-                                <input type="date" id="new-budget-date" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
-                            </div>
-                            <div class="flex-1 min-w-[110px]">
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Catégorie</label>
-                                <select id="new-budget-category" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-indigo-400"></select>
-                            </div>
-                            <div class="flex-[2] min-w-[140px]">
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Libellé</label>
-                                <input type="text" id="new-budget-label" placeholder="Ex: Courses Carrefour" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
-                            </div>
-                            <div class="flex-1 min-w-[90px]">
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Montant (€)</label>
-                                <input type="text" inputmode="decimal" id="new-budget-amount" placeholder="50" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
-                            </div>
-                            <button onclick="addBudgetTransaction()" class="shrink-0 bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-xs flex items-center justify-center gap-1.5 whitespace-nowrap">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                                Ajouter
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Historique des transactions -->
-                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div class="p-4 bg-slate-50/50 border-b border-slate-100">
-                            <h3 class="font-bold text-slate-800 text-sm">Historique des transactions</h3>
-                        </div>
-                        <div class="p-4 overflow-x-auto max-h-[34rem] overflow-y-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                                        <th class="py-2 px-1.5">Date</th>
-                                        <th class="py-2 px-1.5">Catégorie</th>
-                                        <th class="py-2 px-1.5">Libellé</th>
-                                        <th class="py-2 px-1.5 text-right">Montant</th>
-                                        <th class="py-2 px-1.5 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="budget-transactions-tbody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Gestion des catégories -->
+                <!-- BLOC CATÉGORIES : toujours en dernier -->
+                <div class="order-3 lg:order-3 lg:col-start-2 space-y-6">
                     <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                         <h3 class="text-sm font-bold text-slate-800 mb-4">Catégories</h3>
                         <div>
                             <div class="flex flex-wrap gap-2 mb-2">
-                                <input type="text" id="new-budget-cat-depense" placeholder="Nouvelle catégorie..." onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetCategory('depense');}" class="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-400">
-                                <button onclick="addBudgetCategory('depense')" class="bg-rose-400 hover:bg-rose-500 text-white font-medium px-3 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">+ Ajouter</button>
+                                <input type="text" id="new-budget-cat-depense" placeholder="Nouvelle catégorie..." onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetCategory('depense');}" class="w-32 sm:w-40 px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-rose-400">
+                                <button onclick="addBudgetCategory('depense')" class="bg-rose-400 hover:bg-rose-500 text-white font-medium px-3 py-2 rounded-xl text-xs transition-colors whitespace-nowrap">+ Ajouter</button>
                             </div>
                             <div id="budget-cat-list-depense" class="flex flex-wrap gap-1.5"></div>
                         </div>
@@ -887,6 +882,38 @@
         </section>
 
     </main>
+
+    <!-- MODAL : NOUVELLE TRANSACTION (BUDGET) -->
+    <div id="budget-tx-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-sm">Nouvelle transaction</h3>
+                <button onclick="closeNewTransactionOverlay()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+            </div>
+            <div class="p-6 space-y-3">
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+                    <input type="date" id="new-budget-date" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Catégorie</label>
+                    <select id="new-budget-category" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-400"></select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Libellé</label>
+                    <input type="text" id="new-budget-label" placeholder="Ex: Courses Carrefour" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Montant (€)</label>
+                    <input type="text" inputmode="decimal" id="new-budget-amount" placeholder="50" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                </div>
+                <button onclick="addBudgetTransaction()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    Ajouter
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL : CRÉER / MODIFIER UNE RECETTE -->
     <div id="recipe-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -4251,6 +4278,22 @@
             line.reel = updated < 0 ? 0 : updated;
         }
 
+        // Overlay "Nouvelle transaction" : les 4 champs ne sont visibles qu'une fois le bouton
+        // "Ajouter une transaction" cliqué, pour ne pas encombrer la page en permanence.
+        function openNewTransactionOverlay() {
+            const modal = document.getElementById('budget-tx-modal');
+            if (!modal) return;
+            const dateEl = document.getElementById('new-budget-date');
+            if (dateEl && !dateEl.value) dateEl.value = formatDateISO(new Date());
+            refreshBudgetCategoryOptions();
+            modal.classList.remove('hidden');
+        }
+
+        function closeNewTransactionOverlay() {
+            const modal = document.getElementById('budget-tx-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
         function addBudgetTransaction() {
             const date = document.getElementById('new-budget-date').value;
             const category = document.getElementById('new-budget-category').value;
@@ -4268,6 +4311,7 @@
             document.getElementById('new-budget-amount').value = '';
             saveData();
             renderBudget();
+            closeNewTransactionOverlay();
         }
 
         function deleteBudgetTransaction(id) {
@@ -4450,7 +4494,7 @@
                 return `
                 <tr class="${isLogged ? 'opacity-40' : ''}">
                     <td class="px-1.5 py-1.5 truncate">
-                        <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="w-full bg-transparent text-xs text-slate-700 ${struckClass} focus:outline-none focus:border-b focus:border-indigo-300">
+                        <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="budget-text-input w-full bg-transparent text-xs text-slate-700 ${struckClass} focus:outline-none focus:border-b focus:border-indigo-300">
                     </td>
                     <td class="px-1 py-1.5">
                         <div class="flex items-center justify-end gap-0.5">
@@ -4620,10 +4664,10 @@
                         return `
                         <tr class="${isNewDay ? 'border-t-2 border-slate-500' : ''}">
                             <td class="py-2 px-1.5 whitespace-nowrap">${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</td>
-                            <td class="py-2 px-1.5">${budgetCategoryTag(t.category)}</td>
-                            <td class="py-2 px-1.5 text-slate-500">${t.label || '—'}</td>
-                            <td class="py-2 px-1.5 text-right font-semibold ${t.type === 'revenu' ? 'text-emerald-600' : 'text-rose-500'}">${t.type === 'revenu' ? '+' : '-'}${t.amount.toFixed(2)} €</td>
-                            <td class="py-2 px-1.5 text-right">
+                            <td class="py-2 px-1.5 truncate">${budgetCategoryTag(t.category)}</td>
+                            <td class="py-2 px-1.5 text-slate-500 truncate">${t.label || '—'}</td>
+                            <td class="py-2 px-1.5 text-right font-semibold whitespace-nowrap ${t.type === 'revenu' ? 'text-emerald-600' : 'text-rose-500'}">${t.type === 'revenu' ? '+' : '-'}${t.amount.toFixed(2)} €</td>
+                            <td class="py-2 px-1.5 text-right whitespace-nowrap">
                                 <button onclick="deleteBudgetTransaction(${t.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs">🗑️</button>
                             </td>
                         </tr>
