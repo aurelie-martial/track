@@ -858,7 +858,6 @@
                                 <thead>
                                     <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                                         <th class="py-2 px-1.5">Date</th>
-                                        <th class="py-2 px-1.5">Type</th>
                                         <th class="py-2 px-1.5">Catégorie</th>
                                         <th class="py-2 px-1.5">Libellé</th>
                                         <th class="py-2 px-1.5 text-right">Montant</th>
@@ -4355,12 +4354,40 @@
                 id: Date.now(),
                 date: formatDateISO(new Date()),
                 type: 'depense',
-                category: line.label || 'Fixe',
+                category: 'Fixe',
                 label: line.label || '',
                 amount
             });
             saveData();
             renderBudget();
+        }
+
+        // Palette de couleurs pour les tags de catégories du Budget (indépendante de celle du Plan
+        // 2026). "Fixe" a une couleur grise réservée pour bien la distinguer des vraies catégories.
+        const budgetCategoryColorPalette = [
+            { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200' },
+            { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' },
+            { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' },
+            { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200' },
+            { bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-200' },
+            { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-200' },
+            { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200' },
+            { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' }
+        ];
+        const budgetFixeTagColor = { bg: 'bg-slate-200', text: 'text-slate-600', border: 'border-slate-300' };
+
+        function getBudgetCategoryColor(categoryName) {
+            if (categoryName === 'Fixe') return budgetFixeTagColor;
+            const cats = window.budgetCategories.depense || [];
+            const index = cats.indexOf(categoryName);
+            const colorIndex = index >= 0 ? index % budgetCategoryColorPalette.length : 0;
+            return budgetCategoryColorPalette[colorIndex];
+        }
+
+        // Tag coloré pour une catégorie (historique des transactions + gestion des catégories).
+        function budgetCategoryTag(categoryName) {
+            const c = getBudgetCategoryColor(categoryName);
+            return `<span class="inline-flex items-center ${c.bg} ${c.text} border ${c.border} rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap">${categoryName || '—'}</span>`;
         }
 
         // Champ montant avec le signe € affiché juste après, collé au chiffre. Champ texte (pas
@@ -4402,14 +4429,16 @@
                         <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="w-full bg-transparent text-sm text-slate-700 focus:outline-none focus:border-b focus:border-indigo-300">
                     </td>
                     <td class="px-1 py-1.5">
-                        ${budgetEuroInput(l.prevu, `updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)`)}
+                        <div class="flex items-center justify-end gap-1">
+                            ${section === 'fixe' ? `<button onclick="addFixeLineAsTransaction(${l.id})" class="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-slate-200 hover:bg-emerald-200 text-slate-500 hover:text-emerald-700 text-xs font-bold leading-none transition-colors" title="Ajouter comme transaction du jour">+</button>` : ''}
+                            ${budgetEuroInput(l.prevu, `updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)`)}
+                        </div>
                     </td>
                     ${showReel ? `
                     <td class="px-1 py-1.5">
                         ${budgetEuroInput(l.reel, `updateBudgetPlanLine('${section}', ${l.id}, 'reel', this.value)`)}
                     </td>` : ''}
                     <td class="px-0.5 py-1.5 text-center whitespace-nowrap">
-                        ${section === 'fixe' ? `<button onclick="addFixeLineAsTransaction(${l.id})" class="text-slate-300 hover:text-emerald-500 text-xs" title="Ajouter comme transaction du jour">➕</button>` : ''}
                         <button onclick="deleteBudgetPlanLine('${section}', ${l.id})" class="text-slate-300 hover:text-rose-500 text-xs">✕</button>
                     </td>
                 </tr>
@@ -4436,7 +4465,16 @@
             const totalFixePrevu = budgetPlanSectionTotal('fixe', 'prevu');
             const totalVariablePrevu = budgetPlanSectionTotal('variable', 'prevu');
             const epargnePrevu = window.budgetPlan.epargne.prevu || 0;
-            const restant = (r.salaire || 0) - (r.decouvert || 0) - totalFixePrevu - totalVariablePrevu - epargnePrevu;
+            const restantAvant = (r.salaire || 0) - (r.decouvert || 0) - totalFixePrevu - totalVariablePrevu - epargnePrevu;
+
+            // Transactions du mois en cours, hors charges "Fixe" (déjà comptées dans "Total fixe"
+            // ci-dessus) : sert à afficher l'impact réel des transactions saisies à la main.
+            const monthDateForPlan = getBudgetMonthDate();
+            const monthKeyForPlan = getBudgetMonthKey(monthDateForPlan);
+            const nonFixeTransactionsTotal = window.budgetTransactions
+                .filter(t => t.date && t.date.startsWith(monthKeyForPlan) && t.category !== 'Fixe')
+                .reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
+            const restantApres = restantAvant - nonFixeTransactionsTotal;
 
             const editableRow = (label, field, value) => `
                 <tr class="border-b border-slate-100">
@@ -4449,7 +4487,7 @@
             const readonlyRow = (label, value) => `
                 <tr class="border-b border-slate-100">
                     <td class="px-4 py-2 text-slate-600">- ${label}</td>
-                    <td class="px-4 py-2 text-right font-semibold text-slate-500">${formatEuro(value)}</td>
+                    <td class="px-4 py-2 text-right font-semibold text-slate-500">-${formatEuro(value)}</td>
                 </tr>
             `;
 
@@ -4468,8 +4506,16 @@
                 ${readonlyRow('Total variable', totalVariablePrevu)}
                 ${readonlyRow('Epargne', epargnePrevu)}
                 <tr class="bg-slate-800 text-white font-bold">
-                    <td class="px-4 py-2">Restant total</td>
-                    <td class="px-4 py-2 text-right">${formatEuro(restant)}</td>
+                    <td class="px-4 py-2">Restant total avant transactions</td>
+                    <td class="px-4 py-2 text-right">${formatEuro(restantAvant)}</td>
+                </tr>
+                <tr class="border-b border-slate-100">
+                    <td class="px-4 py-2 text-slate-600">- Transactions (hors Fixe)</td>
+                    <td class="px-4 py-2 text-right font-semibold text-slate-500">-${formatEuro(nonFixeTransactionsTotal)}</td>
+                </tr>
+                <tr class="bg-slate-800 text-white font-bold">
+                    <td class="px-4 py-2">Restant total après transactions</td>
+                    <td class="px-4 py-2 text-right">${formatEuro(restantApres)}</td>
                 </tr>
             `;
 
@@ -4522,30 +4568,29 @@
             // Listes de catégories (gestion)
             const depenseListEl = document.getElementById('budget-cat-list-depense');
             if (depenseListEl) {
-                depenseListEl.innerHTML = depenseCategories.map(c => `
-                    <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-600 border border-rose-200 rounded-full px-2.5 py-1 text-xs font-medium">
+                depenseListEl.innerHTML = depenseCategories.map(c => {
+                    const col = getBudgetCategoryColor(c);
+                    return `
+                    <span class="inline-flex items-center gap-1 ${col.bg} ${col.text} border ${col.border} rounded-full px-2.5 py-1 text-xs font-medium">
                         ${c}
-                        <button onclick="deleteBudgetCategory('depense', '${c.replace(/'/g, "\\'")}')" class="text-rose-400 hover:text-rose-700 ml-0.5">✕</button>
+                        <button onclick="deleteBudgetCategory('depense', '${c.replace(/'/g, "\\'")}')" class="${col.text} hover:opacity-70 ml-0.5">✕</button>
                     </span>
-                `).join('');
+                `;
+                }).join('');
             }
 
-            // Historique des transactions du mois, plus récentes en premier
+            // Historique des transactions du mois, les plus récemment ajoutées en premier
+            // (tri par date, puis par id de création en cas d'égalité de date).
             const tbody = document.getElementById('budget-transactions-tbody');
             if (tbody) {
-                const sorted = [...monthTransactions].sort((a, b) => b.date.localeCompare(a.date));
+                const sorted = [...monthTransactions].sort((a, b) => b.date.localeCompare(a.date) || (b.id - a.id));
                 if (sorted.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-400">Aucune transaction ce mois-ci.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">Aucune transaction ce mois-ci.</td></tr>`;
                 } else {
                     tbody.innerHTML = sorted.map(t => `
                         <tr>
                             <td class="py-2 px-1.5 whitespace-nowrap">${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
-                            <td class="py-2 px-1.5">
-                                <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${t.type === 'revenu' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-500'}">
-                                    ${t.type === 'revenu' ? 'Revenu' : 'Dépense'}
-                                </span>
-                            </td>
-                            <td class="py-2 px-1.5">${t.category}</td>
+                            <td class="py-2 px-1.5">${budgetCategoryTag(t.category)}</td>
                             <td class="py-2 px-1.5 text-slate-500">${t.label || '—'}</td>
                             <td class="py-2 px-1.5 text-right font-semibold ${t.type === 'revenu' ? 'text-emerald-600' : 'text-rose-500'}">${t.type === 'revenu' ? '+' : '-'}${t.amount.toFixed(2)} €</td>
                             <td class="py-2 px-1.5 text-right">
