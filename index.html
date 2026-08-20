@@ -121,6 +121,7 @@
         }
         .budget-amount-input {
             -moz-appearance: textfield;
+            font-size: 12px !important;
         }
     </style>
 </head>
@@ -741,15 +742,15 @@
                 </div>
             </div>
 
-            <!-- Budget : Plan (Ressources + Fixe/Variable/Épargne) à gauche, Transactions à droite -->
-            <div class="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-6 items-start">
+            <!-- Budget : Plan (Résumé + Fixe/Variable/Épargne) à gauche, Transactions à droite -->
+            <div class="grid grid-cols-1 lg:grid-cols-[1.8fr_3.2fr] gap-6 items-start">
 
                 <!-- COLONNE GAUCHE : Plan budgétaire (saisie manuelle, façon tableur) -->
                 <div class="space-y-6 min-w-0">
-                    <!-- Ressources -->
+                    <!-- Résumé -->
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div class="px-4 py-3 bg-slate-800 text-white font-bold text-center text-sm uppercase tracking-wide">Ressources</div>
-                        <table class="w-full text-sm">
+                        <div class="px-4 py-3 bg-slate-800 text-white font-bold text-center text-xs uppercase tracking-wide">Résumé</div>
+                        <table class="w-full text-xs">
                             <tbody id="budget-plan-ressources-tbody"></tbody>
                         </table>
                     </div>
@@ -761,12 +762,12 @@
                             <span id="budget-plan-fixe-percent" class="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">0% du salaire</span>
                         </div>
                         <div class="p-3">
-                            <table class="w-full text-sm border-collapse table-fixed">
+                            <table class="w-full text-xs border-collapse table-fixed">
                                 <thead>
                                     <tr>
                                         <th class="bg-sky-50 text-sky-700 text-left px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
-                                        <th class="bg-sky-50 text-sky-700 text-right px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide w-20">Montant</th>
-                                        <th class="bg-sky-50 w-10"></th>
+                                        <th class="bg-sky-50 text-sky-700 text-right px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide w-24">Montant</th>
+                                        <th class="bg-sky-50 w-6"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="budget-plan-fixe-tbody" class="divide-y divide-sky-100"></tbody>
@@ -782,7 +783,7 @@
                             <span id="budget-plan-variable-percent" class="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">0% du salaire</span>
                         </div>
                         <div class="p-3">
-                            <table class="w-full text-sm border-collapse table-fixed">
+                            <table class="w-full text-xs border-collapse table-fixed">
                                 <thead>
                                     <tr>
                                         <th class="bg-amber-50 text-amber-700 text-left px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
@@ -799,11 +800,12 @@
 
                     <!-- Épargne -->
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div class="px-3 py-2 bg-emerald-500 text-white">
+                        <div class="px-3 py-2 bg-emerald-500 text-white flex items-center justify-between">
                             <span class="text-xs font-bold uppercase tracking-wide">Épargne</span>
+                            <span id="budget-plan-epargne-percent" class="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">0% du salaire</span>
                         </div>
                         <div class="p-3">
-                            <table class="w-full text-sm border-collapse table-fixed">
+                            <table class="w-full text-xs border-collapse table-fixed">
                                 <thead>
                                     <tr>
                                         <th class="bg-emerald-50 text-emerald-700 text-left px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
@@ -819,29 +821,29 @@
 
                 <!-- COLONNE DROITE : Transactions -->
                 <div class="space-y-6">
-                    <!-- Formulaire nouvelle transaction -->
-                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-                        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <!-- Formulaire nouvelle transaction (pas de bloc blanc, champs alignés sur une ligne) -->
+                    <div class="pb-2">
+                        <h3 class="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
                             <span class="w-2 h-5 bg-indigo-400 rounded-xs inline-block"></span> Nouvelle transaction
                         </h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 items-end">
-                            <div>
+                        <div class="flex flex-wrap items-end gap-2">
+                            <div class="flex-1 min-w-[110px]">
                                 <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
-                                <input type="date" id="new-budget-date" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                                <input type="date" id="new-budget-date" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
                             </div>
-                            <div>
+                            <div class="flex-1 min-w-[110px]">
                                 <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Catégorie</label>
-                                <select id="new-budget-category" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-400"></select>
+                                <select id="new-budget-category" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-indigo-400"></select>
                             </div>
-                            <div class="col-span-2 sm:col-span-1">
+                            <div class="flex-[2] min-w-[140px]">
                                 <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Libellé</label>
-                                <input type="text" id="new-budget-label" placeholder="Ex: Courses Carrefour" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                                <input type="text" id="new-budget-label" placeholder="Ex: Courses Carrefour" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
                             </div>
-                            <div>
+                            <div class="flex-1 min-w-[90px]">
                                 <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Montant (€)</label>
-                                <input type="text" inputmode="decimal" id="new-budget-amount" placeholder="50" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                                <input type="text" inputmode="decimal" id="new-budget-amount" placeholder="50" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
                             </div>
-                            <button onclick="addBudgetTransaction()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <button onclick="addBudgetTransaction()" class="shrink-0 bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-xs flex items-center justify-center gap-1.5 whitespace-nowrap">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                                 Ajouter
                             </button>
@@ -4356,7 +4358,8 @@
                 type: 'depense',
                 category: 'Fixe',
                 label: line.label || '',
-                amount
+                amount,
+                fixeLineId: line.id
             });
             saveData();
             renderBudget();
@@ -4396,7 +4399,7 @@
         function budgetEuroInput(value, onchange, width) {
             return `
                 <div class="flex items-center justify-end gap-0.5">
-                    <input type="text" inputmode="decimal" value="${formatAmountForInput(value)}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
+                    <input type="text" inputmode="decimal" value="${formatAmountForInput(value)}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} bg-transparent text-xs text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
                     <span class="text-slate-400 text-xs">€</span>
                 </div>
             `;
@@ -4423,14 +4426,26 @@
             const percentEl = document.getElementById(`budget-plan-${section}-percent`);
             if (percentEl) percentEl.innerText = `${percent}% du salaire`;
 
-            const rowsHtml = displayLines.map(l => `
-                <tr>
+            // Charges fixes déjà pointées ce mois-ci (ajoutées via le bouton "+") : on grise la
+            // ligne pour indiquer que c'est déjà fait, sans empêcher un nouvel ajout si besoin.
+            const monthDateForFixe = getBudgetMonthDate();
+            const monthKeyForFixe = getBudgetMonthKey(monthDateForFixe);
+            const loggedFixeLineIds = new Set(
+                window.budgetTransactions
+                    .filter(t => t.date && t.date.startsWith(monthKeyForFixe) && t.category === 'Fixe' && t.fixeLineId)
+                    .map(t => t.fixeLineId)
+            );
+
+            const rowsHtml = displayLines.map(l => {
+                const isLogged = section === 'fixe' && loggedFixeLineIds.has(l.id);
+                return `
+                <tr class="${isLogged ? 'opacity-40' : ''}">
                     <td class="px-1.5 py-1.5 truncate">
-                        <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="w-full bg-transparent text-sm text-slate-700 focus:outline-none focus:border-b focus:border-indigo-300">
+                        <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="w-full bg-transparent text-xs text-slate-700 focus:outline-none focus:border-b focus:border-indigo-300">
                     </td>
                     <td class="px-1 py-1.5">
-                        <div class="flex items-center justify-end gap-1">
-                            ${section === 'fixe' ? `<button onclick="addFixeLineAsTransaction(${l.id})" class="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-slate-200 hover:bg-emerald-200 text-slate-500 hover:text-emerald-700 text-xs font-bold leading-none transition-colors" title="Ajouter comme transaction du jour">+</button>` : ''}
+                        <div class="flex items-center justify-end gap-0.5">
+                            ${section === 'fixe' ? `<button onclick="addFixeLineAsTransaction(${l.id})" class="shrink-0 w-4 h-4 flex items-center justify-center rounded-full bg-slate-200 hover:bg-emerald-200 text-slate-500 hover:text-emerald-700 text-[10px] font-bold leading-none transition-colors" title="Ajouter comme transaction du jour">+</button>` : ''}
                             ${budgetEuroInput(l.prevu, `updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)`)}
                         </div>
                     </td>
@@ -4442,7 +4457,8 @@
                         <button onclick="deleteBudgetPlanLine('${section}', ${l.id})" class="text-slate-300 hover:text-rose-500 text-xs">✕</button>
                     </td>
                 </tr>
-            `).join('');
+            `;
+            }).join('');
 
             tbody.innerHTML = rowsHtml + `
                 <tr class="bg-slate-800 text-white font-bold">
@@ -4478,7 +4494,7 @@
 
             const editableRow = (label, field, value) => `
                 <tr class="border-b border-slate-100">
-                    <td class="px-4 py-2 font-semibold text-slate-700">${label}</td>
+                    <td class="px-4 py-2 text-slate-600">${label}</td>
                     <td class="px-4 py-2">
                         ${budgetEuroInput(value, `updateBudgetPlanRessource('${field}', this.value)`, 'w-16')}
                     </td>
@@ -4486,8 +4502,8 @@
             `;
             const readonlyRow = (label, value) => `
                 <tr class="border-b border-slate-100">
-                    <td class="px-4 py-2 text-slate-600">- ${label}</td>
-                    <td class="px-4 py-2 text-right font-semibold text-slate-500">-${formatEuro(value)}</td>
+                    <td class="px-4 py-2 text-slate-600">${label}</td>
+                    <td class="px-4 py-2 text-right text-slate-700">-${formatEuro(value)}</td>
                 </tr>
             `;
 
@@ -4510,8 +4526,8 @@
                     <td class="px-4 py-2 text-right">${formatEuro(restantAvant)}</td>
                 </tr>
                 <tr class="border-b border-slate-100">
-                    <td class="px-4 py-2 text-slate-600">- Transactions (hors Fixe)</td>
-                    <td class="px-4 py-2 text-right font-semibold text-slate-500">-${formatEuro(nonFixeTransactionsTotal)}</td>
+                    <td class="px-4 py-2 text-slate-600">Transactions (hors Fixe)</td>
+                    <td class="px-4 py-2 text-right text-slate-700">-${formatEuro(nonFixeTransactionsTotal)}</td>
                 </tr>
                 <tr class="bg-slate-800 text-white font-bold">
                     <td class="px-4 py-2">Restant total après transactions</td>
@@ -4522,11 +4538,14 @@
             renderBudgetPlanTable('fixe');
             renderBudgetPlanTable('variable');
 
-            // Épargne : un seul chiffre global (pas de lignes détaillées, pas d'ajout/suppression de ligne)
+            // Épargne : un seul chiffre global (pas de lignes détaillées, pas d'ajout/suppression de ligne).
+            // Le pourcentage du salaire est affiché dans le badge d'en-tête, comme pour Fixe/Variable.
             const epargneTbody = document.getElementById('budget-plan-epargne-tbody');
             if (epargneTbody) {
                 const salaire = r.salaire || 0;
                 const percent = salaire > 0 ? Math.round((epargnePrevu / salaire) * 100) : 0;
+                const epargnePercentEl = document.getElementById('budget-plan-epargne-percent');
+                if (epargnePercentEl) epargnePercentEl.innerText = `${percent}% du salaire`;
                 epargneTbody.innerHTML = `
                     <tr>
                         <td class="px-2 py-1.5 text-slate-700">Mensuel</td>
@@ -4541,11 +4560,6 @@
                         <td class="px-2 py-1.5 text-xs uppercase">Total</td>
                         <td class="px-2 py-1.5 text-right">${formatEuro(epargnePrevu)}</td>
                         <td class="px-2 py-1.5 text-right">${formatEuro(window.budgetPlan.epargne.reel || 0)}</td>
-                    </tr>
-                    <tr class="bg-slate-50 text-slate-400 text-xs">
-                        <td class="px-2 py-1"></td>
-                        <td class="px-2 py-1 text-right">${percent}%</td>
-                        <td class="px-2 py-1"></td>
                     </tr>
                 `;
             }
@@ -4589,7 +4603,7 @@
                 } else {
                     tbody.innerHTML = sorted.map(t => `
                         <tr>
-                            <td class="py-2 px-1.5 whitespace-nowrap">${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR')}</td>
+                            <td class="py-2 px-1.5 whitespace-nowrap">${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</td>
                             <td class="py-2 px-1.5">${budgetCategoryTag(t.category)}</td>
                             <td class="py-2 px-1.5 text-slate-500">${t.label || '—'}</td>
                             <td class="py-2 px-1.5 text-right font-semibold ${t.type === 'revenu' ? 'text-emerald-600' : 'text-rose-500'}">${t.type === 'revenu' ? '+' : '-'}${t.amount.toFixed(2)} €</td>
