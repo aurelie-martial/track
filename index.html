@@ -522,22 +522,6 @@
 
             <!-- SOUS-ONGLET: SPORT -->
             <div id="subtab-sport" class="subtab-content space-y-6">
-            <!-- Connexion balance Withings -->
-            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">⚖️ Balance Withings</h3>
-                    <p id="withings-status" class="text-xs mt-1 text-slate-400">Non connecté</p>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <button onclick="connectWithings()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-xl text-xs sm:text-sm transition-colors whitespace-nowrap">
-                        Connecter mon compte Withings
-                    </button>
-                    <button id="btn-withings-sync" onclick="syncWithingsNow()" class="bg-sky-500 hover:bg-sky-600 text-white font-medium px-4 py-2 rounded-xl text-xs sm:text-sm transition-colors whitespace-nowrap">
-                        🔄 Synchroniser maintenant
-                    </button>
-                </div>
-            </div>
-
             <!-- Sélecteur de période partagé par les 2 graphiques Poids / Composition ci-dessous -->
             <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-wrap items-center justify-between gap-2">
                 <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
@@ -550,6 +534,14 @@
                     <span id="sport-period-label" class="text-[11px] font-semibold text-indigo-700 px-1 min-w-[90px] text-center truncate"></span>
                     <button onclick="navigateSportChartPeriod(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">→</button>
                 </div>
+            </div>
+
+            <!-- Statut de connexion Withings + synchro rapide (bouton "Connecter" déplacé tout en bas de page) -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between gap-2">
+                <p id="withings-status" class="text-xs text-slate-400">Non connecté</p>
+                <button id="btn-withings-sync" onclick="syncWithingsNow()" class="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-xl transition-colors shrink-0" title="Synchroniser maintenant">
+                    🔄
+                </button>
             </div>
 
             <!-- Graphiques : les 3 blocs côte à côte sur desktop -->
@@ -675,6 +667,13 @@
                         </table>
                     </div>
                 </div>
+            </div>
+
+            <!-- Connexion Withings (déplacé tout en bas de la page) -->
+            <div class="flex justify-center pt-2 pb-4">
+                <button onclick="connectWithings()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-xl text-xs sm:text-sm transition-colors whitespace-nowrap">
+                    Connecter mon compte Withings
+                </button>
             </div>
             </div>
             <!-- /SOUS-ONGLET: SPORT -->
