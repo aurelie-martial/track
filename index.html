@@ -766,7 +766,7 @@
                                     <tr>
                                         <th class="bg-sky-50 text-sky-700 text-left px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
                                         <th class="bg-sky-50 text-sky-700 text-right px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide w-20">Montant</th>
-                                        <th class="bg-sky-50 w-5"></th>
+                                        <th class="bg-sky-50 w-10"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="budget-plan-fixe-tbody" class="divide-y divide-sky-100"></tbody>
@@ -830,13 +830,6 @@
                                 <input type="date" id="new-budget-date" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
                             </div>
                             <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Type</label>
-                                <select id="new-budget-type" onchange="onBudgetTypeChange()" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-400">
-                                    <option value="depense">Dépense</option>
-                                    <option value="revenu">Revenu</option>
-                                </select>
-                            </div>
-                            <div>
                                 <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Catégorie</label>
                                 <select id="new-budget-category" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-indigo-400"></select>
                             </div>
@@ -846,7 +839,7 @@
                             </div>
                             <div>
                                 <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Montant (€)</label>
-                                <input type="number" step="0.01" id="new-budget-amount" placeholder="50" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                                <input type="text" inputmode="decimal" id="new-budget-amount" placeholder="50" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
                             </div>
                             <button onclick="addBudgetTransaction()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
@@ -880,24 +873,13 @@
                     <!-- Gestion des catégories -->
                     <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                         <h3 class="text-sm font-bold text-slate-800 mb-4">Catégories</h3>
-                        <div class="space-y-5">
-                            <div>
-                                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Dépenses</p>
-                                <div class="flex flex-wrap gap-2 mb-2">
-                                    <input type="text" id="new-budget-cat-depense" placeholder="Nouvelle catégorie..." class="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-400">
-                                    <input type="number" step="1" id="new-budget-cat-depense-target" placeholder="Budget €/mois" class="w-28 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-400">
-                                    <button onclick="addBudgetCategory('depense')" class="bg-rose-400 hover:bg-rose-500 text-white font-medium px-3 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">+ Ajouter</button>
-                                </div>
-                                <div id="budget-cat-list-depense" class="flex flex-wrap gap-1.5"></div>
+                        <div>
+                            <div class="flex flex-wrap gap-2 mb-2">
+                                <input type="text" id="new-budget-cat-depense" placeholder="Nouvelle catégorie..." class="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-400">
+                                <input type="text" inputmode="decimal" id="new-budget-cat-depense-target" placeholder="Budget €/mois" class="w-28 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-400">
+                                <button onclick="addBudgetCategory('depense')" class="bg-rose-400 hover:bg-rose-500 text-white font-medium px-3 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">+ Ajouter</button>
                             </div>
-                            <div>
-                                <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Revenus</p>
-                                <div class="flex flex-wrap gap-2 mb-2">
-                                    <input type="text" id="new-budget-cat-revenu" placeholder="Nouvelle catégorie..." class="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
-                                    <button onclick="addBudgetCategory('revenu')" class="bg-emerald-400 hover:bg-emerald-500 text-white font-medium px-3 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">+ Ajouter</button>
-                                </div>
-                                <div id="budget-cat-list-revenu" class="flex flex-wrap gap-1.5"></div>
-                            </div>
+                            <div id="budget-cat-list-depense" class="flex flex-wrap gap-1.5"></div>
                         </div>
                     </div>
                 </div>
@@ -4203,6 +4185,19 @@
             return Number.isInteger(rounded) ? `${rounded} €` : `${rounded.toFixed(2)} €`;
         }
 
+        // Lit un montant saisi à la main, en acceptant la virgule ou le point comme séparateur décimal.
+        function parseAmount(str) {
+            const num = parseFloat(String(str).trim().replace(',', '.').replace(/\s/g, ''));
+            return isNaN(num) ? 0 : num;
+        }
+
+        // Affiche toujours 2 décimales avec la virgule française, pour ne jamais perdre un "13,60"
+        // qui redeviendrait "13,6" une fois réaffiché depuis le nombre stocké.
+        function formatAmountForInput(n) {
+            const num = parseFloat(n) || 0;
+            return num.toFixed(2).replace('.', ',');
+        }
+
         function getBudgetMonthDate() {
             const base = new Date();
             base.setDate(1);
@@ -4224,31 +4219,27 @@
             renderBudget();
         }
 
+        // Les transactions ne servent plus qu'à suivre les dépenses (le salaire est saisi une
+        // fois pour toutes dans "Ressources") : plus de sélecteur Type, tout est une dépense.
         function refreshBudgetCategoryOptions() {
-            const typeEl = document.getElementById('new-budget-type');
             const catEl = document.getElementById('new-budget-category');
-            if (!typeEl || !catEl) return;
-            const cats = window.budgetCategories[typeEl.value] || [];
+            if (!catEl) return;
+            const cats = window.budgetCategories.depense || [];
             catEl.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
-        }
-
-        function onBudgetTypeChange() {
-            refreshBudgetCategoryOptions();
         }
 
         function addBudgetTransaction() {
             const date = document.getElementById('new-budget-date').value;
-            const type = document.getElementById('new-budget-type').value;
             const category = document.getElementById('new-budget-category').value;
             const label = document.getElementById('new-budget-label').value.trim();
-            const amount = parseFloat(document.getElementById('new-budget-amount').value);
+            const amount = parseAmount(document.getElementById('new-budget-amount').value);
 
-            if (!date || !category || isNaN(amount) || amount <= 0) {
+            if (!date || !category || amount <= 0) {
                 alert("Merci de renseigner au moins la date, la catégorie et un montant valide.");
                 return;
             }
 
-            window.budgetTransactions.push({ id: Date.now(), date, type, category, label, amount });
+            window.budgetTransactions.push({ id: Date.now(), date, type: 'depense', category, label, amount });
             document.getElementById('new-budget-label').value = '';
             document.getElementById('new-budget-amount').value = '';
             saveData();
@@ -4274,8 +4265,7 @@
 
             if (type === 'depense') {
                 const targetInput = document.getElementById('new-budget-cat-depense-target');
-                const target = parseFloat(targetInput.value);
-                window.budgetTargets[name] = isNaN(target) ? 0 : target;
+                window.budgetTargets[name] = parseAmount(targetInput.value);
                 targetInput.value = '';
             }
 
@@ -4313,8 +4303,7 @@
         }
 
         function updateBudgetPlanRessource(field, value) {
-            const num = parseFloat(value);
-            window.budgetPlan.ressources[field] = isNaN(num) ? 0 : num;
+            window.budgetPlan.ressources[field] = parseAmount(value);
             saveData();
             renderBudgetPlan();
         }
@@ -4340,25 +4329,47 @@
             if (field === 'label') {
                 line.label = value;
             } else {
-                const num = parseFloat(value);
-                line[field] = isNaN(num) ? 0 : num;
+                line[field] = parseAmount(value);
             }
             saveData();
             renderBudgetPlan();
         }
 
         function updateBudgetPlanEpargne(field, value) {
-            const num = parseFloat(value);
-            window.budgetPlan.epargne[field] = isNaN(num) ? 0 : num;
+            window.budgetPlan.epargne[field] = parseAmount(value);
             saveData();
             renderBudgetPlan();
         }
 
-        // Champ montant avec le signe € affiché juste après, collé au chiffre.
+        // Ajoute une charge fixe telle quelle dans l'historique des transactions (date du jour),
+        // pour la pointer dès qu'elle est prélevée sans avoir à ressaisir le libellé et le montant.
+        function addFixeLineAsTransaction(id) {
+            const line = (window.budgetPlan.fixe || []).find(l => l.id === id);
+            if (!line) return;
+            const amount = parseFloat(line.prevu) || 0;
+            if (amount <= 0) {
+                alert("Renseigne d'abord un montant pour cette charge fixe.");
+                return;
+            }
+            window.budgetTransactions.push({
+                id: Date.now(),
+                date: formatDateISO(new Date()),
+                type: 'depense',
+                category: line.label || 'Fixe',
+                label: line.label || '',
+                amount
+            });
+            saveData();
+            renderBudget();
+        }
+
+        // Champ montant avec le signe € affiché juste après, collé au chiffre. Champ texte (pas
+        // number) pour ne jamais perdre un zéro décimal saisi (ex: 13,60) et ne pas afficher les
+        // flèches d'incrémentation natives.
         function budgetEuroInput(value, onchange, width) {
             return `
                 <div class="flex items-center justify-end gap-0.5">
-                    <input type="number" step="1" value="${value}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
+                    <input type="text" inputmode="decimal" value="${formatAmountForInput(value)}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
                     <span class="text-slate-400 text-xs">€</span>
                 </div>
             `;
@@ -4397,7 +4408,8 @@
                     <td class="px-1 py-1.5">
                         ${budgetEuroInput(l.reel, `updateBudgetPlanLine('${section}', ${l.id}, 'reel', this.value)`)}
                     </td>` : ''}
-                    <td class="px-0.5 py-1.5 text-center">
+                    <td class="px-0.5 py-1.5 text-center whitespace-nowrap">
+                        ${section === 'fixe' ? `<button onclick="addFixeLineAsTransaction(${l.id})" class="text-slate-300 hover:text-emerald-500 text-xs" title="Ajouter comme transaction du jour">➕</button>` : ''}
                         <button onclick="deleteBudgetPlanLine('${section}', ${l.id})" class="text-slate-300 hover:text-rose-500 text-xs">✕</button>
                     </td>
                 </tr>
@@ -4446,7 +4458,7 @@
                     <td class="px-4 py-2 font-bold">SALAIRE</td>
                     <td class="px-4 py-2">
                         <div class="flex items-center justify-end gap-0.5">
-                            <input type="number" step="1" value="${r.salaire}" onchange="updateBudgetPlanRessource('salaire', this.value)" class="budget-amount-input w-16 bg-transparent text-right font-bold text-white focus:outline-none">
+                            <input type="text" inputmode="decimal" value="${formatAmountForInput(r.salaire)}" onchange="updateBudgetPlanRessource('salaire', this.value)" class="budget-amount-input w-16 bg-transparent text-right font-bold text-white focus:outline-none">
                             <span class="text-xs text-white/70">€</span>
                         </div>
                     </td>
@@ -4517,16 +4529,6 @@
                     </span>
                 `).join('');
             }
-            const revenuListEl = document.getElementById('budget-cat-list-revenu');
-            if (revenuListEl) {
-                const revenuCategories = window.budgetCategories.revenu || [];
-                revenuListEl.innerHTML = revenuCategories.map(c => `
-                    <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full px-2.5 py-1 text-xs font-medium">
-                        ${c}
-                        <button onclick="deleteBudgetCategory('revenu', '${c.replace(/'/g, "\\'")}')" class="text-emerald-400 hover:text-emerald-700 ml-0.5">✕</button>
-                    </span>
-                `).join('');
-            }
 
             // Historique des transactions du mois, plus récentes en premier
             const tbody = document.getElementById('budget-transactions-tbody');
@@ -4568,7 +4570,7 @@
             if (activityDateEl) activityDateEl.value = todayISO;
             const budgetDateEl = document.getElementById('new-budget-date');
             if (budgetDateEl) budgetDateEl.value = todayISO;
-            onBudgetTypeChange();
+            refreshBudgetCategoryOptions();
         }
     </script>
 </body>
