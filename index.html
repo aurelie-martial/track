@@ -670,9 +670,6 @@
             <div id="subtab-recipes" class="subtab-content active space-y-8">
             <div class="flex justify-end gap-2 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
                 <div class="flex flex-wrap gap-2">
-                    <button id="btn-recompress-images" onclick="recompressAllRecipeImages()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
-                        🗜️ Recompresser les photos
-                    </button>
                     <button onclick="manageRecipeCategories()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1.5">
                         🏷️ Gérer les Catégories
                     </button>
@@ -1443,7 +1440,7 @@
             try {
                 const sizeKB = new Blob([JSON.stringify(payload)]).size / 1024;
                 if (sizeKB > 950) {
-                    alert(`⚠️ Sauvegarde bloquée : tes données pèsent environ ${Math.round(sizeKB)} Ko, la limite Firestore est de 1024 Ko.\n\nUtilise le bouton "🗜️ Recompresser les photos" dans l'onglet Santé > Recette pour réduire le poids de tes photos existantes.`);
+                    alert(`⚠️ Sauvegarde bloquée : tes données pèsent environ ${Math.round(sizeKB)} Ko, la limite Firestore est de 1024 Ko.\n\nSupprime ou remplace quelques photos de recettes trop lourdes pour libérer de la place.`);
                     return;
                 }
             } catch (e) {
@@ -1606,6 +1603,10 @@
                 if (sportSubtab && sportSubtab.classList.contains('active') && typeof renderSportCharts === 'function') {
                     requestAnimationFrame(renderSportCharts);
                 }
+                const recipesSubtab = document.getElementById('subtab-recipes');
+                if (recipesSubtab && recipesSubtab.classList.contains('active') && typeof scrollMealPlannerToToday === 'function') {
+                    requestAnimationFrame(scrollMealPlannerToToday);
+                }
             }
 
             if (tabId === 'budget' && typeof renderBudget === 'function') {
@@ -1648,6 +1649,10 @@
 
             if (subtabId === 'sport' && typeof renderSportCharts === 'function') {
                 requestAnimationFrame(renderSportCharts);
+            }
+
+            if (subtabId === 'recipes' && typeof scrollMealPlannerToToday === 'function') {
+                requestAnimationFrame(scrollMealPlannerToToday);
             }
         }
 
@@ -2957,6 +2962,21 @@
             const today = new Date();
             const todayStr = formatDateISO(today);
 
+            // Génère le bloc glissable d'un créneau (déjeuner/dîner) : le petit ⠿ n'apparaît que si
+            // la case est remplie, donc on ne peut déplacer que du contenu déjà saisi (une case vide
+            // reste un simple champ de saisie, mais reste une cible de dépose valide).
+            const mealSlotHtml = (dateStr, field, icon, label, value) => `
+                <div class="meal-slot-container" data-date="${dateStr}" data-field="${field}">
+                    <div class="meal-slot-item">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <label class="block text-[9px] font-semibold text-slate-400 uppercase">${icon} ${label}</label>
+                            ${value ? `<span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1" title="Déplacer vers un autre jour">⠿</span>` : ''}
+                        </div>
+                        <textarea rows="2" placeholder="..." onchange="updateMealPlan('${dateStr}', '${field}', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white resize-none">${value}</textarea>
+                    </div>
+                </div>
+            `;
+
             let html = '';
             for (let i = 0; i < 7; i++) {
                 const dateObj = new Date(monday);
@@ -2967,24 +2987,87 @@
                 const borderClass = isToday ? 'border-amber-400 ring-1 ring-amber-200' : 'border-slate-100';
 
                 html += `
-                    <div class="rounded-xl border ${borderClass} bg-slate-50/50 p-2.5 flex flex-col gap-1.5">
+                    <div class="rounded-xl border ${borderClass} bg-slate-50/50 p-2.5 flex flex-col gap-1.5" data-meal-day-col="${i}">
                         <div class="text-center">
                             <div class="text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-amber-600' : 'text-slate-400'}">${mealDayHeaders[i]}</div>
                             <div class="text-xs font-bold ${isToday ? 'text-amber-700' : 'text-slate-600'}">${dateObj.getDate()}</div>
                         </div>
-                        <div>
-                            <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">🍽️ Déjeuner</label>
-                            <textarea rows="2" placeholder="..." onchange="updateMealPlan('${dateStr}', 'lunch', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white resize-none">${plan.lunch || ''}</textarea>
-                        </div>
-                        <div>
-                            <label class="block text-[9px] font-semibold text-slate-400 uppercase mb-0.5">🌙 Dîner</label>
-                            <textarea rows="2" placeholder="..." onchange="updateMealPlan('${dateStr}', 'dinner', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white resize-none">${plan.dinner || ''}</textarea>
-                        </div>
+                        ${mealSlotHtml(dateStr, 'lunch', '🍽️', 'Déjeuner', plan.lunch || '')}
+                        ${mealSlotHtml(dateStr, 'dinner', '🌙', 'Dîner', plan.dinner || '')}
                     </div>
                 `;
             }
 
             grid.innerHTML = html;
+
+            initMealPlannerSortable();
+            requestAnimationFrame(scrollMealPlannerToToday);
+        }
+
+        // Glisser-déposer entre créneaux (jour x déjeuner/dîner) : on échange toujours le contenu des
+        // deux cases concernées (jamais de perte), puis on redessine entièrement depuis les données
+        // pour repartir d'un DOM propre (1 item par case).
+        window.mealSlotSortables = [];
+
+        function initMealPlannerSortable() {
+            if (typeof Sortable === 'undefined') return;
+            window.mealSlotSortables.forEach(s => s.destroy());
+            window.mealSlotSortables = [];
+
+            document.querySelectorAll('.meal-slot-container').forEach(container => {
+                const instance = Sortable.create(container, {
+                    group: 'meal-planner',
+                    animation: 150,
+                    ghostClass: 'opacity-40',
+                    handle: '.meal-drag-handle',
+                    delay: 150,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 5,
+                    onEnd: function(evt) {
+                        const fromDate = evt.from.dataset.date;
+                        const fromField = evt.from.dataset.field;
+                        const toDate = evt.to.dataset.date;
+                        const toField = evt.to.dataset.field;
+
+                        if (fromDate !== toDate || fromField !== toField) {
+                            if (!window.mealPlans[fromDate]) window.mealPlans[fromDate] = { lunch: '', dinner: '' };
+                            if (!window.mealPlans[toDate]) window.mealPlans[toDate] = { lunch: '', dinner: '' };
+
+                            const movedValue = window.mealPlans[fromDate][fromField] || '';
+                            const existingValue = window.mealPlans[toDate][toField] || '';
+
+                            window.mealPlans[toDate][toField] = movedValue;
+                            window.mealPlans[fromDate][fromField] = existingValue;
+
+                            saveData();
+                        }
+
+                        renderMealPlanner(); // repart d'un DOM propre dans tous les cas (même sans changement)
+                    }
+                });
+                window.mealSlotSortables.push(instance);
+            });
+        }
+
+        // Fait défiler horizontalement le semainier pour amener la colonne du jour J bien en vue,
+        // comme le rétroplanning "Plan 2026" du Todo se cale sur le mois en cours.
+        function scrollMealPlannerToToday() {
+            if (window.mealWeekOffset !== 0) return; // seulement pertinent quand on affiche la semaine en cours
+            const grid = document.getElementById('meal-planner-grid');
+            if (!grid) return;
+            const scrollContainer = grid.closest('.overflow-x-auto');
+            if (!scrollContainer) return;
+
+            const totalWidth = grid.scrollWidth;
+            const visibleWidth = scrollContainer.clientWidth;
+            if (totalWidth <= visibleWidth) return;
+
+            const dayWidth = totalWidth / 7;
+            const todayIndex = (new Date().getDay() + 6) % 7; // 0 = lundi ... 6 = dimanche
+
+            let target = (dayWidth * todayIndex) - (visibleWidth - dayWidth) / 2;
+            target = Math.max(0, Math.min(target, totalWidth - visibleWidth));
+            scrollContainer.scrollLeft = target;
         }
 
         function renderRecipes() {
@@ -3094,64 +3177,6 @@
 
                 tryCompress(sourceCanvas.width, initialQuality);
             });
-        }
-
-        function loadImageFromDataUrl(dataUrl) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.onload = () => resolve(img);
-                img.onerror = reject;
-                img.src = dataUrl;
-            });
-        }
-
-        // Recompresse toutes les photos de recette déjà enregistrées avec la limite actuelle
-        // (compressCanvasToLimit, 5 Ko par défaut). Utile après avoir changé la limite : les photos
-        // uploadées avant ce changement restent à leur ancien poids tant qu'on ne relance pas ce passage.
-        async function recompressAllRecipeImages() {
-            const recipesWithImages = window.recipes.filter(r => r.image && r.image.startsWith('data:image'));
-            if (recipesWithImages.length === 0) {
-                alert("Aucune photo à recompresser.");
-                return;
-            }
-            if (!confirm(`Recompresser les ${recipesWithImages.length} photo(s) de recette à 5 Ko maximum chacune ? Ça peut prendre quelques secondes.`)) return;
-
-            const btn = document.getElementById('btn-recompress-images');
-            const originalLabel = btn ? btn.innerText : '';
-            if (btn) { btn.disabled = true; btn.innerText = 'Compression en cours...'; }
-
-            let totalBeforeKB = 0;
-            let totalAfterKB = 0;
-            let errorCount = 0;
-
-            for (const recipe of recipesWithImages) {
-                try {
-                    totalBeforeKB += (recipe.image.length - recipe.image.indexOf(',') - 1) * 0.75 / 1024;
-
-                    const img = await loadImageFromDataUrl(recipe.image);
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    canvas.getContext('2d').drawImage(img, 0, 0);
-
-                    const newDataUrl = await compressCanvasToLimit(canvas);
-                    recipe.image = newDataUrl;
-
-                    totalAfterKB += (newDataUrl.length - newDataUrl.indexOf(',') - 1) * 0.75 / 1024;
-                } catch (e) {
-                    console.error(`Erreur de recompression pour la recette "${recipe.title}" :`, e);
-                    errorCount++;
-                }
-            }
-
-            saveData();
-            if (typeof renderRecipes === 'function') renderRecipes();
-            if (typeof updateImageWeightFooter === 'function') updateImageWeightFooter();
-
-            if (btn) { btn.disabled = false; btn.innerText = originalLabel || '🗜️ Recompresser les photos'; }
-
-            const errorNote = errorCount > 0 ? `\n⚠️ ${errorCount} photo(s) n'ont pas pu être traitées.` : '';
-            alert(`✅ ${recipesWithImages.length - errorCount} photo(s) recompressée(s) : ${Math.round(totalBeforeKB)} Ko → ${Math.round(totalAfterKB)} Ko.${errorNote}`);
         }
 
         function cancelImageCrop() {
