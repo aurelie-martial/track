@@ -499,11 +499,13 @@
                     </button>
                 </div>
 
-                <div class="flex items-center gap-1.5 sm:gap-2">
-                    <button onclick="agendaNavigate(-1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">←</button>
-                    <span id="agenda-period-label" class="text-xs sm:text-sm font-bold text-indigo-700 flex-1 text-center truncate"></span>
-                    <button onclick="agendaNavigate(1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">→</button>
-                    <button onclick="agendaGoToday()" class="ml-1 px-2 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap">Aujourd'hui</button>
+                <div class="flex items-center flex-nowrap gap-2">
+                    <div class="flex items-center bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200 shrink-0">
+                        <button onclick="agendaNavigate(-1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">←</button>
+                        <span id="agenda-period-label" class="text-[11px] font-semibold text-indigo-700 px-1 min-w-[110px] text-center truncate"></span>
+                        <button onclick="agendaNavigate(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">→</button>
+                    </div>
+                    <button onclick="agendaGoToday()" class="px-2 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap">Aujourd'hui</button>
                 </div>
             </div>
 
@@ -809,16 +811,16 @@
 
                     <!-- Dépenses fixes -->
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div class="px-3 py-2 bg-sky-500 text-white flex items-center justify-between">
+                        <div class="px-3 py-2 bg-rose-700 text-white flex items-center justify-between">
                             <span class="text-xs font-bold uppercase tracking-wide">Fixe</span>
                             <span id="budget-plan-fixe-percent" class="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">0% du salaire</span>
                         </div>
                         <div class="p-3">
                             <table class="w-full text-xs border-collapse table-fixed">
-                                <tbody id="budget-plan-fixe-tbody" class="divide-y divide-sky-100"></tbody>
+                                <tbody id="budget-plan-fixe-tbody" class="divide-y divide-rose-100"></tbody>
                             </table>
                             <div class="mt-2 text-center">
-                                <button onclick="addBudgetPlanLine('fixe')" class="text-xs font-semibold text-sky-600 hover:text-sky-800">+ Ajouter une ligne</button>
+                                <button onclick="addBudgetPlanLine('fixe')" class="text-xs font-semibold text-rose-700 hover:text-rose-900">+ Ajouter une ligne</button>
                             </div>
                         </div>
                     </div>
@@ -2476,7 +2478,7 @@
                 html += `
                     <button onclick="cycleMoodDay('${key}')" class="relative aspect-square rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform duration-100" title="Clique pour changer l'humeur du ${d}">
                         <span class="text-[9px] sm:text-[10px] font-bold text-slate-500">${d}</span>
-                        <span class="text-xs sm:text-sm leading-none">${emoji || ''}</span>
+                        <span class="text-xs sm:text-2xl leading-none">${emoji || ''}</span>
                         <span onclick="event.stopPropagation(); promptMoodComment('${key}')" class="absolute bottom-0.5 right-0.5 text-[8px] sm:text-[9px] leading-none ${comment ? 'text-indigo-600' : 'text-slate-300'}" title="${comment ? ('Commentaire : ' + comment.replace(/"/g, '&quot;')) : 'Ajouter un commentaire'}">💬</span>
                     </button>
                 `;
@@ -4533,7 +4535,7 @@
             { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200' },
             { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' },
             { bg: 'bg-purple-50', text: 'text-purple-600', border: 'border-purple-200' },
-            { bg: 'bg-sky-50', text: 'text-sky-600', border: 'border-sky-200' },
+            { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-300' },
             { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-200' },
             { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200' },
             { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' }
