@@ -106,6 +106,21 @@
                 padding-left: 6px !important;
                 padding-right: 6px !important;
             }
+            input.budget-amount-input {
+                font-size: 12px !important;
+                padding-right: 1px !important;
+            }
+        }
+
+        /* Champs montants du budget (Ressources/Fixe/Variable/Épargne) : pas de flèches
+           d'incrémentation, pour laisser toute la place au chiffre + au signe €. */
+        .budget-amount-input::-webkit-outer-spin-button,
+        .budget-amount-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .budget-amount-input {
+            -moz-appearance: textfield;
         }
     </style>
 </head>
@@ -717,7 +732,6 @@
             <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h2 class="text-base sm:text-lg font-bold text-slate-800">Budget mensuel</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Revenus, dépenses et répartition par catégorie</p>
                 </div>
                 <div class="flex items-center gap-1.5 sm:gap-2">
                     <button onclick="navigateBudgetMonth(-1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">←</button>
@@ -728,10 +742,10 @@
             </div>
 
             <!-- Budget : Plan (Ressources + Fixe/Variable/Épargne) à gauche, Transactions à droite -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div class="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-6 items-start">
 
                 <!-- COLONNE GAUCHE : Plan budgétaire (saisie manuelle, façon tableur) -->
-                <div class="space-y-6">
+                <div class="space-y-6 min-w-0">
                     <!-- Ressources -->
                     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                         <div class="px-4 py-3 bg-slate-800 text-white font-bold text-center text-sm uppercase tracking-wide">Ressources</div>
@@ -747,12 +761,12 @@
                             <span id="budget-plan-fixe-percent" class="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">0% du salaire</span>
                         </div>
                         <div class="p-3">
-                            <table class="w-full text-sm border-collapse">
+                            <table class="w-full text-sm border-collapse table-fixed">
                                 <thead>
                                     <tr>
-                                        <th class="bg-sky-50 text-sky-700 text-left px-2 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
-                                        <th class="bg-sky-50 text-sky-700 text-right px-2 py-1 text-[10px] font-bold uppercase tracking-wide w-24">Montant</th>
-                                        <th class="bg-sky-50 w-6"></th>
+                                        <th class="bg-sky-50 text-sky-700 text-left px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
+                                        <th class="bg-sky-50 text-sky-700 text-right px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide w-20">Montant</th>
+                                        <th class="bg-sky-50 w-5"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="budget-plan-fixe-tbody" class="divide-y divide-sky-100"></tbody>
@@ -768,13 +782,13 @@
                             <span id="budget-plan-variable-percent" class="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-full">0% du salaire</span>
                         </div>
                         <div class="p-3">
-                            <table class="w-full text-sm border-collapse">
+                            <table class="w-full text-sm border-collapse table-fixed">
                                 <thead>
                                     <tr>
-                                        <th class="bg-amber-50 text-amber-700 text-left px-2 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
-                                        <th class="bg-amber-50 text-amber-700 text-right px-2 py-1 text-[10px] font-bold uppercase tracking-wide w-16">Prévu</th>
-                                        <th class="bg-amber-50 text-amber-700 text-right px-2 py-1 text-[10px] font-bold uppercase tracking-wide w-16">Réel</th>
-                                        <th class="bg-amber-50 w-6"></th>
+                                        <th class="bg-amber-50 text-amber-700 text-left px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
+                                        <th class="bg-amber-50 text-amber-700 text-right px-1 py-1 text-[10px] font-bold uppercase tracking-wide w-[4.5rem]">Prévu</th>
+                                        <th class="bg-amber-50 text-amber-700 text-right px-1 py-1 text-[10px] font-bold uppercase tracking-wide w-[4.5rem]">Réel</th>
+                                        <th class="bg-amber-50 w-5"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="budget-plan-variable-tbody" class="divide-y divide-amber-100"></tbody>
@@ -789,12 +803,12 @@
                             <span class="text-xs font-bold uppercase tracking-wide">Épargne</span>
                         </div>
                         <div class="p-3">
-                            <table class="w-full text-sm border-collapse">
+                            <table class="w-full text-sm border-collapse table-fixed">
                                 <thead>
                                     <tr>
-                                        <th class="bg-emerald-50 text-emerald-700 text-left px-2 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
-                                        <th class="bg-emerald-50 text-emerald-700 text-right px-2 py-1 text-[10px] font-bold uppercase tracking-wide w-16">Prévu</th>
-                                        <th class="bg-emerald-50 text-emerald-700 text-right px-2 py-1 text-[10px] font-bold uppercase tracking-wide w-16">Réel</th>
+                                        <th class="bg-emerald-50 text-emerald-700 text-left px-1.5 py-1 text-[10px] font-bold uppercase tracking-wide">Libellé</th>
+                                        <th class="bg-emerald-50 text-emerald-700 text-right px-1 py-1 text-[10px] font-bold uppercase tracking-wide w-[4.5rem]">Prévu</th>
+                                        <th class="bg-emerald-50 text-emerald-700 text-right px-1 py-1 text-[10px] font-bold uppercase tracking-wide w-[4.5rem]">Réel</th>
                                     </tr>
                                 </thead>
                                 <tbody id="budget-plan-epargne-tbody" class="divide-y divide-emerald-100"></tbody>
@@ -805,16 +819,6 @@
 
                 <!-- COLONNE DROITE : Transactions -->
                 <div class="space-y-6">
-                    <!-- Répartition des dépenses réelles (transactions du mois) -->
-                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
-                        <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                            <span class="w-2 h-5 bg-rose-400 rounded-xs inline-block"></span> Répartition des dépenses (transactions du mois)
-                        </h3>
-                        <div class="h-56">
-                            <canvas id="budget-expense-chart"></canvas>
-                        </div>
-                    </div>
-
                     <!-- Formulaire nouvelle transaction -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
                         <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -851,6 +855,28 @@
                         </div>
                     </div>
 
+                    <!-- Historique des transactions -->
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div class="p-4 bg-slate-50/50 border-b border-slate-100">
+                            <h3 class="font-bold text-slate-800 text-sm">Historique des transactions</h3>
+                        </div>
+                        <div class="p-4 overflow-x-auto max-h-[34rem] overflow-y-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                        <th class="py-2 px-1.5">Date</th>
+                                        <th class="py-2 px-1.5">Type</th>
+                                        <th class="py-2 px-1.5">Catégorie</th>
+                                        <th class="py-2 px-1.5">Libellé</th>
+                                        <th class="py-2 px-1.5 text-right">Montant</th>
+                                        <th class="py-2 px-1.5 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budget-transactions-tbody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- Gestion des catégories -->
                     <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                         <h3 class="text-sm font-bold text-slate-800 mb-4">Catégories</h3>
@@ -872,28 +898,6 @@
                                 </div>
                                 <div id="budget-cat-list-revenu" class="flex flex-wrap gap-1.5"></div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Historique des transactions -->
-                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div class="p-4 bg-slate-50/50 border-b border-slate-100">
-                            <h3 class="font-bold text-slate-800 text-sm">Historique des transactions</h3>
-                        </div>
-                        <div class="p-4 overflow-x-auto max-h-96 overflow-y-auto">
-                            <table class="w-full text-left border-collapse">
-                                <thead>
-                                    <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                                        <th class="py-2 px-1.5">Date</th>
-                                        <th class="py-2 px-1.5">Type</th>
-                                        <th class="py-2 px-1.5">Catégorie</th>
-                                        <th class="py-2 px-1.5">Libellé</th>
-                                        <th class="py-2 px-1.5 text-right">Montant</th>
-                                        <th class="py-2 px-1.5 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="budget-transactions-tbody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
@@ -1551,8 +1555,7 @@
         window.budgetPlan = {
             ressources: {
                 salaire: 3272,
-                decouvert: 0,
-                enveloppes: 0
+                decouvert: 0
             },
             fixe: [
                 { id: 1, label: "Crédit", prevu: 1333, reel: 0 },
@@ -4194,8 +4197,6 @@
 
         // ============ BUDGET ============
         window.budgetMonthOffset = 0; // décalage en mois par rapport au mois en cours
-        let budgetChartInstance = null;
-        const BUDGET_CHART_COLORS = ['#f59e0b', '#f43f5e', '#6366f1', '#10b981', '#0ea5e9', '#a855f7', '#84cc16', '#ec4899', '#94a3b8', '#14b8a6'];
 
         function formatEuro(n) {
             const rounded = Math.round((n + Number.EPSILON) * 100) / 100;
@@ -4353,11 +4354,11 @@
             renderBudgetPlan();
         }
 
-        // Champ montant avec le signe € affiché juste après, aligné à droite.
+        // Champ montant avec le signe € affiché juste après, collé au chiffre.
         function budgetEuroInput(value, onchange, width) {
             return `
-                <div class="flex items-center justify-end gap-1">
-                    <input type="number" step="1" value="${value}" onchange="${onchange}" class="${width || 'w-full'} bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
+                <div class="flex items-center justify-end gap-0.5">
+                    <input type="number" step="1" value="${value}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
                     <span class="text-slate-400 text-xs">€</span>
                 </div>
             `;
@@ -4366,12 +4367,16 @@
         // Rend une table Fixe ou Variable (lignes éditables + ligne Total). Le pourcentage du
         // salaire est affiché en haut du bloc (badge dans l'en-tête coloré), pas dans le tableau.
         // Les charges fixes n'ont qu'un seul montant (pas de distinction Prévu/Réel) ; seules les
-        // charges variables gardent les deux colonnes.
+        // charges variables gardent les deux colonnes. Les charges fixes sont triées du montant
+        // le plus élevé au plus faible (l'ordre de saisie n'a pas d'importance ici).
         function renderBudgetPlanTable(section) {
             const tbody = document.getElementById(`budget-plan-${section}-tbody`);
             if (!tbody) return;
             const lines = window.budgetPlan[section] || [];
             const showReel = section !== 'fixe';
+            const displayLines = section === 'fixe'
+                ? [...lines].sort((a, b) => (parseFloat(b.prevu) || 0) - (parseFloat(a.prevu) || 0))
+                : lines;
             const totalPrevu = budgetPlanSectionTotal(section, 'prevu');
             const totalReel = budgetPlanSectionTotal(section, 'reel');
             const salaire = window.budgetPlan.ressources.salaire || 0;
@@ -4380,19 +4385,19 @@
             const percentEl = document.getElementById(`budget-plan-${section}-percent`);
             if (percentEl) percentEl.innerText = `${percent}% du salaire`;
 
-            const rowsHtml = lines.map(l => `
+            const rowsHtml = displayLines.map(l => `
                 <tr>
-                    <td class="px-2 py-1.5">
+                    <td class="px-1.5 py-1.5 truncate">
                         <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="w-full bg-transparent text-sm text-slate-700 focus:outline-none focus:border-b focus:border-indigo-300">
                     </td>
-                    <td class="px-2 py-1.5">
+                    <td class="px-1 py-1.5">
                         ${budgetEuroInput(l.prevu, `updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)`)}
                     </td>
                     ${showReel ? `
-                    <td class="px-2 py-1.5">
+                    <td class="px-1 py-1.5">
                         ${budgetEuroInput(l.reel, `updateBudgetPlanLine('${section}', ${l.id}, 'reel', this.value)`)}
                     </td>` : ''}
-                    <td class="px-1 py-1.5 text-center">
+                    <td class="px-0.5 py-1.5 text-center">
                         <button onclick="deleteBudgetPlanLine('${section}', ${l.id})" class="text-slate-300 hover:text-rose-500 text-xs">✕</button>
                     </td>
                 </tr>
@@ -4400,9 +4405,9 @@
 
             tbody.innerHTML = rowsHtml + `
                 <tr class="bg-slate-800 text-white font-bold">
-                    <td class="px-2 py-1.5 text-xs uppercase">Total</td>
-                    <td class="px-2 py-1.5 text-right">${formatEuro(totalPrevu)}</td>
-                    ${showReel ? `<td class="px-2 py-1.5 text-right">${formatEuro(totalReel)}</td>` : ''}
+                    <td class="px-1.5 py-1.5 text-xs uppercase">Total</td>
+                    <td class="px-1 py-1.5 text-right">${formatEuro(totalPrevu)}</td>
+                    ${showReel ? `<td class="px-1 py-1.5 text-right">${formatEuro(totalReel)}</td>` : ''}
                     <td></td>
                 </tr>
             `;
@@ -4419,13 +4424,13 @@
             const totalFixePrevu = budgetPlanSectionTotal('fixe', 'prevu');
             const totalVariablePrevu = budgetPlanSectionTotal('variable', 'prevu');
             const epargnePrevu = window.budgetPlan.epargne.prevu || 0;
-            const restant = (r.salaire || 0) - (r.decouvert || 0) - totalFixePrevu - totalVariablePrevu - epargnePrevu - (r.enveloppes || 0);
+            const restant = (r.salaire || 0) - (r.decouvert || 0) - totalFixePrevu - totalVariablePrevu - epargnePrevu;
 
             const editableRow = (label, field, value) => `
                 <tr class="border-b border-slate-100">
                     <td class="px-4 py-2 font-semibold text-slate-700">${label}</td>
                     <td class="px-4 py-2">
-                        ${budgetEuroInput(value, `updateBudgetPlanRessource('${field}', this.value)`, 'w-20')}
+                        ${budgetEuroInput(value, `updateBudgetPlanRessource('${field}', this.value)`, 'w-16')}
                     </td>
                 </tr>
             `;
@@ -4440,8 +4445,8 @@
                 <tr class="bg-slate-800 text-white">
                     <td class="px-4 py-2 font-bold">SALAIRE</td>
                     <td class="px-4 py-2">
-                        <div class="flex items-center justify-end gap-1">
-                            <input type="number" step="1" value="${r.salaire}" onchange="updateBudgetPlanRessource('salaire', this.value)" class="w-20 bg-transparent text-right font-bold text-white focus:outline-none">
+                        <div class="flex items-center justify-end gap-0.5">
+                            <input type="number" step="1" value="${r.salaire}" onchange="updateBudgetPlanRessource('salaire', this.value)" class="budget-amount-input w-16 bg-transparent text-right font-bold text-white focus:outline-none">
                             <span class="text-xs text-white/70">€</span>
                         </div>
                     </td>
@@ -4450,7 +4455,6 @@
                 ${readonlyRow('Total fixe', totalFixePrevu)}
                 ${readonlyRow('Total variable', totalVariablePrevu)}
                 ${readonlyRow('Epargne', epargnePrevu)}
-                ${editableRow('Enveloppes', 'enveloppes', r.enveloppes)}
                 <tr class="bg-slate-800 text-white font-bold">
                     <td class="px-4 py-2">Restant total</td>
                     <td class="px-4 py-2 text-right">${formatEuro(restant)}</td>
@@ -4501,14 +4505,7 @@
 
             renderBudgetPlan();
 
-            // Répartition par catégorie de dépense
             const depenseCategories = window.budgetCategories.depense || [];
-            const spentByCategory = {};
-            depenseCategories.forEach(c => spentByCategory[c] = 0);
-            monthTransactions.filter(t => t.type === 'depense').forEach(t => {
-                spentByCategory[t.category] = (spentByCategory[t.category] || 0) + t.amount;
-            });
-
 
             // Listes de catégories (gestion)
             const depenseListEl = document.getElementById('budget-cat-list-depense');
@@ -4557,40 +4554,6 @@
                 }
             }
 
-            // Graphique en doughnut des dépenses par catégorie (uniquement si l'onglet Budget est visible)
-            const budgetSection = document.getElementById('budget');
-            const isBudgetActive = budgetSection && budgetSection.classList.contains('active');
-            const chartCanvas = document.getElementById('budget-expense-chart');
-            if (isBudgetActive && chartCanvas && typeof Chart !== 'undefined') {
-                const chartCategories = depenseCategories.filter(c => (spentByCategory[c] || 0) > 0);
-                if (budgetChartInstance) { budgetChartInstance.destroy(); budgetChartInstance = null; }
-                if (chartCategories.length > 0) {
-                    budgetChartInstance = new Chart(chartCanvas.getContext('2d'), {
-                        type: 'doughnut',
-                        data: {
-                            labels: chartCategories,
-                            datasets: [{
-                                data: chartCategories.map(c => spentByCategory[c]),
-                                backgroundColor: chartCategories.map((_, i) => BUDGET_CHART_COLORS[i % BUDGET_CHART_COLORS.length]),
-                                borderWidth: 2,
-                                borderColor: '#ffffff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
-                                tooltip: {
-                                    callbacks: {
-                                        label: (ctx) => `${ctx.label} : ${formatEuro(ctx.parsed)}`
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            }
         }
 
         window.onload = function() {
