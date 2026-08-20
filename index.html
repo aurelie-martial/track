@@ -537,9 +537,9 @@
             </div>
 
             <!-- Statut de connexion Withings + synchro rapide (bouton "Connecter" déplacé tout en bas de page) -->
-            <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1 px-1">
                 <p id="withings-status" class="text-xs text-slate-400">Non connecté</p>
-                <button id="btn-withings-sync" onclick="syncWithingsNow()" class="bg-sky-500 hover:bg-sky-600 text-white p-2 rounded-xl transition-colors shrink-0" title="Synchroniser maintenant">
+                <button id="btn-withings-sync" onclick="syncWithingsNow()" class="text-slate-300 hover:text-sky-500 p-1 rounded-lg transition-colors shrink-0 text-xs leading-none" title="Synchroniser maintenant">
                     🔄
                 </button>
             </div>
@@ -569,57 +569,6 @@
                     </h3>
                     <div class="h-56">
                         <canvas id="sport-activity-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Formulaire d'ajout : plus de saisie manuelle de mesure de poids (uniquement via
-                 la synchro Withings désormais), seule "Nouvelle activité" reste — sur une seule
-                 colonne, pas la peine de garder une grille à 2 colonnes pour un unique bloc. -->
-            <div class="grid grid-cols-1 gap-6">
-                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm lg:max-w-xl">
-                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <span class="w-2 h-5 bg-emerald-400 rounded-xs inline-block"></span> Nouvelle activité
-                    </h3>
-                    <div class="space-y-3">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
-                                <input type="date" id="new-activity-date" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Type</label>
-                                <select id="new-activity-type" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-emerald-400">
-                                    <option value="Renfo">🏋️ Renfo</option>
-                                    <option value="Run">🏃 Run</option>
-                                    <option value="Marche">🚶 Marche</option>
-                                    <option value="Autre">✨ Autre activité</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nom / description</label>
-                            <input type="text" id="new-activity-name" placeholder="Ex: Course à pied, Musculation..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Durée (min)</label>
-                                <input type="number" id="new-activity-duration" placeholder="30" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Calories (kcal)</label>
-                                <input type="number" id="new-activity-calories" placeholder="250" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button id="btn-save-activity" onclick="addSportActivity()" class="flex-1 bg-emerald-400 hover:bg-emerald-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                                <span id="btn-save-activity-label">Enregistrer l'activité</span>
-                            </button>
-                            <button id="btn-cancel-activity-edit" onclick="cancelEditSportActivity()" class="hidden px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl text-sm transition-colors">
-                                Annuler
-                            </button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -666,6 +615,12 @@
                             <tbody id="sport-activities-tbody" class="divide-y divide-slate-100 text-sm text-slate-600"></tbody>
                         </table>
                     </div>
+                    <div class="px-4 pb-4 pt-1 border-t border-slate-100">
+                        <button onclick="openSportActivityModal()" class="w-full flex items-center justify-center gap-2 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 font-medium py-2 rounded-xl text-sm transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                            Ajouter une activité
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -674,6 +629,56 @@
                 <button onclick="connectWithings()" class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-xl text-xs sm:text-sm transition-colors whitespace-nowrap">
                     Connecter mon compte Withings
                 </button>
+            </div>
+
+            <!-- Overlay "Nouvelle activité" (remplace l'ancien formulaire toujours visible sur la page) -->
+            <div id="sport-activity-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40" onclick="if (event.target === this) { cancelEditSportActivity(); closeSportActivityModal(); }">
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-lg w-full max-w-md p-6 relative">
+                    <button onclick="cancelEditSportActivity(); closeSportActivityModal();" class="absolute top-3 right-3 text-slate-300 hover:text-slate-500 p-1" title="Fermer">✕</button>
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-emerald-400 rounded-xs inline-block"></span> Nouvelle activité
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+                                <input type="date" id="new-activity-date" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Type</label>
+                                <select id="new-activity-type" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-emerald-400">
+                                    <option value="Renfo">🏋️ Renfo</option>
+                                    <option value="Run">🏃 Run</option>
+                                    <option value="Marche">🚶 Marche</option>
+                                    <option value="Autre">✨ Autre activité</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Nom / description</label>
+                            <input type="text" id="new-activity-name" placeholder="Ex: Course à pied, Musculation..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Durée (min)</label>
+                                <input type="number" id="new-activity-duration" placeholder="30" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Calories (kcal)</label>
+                                <input type="number" id="new-activity-calories" placeholder="250" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="btn-save-activity" onclick="addSportActivity()" class="flex-1 bg-emerald-400 hover:bg-emerald-500 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                <span id="btn-save-activity-label">Enregistrer l'activité</span>
+                            </button>
+                            <button id="btn-cancel-activity-edit" onclick="cancelEditSportActivity(); closeSportActivityModal();" class="hidden px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl text-sm transition-colors">
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
             </div>
             <!-- /SOUS-ONGLET: SPORT -->
@@ -3906,6 +3911,15 @@
 
         window.editingSportActivityId = null; // id de l'activité en cours de modification, ou null si mode "ajout"
 
+        // Overlay "Nouvelle activité" : remplace l'ancien formulaire toujours affiché sur la page.
+        function openSportActivityModal() {
+            document.getElementById('sport-activity-modal').classList.remove('hidden');
+        }
+
+        function closeSportActivityModal() {
+            document.getElementById('sport-activity-modal').classList.add('hidden');
+        }
+
         function addSportActivity() {
             const dateInput = document.getElementById('new-activity-date');
             const typeInput = document.getElementById('new-activity-type');
@@ -3943,12 +3957,14 @@
 
             saveData();
             renderSport();
+            closeSportActivityModal();
         }
 
         function editSportActivity(id) {
             const activity = window.sportActivities.find(a => a.id === id);
             if (!activity) return;
 
+            openSportActivityModal();
             window.editingSportActivityId = id;
             document.getElementById('new-activity-date').value = activity.date;
             document.getElementById('new-activity-type').value = normalizeActivityType(activity.type);
