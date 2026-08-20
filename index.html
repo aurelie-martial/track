@@ -730,45 +730,69 @@
                 </div>
             </div>
 
-            <!-- Cartes récapitulatives -->
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Revenus</p>
-                    <p id="budget-total-revenus" class="text-2xl font-bold text-emerald-600 mt-1">0 €</p>
+            <!-- Plan budgétaire : Ressources + Fixe/Variable/Épargne (saisie manuelle, façon tableur) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <!-- Ressources -->
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div class="px-4 py-3 bg-slate-800 text-white font-bold text-center text-sm uppercase tracking-wide">Ressources</div>
+                    <table class="w-full text-sm">
+                        <tbody id="budget-plan-ressources-tbody"></tbody>
+                    </table>
                 </div>
-                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Dépenses</p>
-                    <p id="budget-total-depenses" class="text-2xl font-bold text-rose-500 mt-1">0 €</p>
-                </div>
-                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">dont Fixes</p>
-                    <p id="budget-total-depenses-fixes" class="text-2xl font-bold text-slate-600 mt-1">0 €</p>
-                </div>
-                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">dont Variables</p>
-                    <p id="budget-total-depenses-variables" class="text-2xl font-bold text-slate-600 mt-1">0 €</p>
-                </div>
-                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm">
-                    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Solde</p>
-                    <p id="budget-solde" class="text-2xl font-bold text-indigo-600 mt-1">0 €</p>
+
+                <!-- Fixe / Variable / Épargne -->
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                    <div class="px-4 py-3 bg-indigo-500 text-white font-bold text-center text-sm uppercase tracking-wide">Fixe et Variable</div>
+                    <div class="p-4 space-y-6">
+                        <div>
+                            <table class="w-full text-sm border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th class="bg-sky-500 text-white text-left px-2 py-1.5 rounded-tl-lg text-xs uppercase tracking-wide">Fixe</th>
+                                        <th class="bg-sky-500 text-white text-right px-2 py-1.5 text-xs uppercase tracking-wide w-20">Prévu</th>
+                                        <th class="bg-sky-500 text-white text-right px-2 py-1.5 rounded-tr-lg text-xs uppercase tracking-wide w-20">Réel</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budget-plan-fixe-tbody" class="divide-y divide-sky-100"></tbody>
+                            </table>
+                            <button onclick="addBudgetPlanLine('fixe')" class="mt-2 text-xs font-semibold text-sky-600 hover:text-sky-800">+ Ajouter une ligne</button>
+                        </div>
+                        <div>
+                            <table class="w-full text-sm border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th class="bg-amber-400 text-white text-left px-2 py-1.5 rounded-tl-lg text-xs uppercase tracking-wide">Variable</th>
+                                        <th class="bg-amber-400 text-white text-right px-2 py-1.5 text-xs uppercase tracking-wide w-20">Prévu</th>
+                                        <th class="bg-amber-400 text-white text-right px-2 py-1.5 rounded-tr-lg text-xs uppercase tracking-wide w-20">Réel</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budget-plan-variable-tbody" class="divide-y divide-amber-100"></tbody>
+                            </table>
+                            <button onclick="addBudgetPlanLine('variable')" class="mt-2 text-xs font-semibold text-amber-600 hover:text-amber-800">+ Ajouter une ligne</button>
+                        </div>
+                        <div>
+                            <table class="w-full text-sm border-collapse">
+                                <thead>
+                                    <tr>
+                                        <th class="bg-emerald-500 text-white text-left px-2 py-1.5 rounded-tl-lg text-xs uppercase tracking-wide">Épargne</th>
+                                        <th class="bg-emerald-500 text-white text-right px-2 py-1.5 text-xs uppercase tracking-wide w-20">Prévu</th>
+                                        <th class="bg-emerald-500 text-white text-right px-2 py-1.5 rounded-tr-lg text-xs uppercase tracking-wide w-20">Réel</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="budget-plan-epargne-tbody" class="divide-y divide-emerald-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Graphique + budget par catégorie -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
-                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <span class="w-2 h-5 bg-rose-400 rounded-xs inline-block"></span> Répartition des dépenses
-                    </h3>
-                    <div class="h-56">
-                        <canvas id="budget-expense-chart"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                    <div class="p-4 bg-slate-50/50 border-b border-slate-100">
-                        <h3 class="font-bold text-slate-800 text-sm">Budget par catégorie</h3>
-                    </div>
-                    <div id="budget-categories-progress" class="p-4 space-y-3 max-h-72 overflow-y-auto"></div>
+            <!-- Répartition des dépenses réelles (transactions du mois) -->
+            <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <span class="w-2 h-5 bg-rose-400 rounded-xs inline-block"></span> Répartition des dépenses (transactions du mois)
+                </h3>
+                <div class="h-56">
+                    <canvas id="budget-expense-chart"></canvas>
                 </div>
             </div>
 
@@ -1316,6 +1340,7 @@
                         window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
                         window.budgetCategories = data.budgetCategories || window.budgetCategories;
                         window.budgetTargets = data.budgetTargets || window.budgetTargets;
+                        window.budgetPlan = data.budgetPlan || window.budgetPlan;
 
                         renderHabits();
                         renderTodos();
@@ -1408,7 +1433,8 @@
                 mealPlans: window.mealPlans,
                 budgetTransactions: window.budgetTransactions,
                 budgetCategories: window.budgetCategories,
-                budgetTargets: window.budgetTargets
+                budgetTargets: window.budgetTargets,
+                budgetPlan: window.budgetPlan
             };
 
             // Vérification préventive AVANT l'envoi : Firestore limite un document à 1 Mo (≈1024 Ko)
@@ -1503,6 +1529,35 @@
             "Abonnements": 50,
             "Santé": 50,
             "Autre": 50
+        };
+
+        // --- PLAN BUDGÉTAIRE (Ressources + Fixe/Variable/Épargne) ---
+        // Tableau saisi entièrement à la main (Prévu ET Réel), façon tableur, indépendant des
+        // transactions ci-dessus. C'est un budget mensuel "type" qu'on ajuste au fil de l'eau,
+        // pas rattaché à un mois précis.
+        window.budgetPlan = {
+            ressources: {
+                salaire: 3272,
+                decouvert: 0,
+                enveloppes: 0
+            },
+            fixe: [
+                { id: 1, label: "Crédit", prevu: 1333, reel: 0 },
+                { id: 2, label: "Total Energies", prevu: 167, reel: 0 },
+                { id: 3, label: "Syndic", prevu: 157, reel: 0 },
+                { id: 4, label: "Taxe fonciere", prevu: 106, reel: 0 },
+                { id: 5, label: "Assurance voit + hab", prevu: 92, reel: 0 },
+                { id: 6, label: "Internet + tel", prevu: 48, reel: 0 },
+                { id: 7, label: "Entretien chauffagiste", prevu: 11, reel: 0 },
+                { id: 8, label: "Frais bancaire", prevu: 13, reel: 0 },
+                { id: 9, label: "Sauv. iOs + Drive", prevu: 13, reel: 0 }
+            ],
+            variable: [
+                { id: 10, label: "Course", prevu: 300, reel: 0 },
+                { id: 11, label: "Boucherie", prevu: 50, reel: 0 },
+                { id: 12, label: "Ticket resto", prevu: 92, reel: 0 }
+            ],
+            epargne: { prevu: 50, reel: 0 }
         };
 
         const pastelColors = ['bg-pastel-blue', 'bg-pastel-green', 'bg-pastel-purple', 'bg-pastel-pink', 'bg-pastel-orange'];
@@ -4215,6 +4270,174 @@
             renderBudget();
         }
 
+        // --- PLAN BUDGÉTAIRE : Ressources + Fixe/Variable/Épargne (saisie manuelle façon tableur) ---
+        let budgetPlanLineCounter = Date.now();
+
+        function budgetPlanSectionTotal(section, field) {
+            return (window.budgetPlan[section] || []).reduce((s, l) => s + (parseFloat(l[field]) || 0), 0);
+        }
+
+        function updateBudgetPlanRessource(field, value) {
+            const num = parseFloat(value);
+            window.budgetPlan.ressources[field] = isNaN(num) ? 0 : num;
+            saveData();
+            renderBudgetPlan();
+        }
+
+        function addBudgetPlanLine(section) {
+            if (!window.budgetPlan[section]) return;
+            budgetPlanLineCounter++;
+            window.budgetPlan[section].push({ id: budgetPlanLineCounter, label: '', prevu: 0, reel: 0 });
+            saveData();
+            renderBudgetPlan();
+        }
+
+        function deleteBudgetPlanLine(section, id) {
+            if (!window.budgetPlan[section]) return;
+            window.budgetPlan[section] = window.budgetPlan[section].filter(l => l.id !== id);
+            saveData();
+            renderBudgetPlan();
+        }
+
+        function updateBudgetPlanLine(section, id, field, value) {
+            const line = (window.budgetPlan[section] || []).find(l => l.id === id);
+            if (!line) return;
+            if (field === 'label') {
+                line.label = value;
+            } else {
+                const num = parseFloat(value);
+                line[field] = isNaN(num) ? 0 : num;
+            }
+            saveData();
+            renderBudgetPlan();
+        }
+
+        function updateBudgetPlanEpargne(field, value) {
+            const num = parseFloat(value);
+            window.budgetPlan.epargne[field] = isNaN(num) ? 0 : num;
+            saveData();
+            renderBudgetPlan();
+        }
+
+        // Rend une table Fixe ou Variable (lignes éditables + ligne Total + ligne %).
+        function renderBudgetPlanTable(section) {
+            const tbody = document.getElementById(`budget-plan-${section}-tbody`);
+            if (!tbody) return;
+            const lines = window.budgetPlan[section] || [];
+            const totalPrevu = budgetPlanSectionTotal(section, 'prevu');
+            const totalReel = budgetPlanSectionTotal(section, 'reel');
+            const salaire = window.budgetPlan.ressources.salaire || 0;
+            const percent = salaire > 0 ? Math.round((totalPrevu / salaire) * 100) : 0;
+
+            const rowsHtml = lines.map(l => `
+                <tr>
+                    <td class="px-2 py-1.5">
+                        <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="w-full bg-transparent text-sm text-slate-700 focus:outline-none focus:border-b focus:border-indigo-300">
+                    </td>
+                    <td class="px-2 py-1.5">
+                        <input type="number" step="1" value="${l.prevu}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)" class="w-full bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
+                    </td>
+                    <td class="px-2 py-1.5">
+                        <div class="flex items-center gap-1 justify-end">
+                            <input type="number" step="1" value="${l.reel}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'reel', this.value)" class="w-full bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
+                            <button onclick="deleteBudgetPlanLine('${section}', ${l.id})" class="text-slate-300 hover:text-rose-500 text-xs shrink-0">✕</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            tbody.innerHTML = rowsHtml + `
+                <tr class="bg-slate-800 text-white font-bold">
+                    <td class="px-2 py-1.5 text-xs uppercase">Total</td>
+                    <td class="px-2 py-1.5 text-right">${formatEuro(totalPrevu)}</td>
+                    <td class="px-2 py-1.5 text-right">${formatEuro(totalReel)}</td>
+                </tr>
+                <tr class="bg-slate-50 text-slate-400 text-xs">
+                    <td class="px-2 py-1"></td>
+                    <td class="px-2 py-1 text-right">${percent}%</td>
+                    <td class="px-2 py-1"></td>
+                </tr>
+            `;
+        }
+
+        // Rend le bloc Ressources + les 3 tables Fixe/Variable/Épargne. Tout est saisi à la main :
+        // seuls "Total fixe", "Total variable", "Epargne" et "Restant total" (Ressources) sont
+        // recalculés automatiquement à partir des lignes/valeurs saisies.
+        function renderBudgetPlan() {
+            const ressourcesTbody = document.getElementById('budget-plan-ressources-tbody');
+            if (!ressourcesTbody) return; // section pas encore présente dans le DOM
+
+            const r = window.budgetPlan.ressources;
+            const totalFixePrevu = budgetPlanSectionTotal('fixe', 'prevu');
+            const totalVariablePrevu = budgetPlanSectionTotal('variable', 'prevu');
+            const epargnePrevu = window.budgetPlan.epargne.prevu || 0;
+            const restant = (r.salaire || 0) - (r.decouvert || 0) - totalFixePrevu - totalVariablePrevu - epargnePrevu - (r.enveloppes || 0);
+
+            const editableRow = (label, field, value) => `
+                <tr class="border-b border-slate-100">
+                    <td class="px-4 py-2 font-semibold text-slate-700">${label}</td>
+                    <td class="px-4 py-2 text-right">
+                        <input type="number" step="1" value="${value}" onchange="updateBudgetPlanRessource('${field}', this.value)" class="w-24 bg-transparent text-right font-bold text-slate-800 focus:outline-none focus:border-b focus:border-indigo-300">
+                    </td>
+                </tr>
+            `;
+            const readonlyRow = (label, value) => `
+                <tr class="border-b border-slate-100">
+                    <td class="px-4 py-2 text-slate-600">- ${label}</td>
+                    <td class="px-4 py-2 text-right font-semibold text-slate-500">${formatEuro(value)}</td>
+                </tr>
+            `;
+
+            ressourcesTbody.innerHTML = `
+                <tr class="bg-slate-800 text-white">
+                    <td class="px-4 py-2 font-bold">SALAIRE</td>
+                    <td class="px-4 py-2 text-right">
+                        <input type="number" step="1" value="${r.salaire}" onchange="updateBudgetPlanRessource('salaire', this.value)" class="w-24 bg-transparent text-right font-bold text-white focus:outline-none">
+                    </td>
+                </tr>
+                ${editableRow('Découvert', 'decouvert', r.decouvert)}
+                ${readonlyRow('Total fixe', totalFixePrevu)}
+                ${readonlyRow('Total variable', totalVariablePrevu)}
+                ${readonlyRow('Epargne', epargnePrevu)}
+                ${editableRow('Enveloppes', 'enveloppes', r.enveloppes)}
+                <tr class="bg-slate-800 text-white font-bold">
+                    <td class="px-4 py-2">Restant total</td>
+                    <td class="px-4 py-2 text-right">${formatEuro(restant)}</td>
+                </tr>
+            `;
+
+            renderBudgetPlanTable('fixe');
+            renderBudgetPlanTable('variable');
+
+            // Épargne : un seul chiffre global (pas de lignes détaillées, pas d'ajout/suppression de ligne)
+            const epargneTbody = document.getElementById('budget-plan-epargne-tbody');
+            if (epargneTbody) {
+                const salaire = r.salaire || 0;
+                const percent = salaire > 0 ? Math.round((epargnePrevu / salaire) * 100) : 0;
+                epargneTbody.innerHTML = `
+                    <tr>
+                        <td class="px-2 py-1.5 text-slate-700">Mensuel</td>
+                        <td class="px-2 py-1.5">
+                            <input type="number" step="1" value="${window.budgetPlan.epargne.prevu}" onchange="updateBudgetPlanEpargne('prevu', this.value)" class="w-full bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
+                        </td>
+                        <td class="px-2 py-1.5">
+                            <input type="number" step="1" value="${window.budgetPlan.epargne.reel}" onchange="updateBudgetPlanEpargne('reel', this.value)" class="w-full bg-transparent text-sm text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
+                        </td>
+                    </tr>
+                    <tr class="bg-slate-800 text-white font-bold">
+                        <td class="px-2 py-1.5 text-xs uppercase">Total</td>
+                        <td class="px-2 py-1.5 text-right">${formatEuro(epargnePrevu)}</td>
+                        <td class="px-2 py-1.5 text-right">${formatEuro(window.budgetPlan.epargne.reel || 0)}</td>
+                    </tr>
+                    <tr class="bg-slate-50 text-slate-400 text-xs">
+                        <td class="px-2 py-1"></td>
+                        <td class="px-2 py-1 text-right">${percent}%</td>
+                        <td class="px-2 py-1"></td>
+                    </tr>
+                `;
+            }
+        }
+
         function renderBudget() {
             const label = document.getElementById('budget-month-label');
             if (!label) return; // section pas encore présente dans le DOM
@@ -4225,21 +4448,7 @@
             const monthKey = getBudgetMonthKey(monthDate);
             const monthTransactions = window.budgetTransactions.filter(t => t.date && t.date.startsWith(monthKey));
 
-            const totalRevenus = monthTransactions.filter(t => t.type === 'revenu').reduce((s, t) => s + t.amount, 0);
-            const depenseTransactions = monthTransactions.filter(t => t.type === 'depense');
-            const totalDepenses = depenseTransactions.reduce((s, t) => s + t.amount, 0);
-            // Transactions sans nature enregistrée (anciennes données) comptées en "Variable" par défaut.
-            const totalDepensesFixes = depenseTransactions.filter(t => t.nature === 'fixe').reduce((s, t) => s + t.amount, 0);
-            const totalDepensesVariables = depenseTransactions.filter(t => t.nature !== 'fixe').reduce((s, t) => s + t.amount, 0);
-            const solde = totalRevenus - totalDepenses;
-
-            document.getElementById('budget-total-revenus').innerText = formatEuro(totalRevenus);
-            document.getElementById('budget-total-depenses').innerText = formatEuro(totalDepenses);
-            document.getElementById('budget-total-depenses-fixes').innerText = formatEuro(totalDepensesFixes);
-            document.getElementById('budget-total-depenses-variables').innerText = formatEuro(totalDepensesVariables);
-            const soldeEl = document.getElementById('budget-solde');
-            soldeEl.innerText = `${solde < 0 ? '-' : ''}${formatEuro(Math.abs(solde))}`;
-            soldeEl.className = `text-2xl font-bold mt-1 ${solde < 0 ? 'text-rose-500' : 'text-indigo-600'}`;
+            renderBudgetPlan();
 
             // Répartition par catégorie de dépense
             const depenseCategories = window.budgetCategories.depense || [];
@@ -4249,34 +4458,6 @@
                 spentByCategory[t.category] = (spentByCategory[t.category] || 0) + t.amount;
             });
 
-            // Cartes de progression par catégorie
-            const progressContainer = document.getElementById('budget-categories-progress');
-            if (progressContainer) {
-                if (depenseCategories.length === 0) {
-                    progressContainer.innerHTML = `<p class="text-sm text-slate-400 text-center py-4">Aucune catégorie de dépense pour l'instant.</p>`;
-                } else {
-                    progressContainer.innerHTML = depenseCategories.map(cat => {
-                        const spent = spentByCategory[cat] || 0;
-                        const target = window.budgetTargets[cat] || 0;
-                        const percent = target > 0 ? Math.min(100, (spent / target) * 100) : (spent > 0 ? 100 : 0);
-                        const overBudget = target > 0 && spent > target;
-                        const barColor = overBudget ? 'bg-rose-500' : 'bg-indigo-500';
-                        return `
-                            <div>
-                                <div class="flex items-center justify-between text-xs mb-1">
-                                    <span class="font-semibold text-slate-700">${cat}</span>
-                                    <button onclick="editBudgetCategoryTarget('${cat.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-indigo-500">
-                                        ${spent.toFixed(0)} € ${target > 0 ? `/ ${target.toFixed(0)} €` : ''} ✏️
-                                    </button>
-                                </div>
-                                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="h-full ${barColor} rounded-full" style="width: ${percent}%"></div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            }
 
             // Listes de catégories (gestion)
             const depenseListEl = document.getElementById('budget-cat-list-depense');
