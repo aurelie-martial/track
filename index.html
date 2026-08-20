@@ -538,29 +538,42 @@
                 </div>
             </div>
 
+            <!-- Sélecteur de période partagé par les 2 graphiques Poids / Composition ci-dessous -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-wrap items-center justify-between gap-2">
+                <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+                    <button onclick="setSportChartPeriodMode('month')" id="btn-sport-period-month" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">Mois</button>
+                    <button onclick="setSportChartPeriodMode('quarter')" id="btn-sport-period-quarter" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Trimestre</button>
+                    <button onclick="setSportChartPeriodMode('semester')" id="btn-sport-period-semester" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Semestre</button>
+                </div>
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200 shrink-0">
+                    <button onclick="navigateSportChartPeriod(-1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">←</button>
+                    <span id="sport-period-label" class="text-[11px] font-semibold text-indigo-700 px-1 min-w-[90px] text-center truncate"></span>
+                    <button onclick="navigateSportChartPeriod(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">→</button>
+                </div>
+            </div>
+
             <!-- Graphiques -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                        <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Poids & répartition muscle / gras
+                        <span class="w-2 h-5 bg-indigo-500 rounded-xs inline-block"></span> Poids
                     </h3>
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                        <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
-                            <button onclick="setSportChartPeriodMode('month')" id="btn-sport-period-month" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">Mois</button>
-                            <button onclick="setSportChartPeriodMode('quarter')" id="btn-sport-period-quarter" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Trimestre</button>
-                            <button onclick="setSportChartPeriodMode('semester')" id="btn-sport-period-semester" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Semestre</button>
-                        </div>
-                        <div class="flex items-center bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200 shrink-0">
-                            <button onclick="navigateSportChartPeriod(-1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">←</button>
-                            <span id="sport-period-label" class="text-[11px] font-semibold text-indigo-700 px-1 min-w-[90px] text-center truncate"></span>
-                            <button onclick="navigateSportChartPeriod(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">→</button>
-                        </div>
-                    </div>
                     <div class="h-56">
-                        <canvas id="sport-measurements-chart"></canvas>
+                        <canvas id="sport-weight-chart"></canvas>
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-2">La courbe trace le poids ; la zone en dessous répartit la masse musculaire (vert) et la masse grasse (orange) selon leurs proportions.</p>
+                    <p class="text-[10px] text-slate-400 mt-2">Zoomé entre 50 et 70 kg pour mieux voir le détail. Clique/survole un point pour la masse grasse et musculaire du jour.</p>
                 </div>
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-amber-400 rounded-xs inline-block"></span> Masse grasse & masse musculaire
+                    </h3>
+                    <div class="h-56">
+                        <canvas id="sport-composition-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6">
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
                         <span class="w-2 h-5 bg-emerald-500 rounded-xs inline-block"></span> Séances de sport & calories dépensées
@@ -3779,7 +3792,8 @@
         }
 
         // --- SUIVI SPORT : MESURES CORPORELLES & ACTIVITÉS ---
-        let sportMeasurementsChartInstance = null;
+        let sportWeightChartInstance = null;
+        let sportCompositionChartInstance = null;
         let sportActivityChartInstance = null;
         let moodChartInstance = null;
 
@@ -4109,13 +4123,12 @@
         function renderSportCharts() {
             if (typeof Chart === 'undefined') return;
 
-            const measurementsCanvas = document.getElementById('sport-measurements-chart');
+            const weightCanvas = document.getElementById('sport-weight-chart');
+            const compositionCanvas = document.getElementById('sport-composition-chart');
             const activityCanvas = document.getElementById('sport-activity-chart');
-            if (!measurementsCanvas || !activityCanvas) return;
+            if (!weightCanvas || !compositionCanvas || !activityCanvas) return;
 
-            // --- Graphique combiné : une seule courbe (le poids), la zone en dessous étant
-            // répartie entre masse grasse et masse musculaire selon leurs proportions respectives.
-            // Limité à la période choisie (mois / trimestre / semestre, navigable).
+            // Période partagée par les 2 graphiques (mois / trimestre / semestre, navigable).
             const periodRange = getSportChartPeriodRange();
             const periodStartISO = formatDateISO(periodRange.start);
             const periodEndISO = formatDateISO(periodRange.end);
@@ -4128,40 +4141,99 @@
             const measurementLabels = sortedMeasurements.map(m => formatDateFRShort(m.date));
             const comp = buildBodyCompositionSeries(sortedMeasurements);
 
-            if (sportMeasurementsChartInstance) sportMeasurementsChartInstance.destroy();
-            sportMeasurementsChartInstance = new Chart(measurementsCanvas.getContext('2d'), {
+            // --- Graphique 1 : le poids seul, zoomé entre 50 et 70 kg pour mieux voir le détail.
+            // Le détail masse grasse / musculaire reste consultable au clic/survol d'un point,
+            // exactement comme avant (juste plus dessiné en zone empilée sur la courbe).
+            if (sportWeightChartInstance) sportWeightChartInstance.destroy();
+            sportWeightChartInstance = new Chart(weightCanvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: measurementLabels,
+                    datasets: [
+                        {
+                            label: 'Poids (kg)',
+                            data: comp.weightArr,
+                            borderColor: '#6366f1',
+                            backgroundColor: '#6366f122',
+                            borderWidth: 2.5,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#6366f1',
+                            tension: 0.3,
+                            spanGaps: true,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const w = comp.weightArr[context.dataIndex];
+                                    return w === null || w === undefined ? 'Poids : non renseigné' : `Poids : ${w} kg`;
+                                },
+                                afterLabel: function(context) {
+                                    const idx = context.dataIndex;
+                                    const lines = [];
+                                    const fatKg = comp.fatKgRaw[idx];
+                                    const fatPct = comp.fatPercentArr[idx];
+                                    const muscleKg = comp.muscleKgRaw[idx];
+                                    const musclePct = comp.musclePercentArr[idx];
+                                    if (fatKg !== null && fatKg !== undefined) {
+                                        lines.push(`Masse grasse : ${fatKg} kg${fatPct !== null ? ' (' + fatPct + '%)' : ''}`);
+                                    }
+                                    if (muscleKg !== null && muscleKg !== undefined) {
+                                        lines.push(`Masse musculaire : ${muscleKg} kg${musclePct !== null ? ' (' + musclePct + '%)' : ''}`);
+                                    }
+                                    return lines;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: {
+                            min: 50,
+                            max: 70,
+                            grid: { color: '#f1f5f9' },
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+
+            // --- Graphique 2 : masse grasse et masse musculaire en 2 courbes distinctes (kg),
+            // pour voir l'évolution de chacune indépendamment plutôt qu'empilées sur le poids.
+            if (sportCompositionChartInstance) sportCompositionChartInstance.destroy();
+            sportCompositionChartInstance = new Chart(compositionCanvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: measurementLabels,
                     datasets: [
                         {
                             label: 'Masse grasse (kg)',
-                            data: comp.fatKg,
+                            data: comp.fatKgRaw,
                             borderColor: '#f59e0b',
-                            backgroundColor: '#f59e0b55',
-                            borderWidth: 1,
-                            pointRadius: 0,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            pointBackgroundColor: '#f59e0b',
                             tension: 0.3,
-                            fill: 'origin'
+                            spanGaps: true,
+                            fill: false
                         },
                         {
                             label: 'Masse musculaire (kg)',
-                            data: comp.stackedTopKg,
+                            data: comp.muscleKgRaw,
                             borderColor: '#10b981',
-                            backgroundColor: '#10b98155',
-                            borderWidth: 1,
-                            pointRadius: 0,
-                            tension: 0.3,
-                            fill: '-1'
-                        },
-                        {
-                            label: 'Poids (kg)',
-                            data: comp.weightArr,
-                            borderColor: '#6366f1',
                             backgroundColor: 'transparent',
-                            borderWidth: 2.5,
-                            pointRadius: 3,
-                            pointBackgroundColor: '#6366f1',
+                            borderWidth: 2,
+                            pointRadius: 2,
+                            pointBackgroundColor: '#10b981',
                             tension: 0.3,
                             spanGaps: true,
                             fill: false
@@ -4171,18 +4243,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    // Survol/clic n'importe où sur une même date affiche les 3 valeurs ensemble
-                    // (poids + masse musculaire + masse grasse), pas seulement celle du trait
-                    // exactement pointé (utile car les aires grasse/musculaire n'ont pas de point visible).
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
                         tooltip: {
-                            // Ordre d'affichage dans l'infobulle : Poids, puis Masse musculaire, puis Masse grasse
-                            itemSort: function(a, b) {
-                                const order = { 2: 0, 1: 1, 0: 2 };
-                                return order[a.datasetIndex] - order[b.datasetIndex];
-                            },
                             callbacks: {
                                 label: function(context) {
                                     const idx = context.dataIndex;
@@ -4192,15 +4256,10 @@
                                         if (kg === null || kg === undefined) return null;
                                         return `Masse grasse : ${kg} kg${pct !== null ? ' (' + pct + '%)' : ''}`;
                                     }
-                                    if (context.datasetIndex === 1) {
-                                        const kg = comp.muscleKgRaw[idx];
-                                        const pct = comp.musclePercentArr[idx];
-                                        if (kg === null || kg === undefined) return null;
-                                        return `Masse musculaire : ${kg} kg${pct !== null ? ' (' + pct + '%)' : ''}`;
-                                    }
-                                    const w = comp.weightArr[idx];
-                                    if (w === null || w === undefined) return null;
-                                    return `Poids : ${w} kg`;
+                                    const kg = comp.muscleKgRaw[idx];
+                                    const pct = comp.musclePercentArr[idx];
+                                    if (kg === null || kg === undefined) return null;
+                                    return `Masse musculaire : ${kg} kg${pct !== null ? ' (' + pct + '%)' : ''}`;
                                 }
                             }
                         }
@@ -4209,7 +4268,6 @@
                         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
                         y: {
                             beginAtZero: true,
-                            max: 70,
                             grid: { color: '#f1f5f9' },
                             ticks: { font: { size: 10 } }
                         }
