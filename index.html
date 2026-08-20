@@ -368,9 +368,12 @@
             <!-- SOUS-ONGLET: TODO LIST -->
             <div id="subtab-todo-list" class="subtab-content active space-y-6">
                 <div class="flex justify-end gap-2 bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs">
-                    <input type="text" id="new-todo-cat-input" placeholder="Nouveau bloc..." class="w-32 sm:w-auto px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+                    <input type="text" id="new-todo-cat-input" placeholder="Nouveau bloc..." onkeydown="if(event.key==='Enter'){event.preventDefault();addTodoCategory();}" class="w-32 sm:w-auto px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
                     <button onclick="addTodoCategory()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">
                         + Ajouter
+                    </button>
+                    <button onclick="addTodoCategory(true)" title="Ajouter un bloc « objectif du mois » (fond noir)" class="bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors whitespace-nowrap flex items-center gap-1">
+                        ⭐ Objectif du mois
                     </button>
                 </div>
 
@@ -873,8 +876,7 @@
                         <h3 class="text-sm font-bold text-slate-800 mb-4">Catégories</h3>
                         <div>
                             <div class="flex flex-wrap gap-2 mb-2">
-                                <input type="text" id="new-budget-cat-depense" placeholder="Nouvelle catégorie..." class="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-400">
-                                <input type="text" inputmode="decimal" id="new-budget-cat-depense-target" placeholder="Budget €/mois" class="w-28 px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-400">
+                                <input type="text" id="new-budget-cat-depense" placeholder="Nouvelle catégorie..." onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetCategory('depense');}" class="flex-1 min-w-[120px] px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-rose-400">
                                 <button onclick="addBudgetCategory('depense')" class="bg-rose-400 hover:bg-rose-500 text-white font-medium px-3 py-2 rounded-xl text-sm transition-colors whitespace-nowrap">+ Ajouter</button>
                             </div>
                             <div id="budget-cat-list-depense" class="flex flex-wrap gap-1.5"></div>
@@ -1326,6 +1328,7 @@
                         window.habits = data.habits || window.habits;
                         window.moodHistory = data.moodHistory || window.moodHistory;
                         window.todoData = data.todoData || window.todoData;
+                        window.todoStarBlocks = data.todoStarBlocks || window.todoStarBlocks;
                         window.planCategories = data.planCategories || window.planCategories;
                         window.planGoals = data.planGoals || window.planGoals;
                         window.recipeCategories = data.recipeCategories || window.recipeCategories;
@@ -1421,6 +1424,7 @@
                 habits: window.habits,
                 moodHistory: window.moodHistory,
                 todoData: window.todoData,
+                todoStarBlocks: window.todoStarBlocks,
                 planCategories: window.planCategories,
                 planGoals: window.planGoals,
                 recipeCategories: window.recipeCategories,
@@ -1472,6 +1476,8 @@
             "Airbnb": [{ id: 101, text: "Répondre aux messages", completed: false }],
             "TODO": [{ id: 105, text: "Exemple de tâche", completed: false }]
         };
+        // Noms des blocs Todo affichés en style "objectif du mois" (fond noir, texte blanc).
+        window.todoStarBlocks = [];
         window.planCategories = ["Airbnb", "Roman graphique", "TODO", "Sport"];
         window.planGoals = [
             { id: 201, text: "Lancer les réservations", category: "Airbnb", completed: false, month: "Mars" }
@@ -2693,20 +2699,20 @@
             if(!container) return;
             container.innerHTML = '';
 
-            function renderTaskItem(blockName, task) {
+            function renderTaskItem(blockName, task, isStar) {
                 return `
-                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all group" data-task-id="${task.id}">
+                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl ${isStar ? 'hover:bg-white/10' : 'hover:bg-slate-50'} border border-transparent ${isStar ? 'hover:border-slate-700' : 'hover:border-slate-100'} transition-all group" data-task-id="${task.id}">
                         <div class="flex items-center gap-2 flex-1 min-w-0">
-                            <span class="task-drag-handle text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing shrink-0 select-none" title="Glisser pour réordonner">⠿</span>
-                            <input type="checkbox" ${task.completed ? 'checked' : ''} 
+                            <span class="task-drag-handle ${isStar ? 'text-slate-500 hover:text-slate-300' : 'text-slate-300 hover:text-slate-500'} cursor-grab active:cursor-grabbing shrink-0 select-none" title="Glisser pour réordonner">⠿</span>
+                            <input type="checkbox" ${task.completed ? 'checked' : ''}
                                 onclick="toggleTodoStatus('${blockName}', ${task.id}, this.checked)"
                                 class="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-400 cursor-pointer shrink-0">
-                            <span class="todo-edit-label text-sm truncate text-slate-700 ${task.completed ? 'line-through text-slate-400' : ''}" 
+                            <span class="todo-edit-label text-sm truncate ${isStar ? 'text-white' : 'text-slate-700'} ${task.completed ? (isStar ? 'line-through text-slate-500' : 'line-through text-slate-400') : ''}"
                                   onclick="editTodoText('${blockName}', ${task.id})">${task.text}</span>
                         </div>
                         <div class="flex gap-0.5 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                            <button onclick="editTodoText('${blockName}', ${task.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs">✏️</button>
-                            <button onclick="deleteSingleTodo('${blockName}', ${task.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs">✕</button>
+                            <button onclick="editTodoText('${blockName}', ${task.id})" class="${isStar ? 'text-slate-400 hover:text-indigo-300' : 'text-slate-400 hover:text-indigo-500'} p-1 text-xs">✏️</button>
+                            <button onclick="deleteSingleTodo('${blockName}', ${task.id})" class="${isStar ? 'text-slate-400 hover:text-rose-400' : 'text-slate-400 hover:text-rose-500'} p-1 text-xs">✕</button>
                         </div>
                     </div>
                 `;
@@ -2716,37 +2722,38 @@
                 const tasks = todoData[blockName];
                 const activeTasks = tasks.filter(t => !t.completed);
                 const doneTasks = tasks.filter(t => t.completed);
+                const isStar = (window.todoStarBlocks || []).includes(blockName);
                 const blockColor = pastelColors[blockIdx % pastelColors.length];
 
                 let blockHtml = `
-                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col h-full overflow-hidden" data-block-name="${blockName}">
-                        <div class="px-5 py-4 ${blockColor} flex justify-between items-center border-b border-slate-100">
+                    <div class="${isStar ? 'bg-slate-900' : 'bg-white'} rounded-2xl border ${isStar ? 'border-slate-900' : 'border-slate-100'} shadow-sm flex flex-col h-full overflow-hidden" data-block-name="${blockName}">
+                        <div class="px-5 py-4 ${isStar ? 'bg-black' : blockColor} flex justify-between items-center border-b ${isStar ? 'border-slate-700' : 'border-slate-100'}">
                             <div class="flex items-center gap-2 min-w-0 block-drag-handle cursor-grab active:cursor-grabbing">
                                 <span class="text-slate-400 select-none" title="Glisser pour réordonner">⠿</span>
-                                <h3 class="font-bold text-slate-800 text-sm tracking-wide uppercase truncate">${blockName}</h3>
+                                <h3 class="font-bold ${isStar ? 'text-white' : 'text-slate-800'} text-sm tracking-wide uppercase truncate">${isStar ? '⭐ ' : ''}${blockName}</h3>
                             </div>
                             <div class="flex items-center gap-1 shrink-0">
-                                <button onclick="clearAllCategoryTodos('${blockName}')" class="text-slate-500 hover:text-rose-600 p-1 rounded text-xs bg-white/50 hover:bg-white transition-colors">Vider</button>
-                                <button onclick="deleteTodoCategory('${blockName}')" class="text-slate-400 hover:text-rose-600 p-1 rounded text-xs">❌</button>
+                                <button onclick="clearAllCategoryTodos('${blockName}')" class="${isStar ? 'text-slate-300 hover:text-rose-400 bg-white/10 hover:bg-white/20' : 'text-slate-500 hover:text-rose-600 bg-white/50 hover:bg-white'} p-1 rounded text-xs transition-colors">Vider</button>
+                                <button onclick="deleteTodoCategory('${blockName}')" class="${isStar ? 'text-slate-300 hover:text-rose-400' : 'text-slate-400 hover:text-rose-600'} p-1 rounded text-xs">❌</button>
                             </div>
                         </div>
                         <div class="p-4 flex-1">
                             <div id="todo-active-${blockIdx}" class="space-y-2">
-                                ${activeTasks.map(t => renderTaskItem(blockName, t)).join('')}
+                                ${activeTasks.map(t => renderTaskItem(blockName, t, isStar)).join('')}
                             </div>
-                            <div id="todo-done-${blockIdx}" class="space-y-2 ${doneTasks.length > 0 ? 'mt-2 pt-2 border-t border-slate-100' : ''}">
-                                ${doneTasks.map(t => renderTaskItem(blockName, t)).join('')}
+                            <div id="todo-done-${blockIdx}" class="space-y-2 ${doneTasks.length > 0 ? 'mt-2 pt-2 border-t ' + (isStar ? 'border-slate-700' : 'border-slate-100') : ''}">
+                                ${doneTasks.map(t => renderTaskItem(blockName, t, isStar)).join('')}
                             </div>
                 `;
 
-                if (tasks.length === 0) blockHtml += `<p class="text-xs text-center text-slate-400 py-6">Aucune tâche</p>`;
+                if (tasks.length === 0) blockHtml += `<p class="text-xs text-center ${isStar ? 'text-slate-400' : 'text-slate-400'} py-6">Aucune tâche</p>`;
 
                 blockHtml += `
                         </div>
-                        <div class="p-3 bg-slate-50/50 border-t border-slate-100 flex gap-1.5">
-                            <input type="text" id="input-add-${blockIdx}" placeholder="Ajouter une tâche..." 
-                                onkeydown="if(event.key === 'Enter') addTodoItem('${blockName}', ${blockIdx})" 
-                                class="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:border-indigo-400 bg-white">
+                        <div class="p-3 ${isStar ? 'bg-black/40 border-t border-slate-700' : 'bg-slate-50/50 border-t border-slate-100'} flex gap-1.5">
+                            <input type="text" id="input-add-${blockIdx}" placeholder="Ajouter une tâche..."
+                                onkeydown="if(event.key === 'Enter') addTodoItem('${blockName}', ${blockIdx})"
+                                class="flex-1 px-3 py-1.5 rounded-lg border ${isStar ? 'border-slate-700 bg-slate-800 text-white placeholder-slate-400' : 'border-slate-200 bg-white'} text-xs focus:outline-none focus:border-indigo-400">
                             <button onclick="addTodoItem('${blockName}', ${blockIdx})" class="bg-indigo-500 text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors">Ajouter</button>
                         </div>
                     </div>
@@ -2814,11 +2821,15 @@
             saveData();
         }
 
-        function addTodoCategory() {
+        function addTodoCategory(isStar) {
             const input = document.getElementById('new-todo-cat-input');
             const name = input.value.trim();
             if (!name || todoData[name]) return;
             todoData[name] = [];
+            if (isStar) {
+                if (!window.todoStarBlocks) window.todoStarBlocks = [];
+                if (!window.todoStarBlocks.includes(name)) window.todoStarBlocks.push(name);
+            }
             input.value = '';
             saveData();
             renderTodos();
@@ -2827,6 +2838,7 @@
         function deleteTodoCategory(name) {
             if (confirm(`Supprimer le bloc "${name}" ?`)) {
                 delete todoData[name];
+                window.todoStarBlocks = (window.todoStarBlocks || []).filter(n => n !== name);
                 saveData();
                 renderTodos();
             }
@@ -4223,7 +4235,7 @@
         function refreshBudgetCategoryOptions() {
             const catEl = document.getElementById('new-budget-category');
             if (!catEl) return;
-            const cats = window.budgetCategories.depense || [];
+            const cats = [...(window.budgetCategories.depense || [])].sort((a, b) => a.localeCompare(b, 'fr'));
             catEl.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
         }
 
@@ -4277,12 +4289,6 @@
             }
             window.budgetCategories[type].push(name);
 
-            if (type === 'depense') {
-                const targetInput = document.getElementById('new-budget-cat-depense-target');
-                window.budgetTargets[name] = parseAmount(targetInput.value);
-                targetInput.value = '';
-            }
-
             nameInput.value = '';
             saveData();
             renderBudget();
@@ -4296,17 +4302,6 @@
             saveData();
             renderBudget();
             refreshBudgetCategoryOptions();
-        }
-
-        function editBudgetCategoryTarget(name) {
-            const current = window.budgetTargets[name] || 0;
-            const input = prompt(`Budget mensuel prévu pour "${name}" (€) :`, current);
-            if (input === null) return;
-            const value = parseFloat(input);
-            if (isNaN(value) || value < 0) return;
-            window.budgetTargets[name] = value;
-            saveData();
-            renderBudget();
         }
 
         // --- PLAN BUDGÉTAIRE : Ressources + Fixe/Variable/Épargne (saisie manuelle façon tableur) ---
@@ -4409,10 +4404,10 @@
         // Champ montant avec le signe € affiché juste après, collé au chiffre. Champ texte (pas
         // number) pour ne jamais perdre un zéro décimal saisi (ex: 13,60) et ne pas afficher les
         // flèches d'incrémentation natives.
-        function budgetEuroInput(value, onchange, width) {
+        function budgetEuroInput(value, onchange, width, extraClass) {
             return `
                 <div class="flex items-center justify-end gap-0.5">
-                    <input type="text" inputmode="decimal" value="${formatAmountForInput(value)}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} bg-transparent text-xs text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
+                    <input type="text" inputmode="decimal" value="${formatAmountForInput(value)}" onchange="${onchange}" class="budget-amount-input ${width || 'w-full'} ${extraClass || ''} bg-transparent text-xs text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300">
                     <span class="text-slate-400 text-xs">€</span>
                 </div>
             `;
@@ -4451,15 +4446,16 @@
 
             const rowsHtml = displayLines.map(l => {
                 const isLogged = section === 'fixe' && loggedFixeLineIds.has(l.id);
+                const struckClass = isLogged ? 'line-through' : '';
                 return `
                 <tr class="${isLogged ? 'opacity-40' : ''}">
                     <td class="px-1.5 py-1.5 truncate">
-                        <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="w-full bg-transparent text-xs text-slate-700 focus:outline-none focus:border-b focus:border-indigo-300">
+                        <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="w-full bg-transparent text-xs text-slate-700 ${struckClass} focus:outline-none focus:border-b focus:border-indigo-300">
                     </td>
                     <td class="px-1 py-1.5">
                         <div class="flex items-center justify-end gap-0.5">
                             ${section === 'fixe' ? `<button onclick="addFixeLineAsTransaction(${l.id})" class="shrink-0 w-4 h-4 flex items-center justify-center rounded-full bg-slate-200 hover:bg-emerald-200 text-slate-500 hover:text-emerald-700 text-[10px] font-bold leading-none transition-colors" title="Ajouter comme transaction du jour">+</button>` : ''}
-                            ${budgetEuroInput(l.prevu, `updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)`)}
+                            ${budgetEuroInput(l.prevu, `updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)`, null, struckClass)}
                         </div>
                     </td>
                     ${showReel ? `
@@ -4509,7 +4505,10 @@
                 <tr class="border-b border-slate-100">
                     <td class="px-4 py-2 text-slate-600">${label}</td>
                     <td class="px-4 py-2">
-                        ${budgetEuroInput(value, `updateBudgetPlanRessource('${field}', this.value)`, 'w-16')}
+                        <div class="flex items-center justify-end gap-0.5">
+                            <span class="text-slate-500">-</span>
+                            ${budgetEuroInput(value, `updateBudgetPlanRessource('${field}', this.value)`, 'w-16')}
+                        </div>
                     </td>
                 </tr>
             `;
@@ -4590,7 +4589,7 @@
 
             renderBudgetPlan();
 
-            const depenseCategories = window.budgetCategories.depense || [];
+            const depenseCategories = [...(window.budgetCategories.depense || [])].sort((a, b) => a.localeCompare(b, 'fr'));
 
             // Listes de catégories (gestion)
             const depenseListEl = document.getElementById('budget-cat-list-depense');
@@ -4619,7 +4618,7 @@
                         // facilement où commence/finit chaque journée dans la liste.
                         const isNewDay = idx > 0 && t.date !== sorted[idx - 1].date;
                         return `
-                        <tr class="${isNewDay ? 'border-t-2 border-slate-300' : ''}">
+                        <tr class="${isNewDay ? 'border-t-2 border-slate-500' : ''}">
                             <td class="py-2 px-1.5 whitespace-nowrap">${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</td>
                             <td class="py-2 px-1.5">${budgetCategoryTag(t.category)}</td>
                             <td class="py-2 px-1.5 text-slate-500">${t.label || '—'}</td>
