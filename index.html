@@ -531,7 +531,7 @@
                 </div>
                 <div class="flex items-center bg-slate-100 p-1 rounded-xl gap-1 border border-slate-200 shrink-0">
                     <button onclick="navigateSportChartPeriod(-1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">←</button>
-                    <span id="sport-period-label" class="text-[11px] font-semibold text-indigo-700 px-1 min-w-[90px] text-center truncate"></span>
+                    <span id="sport-period-label" class="text-[11px] font-semibold text-indigo-700 px-1 min-w-[120px] text-center truncate"></span>
                     <button onclick="navigateSportChartPeriod(1)" class="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded-lg shadow-xs font-semibold text-[11px]">→</button>
                 </div>
             </div>
@@ -553,7 +553,7 @@
                     <div class="h-56">
                         <canvas id="sport-weight-chart"></canvas>
                     </div>
-                    <p class="text-[10px] text-slate-400 mt-2">Zoomé entre 56 et 61 kg pour mieux voir le détail. Clique/survole un point pour la masse grasse et musculaire du jour.</p>
+                    <p class="text-[10px] text-slate-400 mt-2">Échelle ajustée automatiquement (±1 kg autour des valeurs affichées). Clique/survole un point pour la masse grasse et musculaire du jour.</p>
                 </div>
                 <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm">
                     <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
@@ -3843,13 +3843,17 @@
                 return { start, end, label: `T${quarter + 1} ${year}` };
             }
             if (mode === 'semester') {
-                const currentSemester = Math.floor(now.getMonth() / 6);
-                const total = now.getFullYear() * 2 + currentSemester + offset;
-                const year = Math.floor(total / 2);
-                const semester = ((total % 2) + 2) % 2;
-                const start = new Date(year, semester * 6, 1);
-                const end = new Date(year, semester * 6 + 6, 1);
-                return { start, end, label: `S${semester + 1} ${year}` };
+                // Fenêtre GLISSANTE de 6 mois se terminant "aujourd'hui" (et non un semestre
+                // calendaire fixe S1/S2) : plus intuitif quand l'essentiel des mesures est
+                // récent, tout en restant navigable par tranches de 6 mois via les flèches.
+                const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+                end.setMonth(end.getMonth() + offset * 6);
+                const start = new Date(end);
+                start.setMonth(start.getMonth() - 6);
+                const label = offset === 0
+                    ? '6 derniers mois'
+                    : `${formatDateFRShort(formatDateISO(start))} → ${formatDateFRShort(formatDateISO(new Date(end.getTime() - 86400000)))}`;
+                return { start, end, label };
             }
             // 'month' par défaut
             const total = now.getFullYear() * 12 + now.getMonth() + offset;
@@ -4153,6 +4157,16 @@
             const measurementLabels = sortedMeasurements.map(m => formatDateFRShort(m.date));
             const comp = buildBodyCompositionSeries(sortedMeasurements);
 
+            // Zoom dynamique de l'axe du poids : 1 kg au-dessus et 1 kg en dessous
+            // des valeurs réellement affichées sur la période, au lieu de bornes fixes.
+            const weightValuesInRange = comp.weightArr.filter(w => w !== null && w !== undefined);
+            let weightAxisMin = 56;
+            let weightAxisMax = 61;
+            if (weightValuesInRange.length > 0) {
+                weightAxisMin = Math.min(...weightValuesInRange) - 1;
+                weightAxisMax = Math.max(...weightValuesInRange) + 1;
+            }
+
             // --- Graphique 1 : le poids seul, zoomé entre 50 et 70 kg pour mieux voir le détail.
             // Le détail masse grasse / musculaire reste consultable au clic/survol d'un point,
             // exactement comme avant (juste plus dessiné en zone empilée sur la courbe).
@@ -4209,8 +4223,8 @@
                     scales: {
                         x: { grid: { display: false }, ticks: { font: { size: 10 } } },
                         y: {
-                            min: 56,
-                            max: 61,
+                            min: weightAxisMin,
+                            max: weightAxisMax,
                             grid: { color: '#f1f5f9' },
                             ticks: { font: { size: 10 } }
                         }
