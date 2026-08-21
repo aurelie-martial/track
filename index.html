@@ -7,7 +7,7 @@
     <link rel="apple-touch-icon" href="lily-tracker.png">
 <link rel="icon" type="image/png" href="lily-tracker.png" />
     <!-- Nom personnalisé sous l'icône de l'écran d'accueil -->
-    <meta name="apple-mobile-web-app-title" content="LilyPlanner">
+    <meta name="apple-mobile-web-app-title" content="LilyTracker">
 
     <!-- Masquer la barre de navigateur Safari pour un effet "Application native" -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -152,7 +152,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-slate-800">LilyPlanner <span class="text-indigo-400 font-medium">2026</span></h1>
+                        <h1 class="text-xl font-bold text-slate-800">LilyTracker <span class="text-indigo-400 font-medium">2026</span></h1>
                         <p class="text-xs text-slate-400">Discipline vaut mieux que motivation</p>
                     </div>
                 </div>
@@ -522,6 +522,24 @@
 
             <!-- SOUS-ONGLET: SPORT -->
             <div id="subtab-sport" class="subtab-content space-y-6">
+
+            <!-- Semainier sport : 1 bloc de texte libre par jour pour organiser les séances -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="p-4 sm:p-6 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center justify-end gap-3">
+                    <div class="flex items-center gap-1.5 sm:gap-2">
+                        <button onclick="navigateSportWeek(-1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">←</button>
+                        <span id="sport-week-label" class="text-xs sm:text-sm font-bold text-emerald-700 min-w-[140px] text-center"></span>
+                        <button onclick="navigateSportWeek(1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">→</button>
+                        <button onclick="goToSportCurrentWeek()" class="ml-1 px-2 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap">Semaine en cours</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <div id="sport-week-planner-grid" class="p-4 sm:p-6 grid grid-cols-7 gap-2 sm:gap-3 min-w-[760px] sm:min-w-0">
+                        <!-- Généré par JS -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Sélecteur de période partagé par les 2 graphiques Poids / Composition ci-dessous -->
             <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-wrap items-center justify-between gap-2">
                 <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
@@ -688,10 +706,7 @@
 
             <!-- Semainier / Planning de repas de la semaine -->
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div class="p-4 sm:p-6 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                        <span class="w-2 h-5 bg-amber-400 rounded-xs inline-block"></span> Semainier - Planning de repas
-                    </h3>
+                <div class="p-4 sm:p-6 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center justify-end gap-3">
                     <div class="flex items-center gap-1.5 sm:gap-2">
                         <button onclick="navigateMealWeek(-1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">←</button>
                         <span id="meal-week-label" class="text-xs sm:text-sm font-bold text-amber-700 min-w-[140px] text-center"></span>
@@ -1321,6 +1336,7 @@
                         window.sportMeasurements = data.sportMeasurements || window.sportMeasurements;
                         window.sportActivities = data.sportActivities || window.sportActivities;
                         window.mealPlans = data.mealPlans || window.mealPlans;
+                        window.sportWeekPlans = data.sportWeekPlans || window.sportWeekPlans;
                         window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
                         window.budgetCategories = data.budgetCategories || window.budgetCategories;
                         window.budgetTargets = data.budgetTargets || window.budgetTargets;
@@ -1330,6 +1346,7 @@
                         renderTodos();
                         renderRecipes();
                         renderMealPlanner();
+                        renderSportWeekPlanner();
                         renderPlanGoals();
                         renderAgenda();
                         renderSport();
@@ -1360,7 +1377,7 @@
         // --- Connexion / synchronisation Withings ---
         window.connectWithings = function() {
             if (!auth.currentUser) {
-                alert("Connecte-toi d'abord à LilyPlanner.");
+                alert("Connecte-toi d'abord à LilyTracker.");
                 return;
             }
             if (WITHINGS_CLIENT_ID.startsWith("COLLE_ICI") || WITHINGS_REDIRECT_URI.startsWith("COLLE_ICI")) {
@@ -1381,7 +1398,7 @@
 
         window.syncWithingsNow = async function() {
             if (!auth.currentUser) {
-                alert("Connecte-toi d'abord à LilyPlanner.");
+                alert("Connecte-toi d'abord à LilyTracker.");
                 return;
             }
             const btn = document.getElementById('btn-withings-sync');
@@ -1418,6 +1435,7 @@
                 sportMeasurements: window.sportMeasurements,
                 sportActivities: window.sportActivities,
                 mealPlans: window.mealPlans,
+                sportWeekPlans: window.sportWeekPlans,
                 budgetTransactions: window.budgetTransactions,
                 budgetCategories: window.budgetCategories,
                 budgetTargets: window.budgetTargets,
@@ -1505,6 +1523,10 @@
         // --- DONNÉES SEMAINIER (planning de repas) ---
         // Clé = date ISO ('YYYY-MM-DD') du jour concerné -> { lunch, dinner }
         window.mealPlans = {};
+
+        // --- DONNÉES SEMAINIER SPORT (organisation des séances) ---
+        // Clé = date ISO ('YYYY-MM-DD') du jour concerné -> texte libre
+        window.sportWeekPlans = {};
 
         // --- DONNÉES BUDGET ---
         window.budgetTransactions = []; // { id, date: 'YYYY-MM-DD', type: 'depense'|'revenu', category, label, amount }
@@ -1596,6 +1618,9 @@
                 if (sportSubtab && sportSubtab.classList.contains('active') && typeof renderSportCharts === 'function') {
                     requestAnimationFrame(renderSportCharts);
                 }
+                if (sportSubtab && sportSubtab.classList.contains('active') && typeof scrollSportWeekPlannerToToday === 'function') {
+                    requestAnimationFrame(scrollSportWeekPlannerToToday);
+                }
                 const recipesSubtab = document.getElementById('subtab-recipes');
                 if (recipesSubtab && recipesSubtab.classList.contains('active') && typeof scrollMealPlannerToToday === 'function') {
                     requestAnimationFrame(scrollMealPlannerToToday);
@@ -1642,6 +1667,9 @@
 
             if (subtabId === 'sport' && typeof renderSportCharts === 'function') {
                 requestAnimationFrame(renderSportCharts);
+            }
+            if (subtabId === 'sport' && typeof renderSportWeekPlanner === 'function') {
+                requestAnimationFrame(renderSportWeekPlanner);
             }
 
             if (subtabId === 'recipes' && typeof scrollMealPlannerToToday === 'function') {
@@ -3097,6 +3125,95 @@
 
             const dayWidth = totalWidth / 7;
             const todayIndex = (new Date().getDay() + 6) % 7; // 0 = lundi ... 6 = dimanche
+
+            let target = dayWidth * todayIndex;
+            target = Math.max(0, Math.min(target, totalWidth - visibleWidth));
+            scrollContainer.scrollLeft = target;
+        }
+
+        // --- SEMAINIER SPORT : organisation des séances (1 bloc de texte libre par jour) ---
+        window.sportWeekOffset = 0; // décalage en semaines par rapport à la semaine en cours
+
+        function getSportWeekMonday() {
+            const base = new Date();
+            base.setDate(base.getDate() + window.sportWeekOffset * 7);
+            return getMondayOfWeek(base);
+        }
+
+        function navigateSportWeek(delta) {
+            window.sportWeekOffset += delta;
+            renderSportWeekPlanner();
+        }
+
+        function goToSportCurrentWeek() {
+            window.sportWeekOffset = 0;
+            renderSportWeekPlanner();
+        }
+
+        function updateSportWeekNote(dateStr, value) {
+            window.sportWeekPlans[dateStr] = value;
+            saveData();
+        }
+
+        const sportWeekDayHeaders = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+
+        function renderSportWeekPlanner() {
+            const grid = document.getElementById('sport-week-planner-grid');
+            const label = document.getElementById('sport-week-label');
+            if (!grid || !label) return;
+
+            const monday = getSportWeekMonday();
+            const sunday = new Date(monday);
+            sunday.setDate(sunday.getDate() + 6);
+
+            const sameMonth = monday.getMonth() === sunday.getMonth();
+            label.innerText = sameMonth
+                ? `${monday.getDate()} - ${sunday.getDate()} ${agendaMonthNames[monday.getMonth()]}`
+                : `${monday.getDate()} ${agendaMonthNames[monday.getMonth()]} - ${sunday.getDate()} ${agendaMonthNames[sunday.getMonth()]}`;
+
+            const today = new Date();
+            const todayStr = formatDateISO(today);
+
+            let html = '';
+            for (let i = 0; i < 7; i++) {
+                const dateObj = new Date(monday);
+                dateObj.setDate(monday.getDate() + i);
+                const dateStr = formatDateISO(dateObj);
+                const isToday = dateStr === todayStr;
+                const note = window.sportWeekPlans[dateStr] || '';
+                const borderClass = isToday ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-slate-100';
+
+                html += `
+                    <div class="rounded-xl border ${borderClass} bg-slate-50/50 p-2.5 flex flex-col gap-1.5">
+                        <div class="text-center">
+                            <div class="text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-emerald-600' : 'text-slate-400'}">${sportWeekDayHeaders[i]}</div>
+                            <div class="text-xs font-bold ${isToday ? 'text-emerald-700' : 'text-slate-600'}">${dateObj.getDate()}</div>
+                        </div>
+                        <textarea rows="4" placeholder="..." onchange="updateSportWeekNote('${dateStr}', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] bg-white focus:outline-none focus:border-emerald-400 resize-none">${note}</textarea>
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+
+            requestAnimationFrame(scrollSportWeekPlannerToToday);
+        }
+
+        // Fait défiler horizontalement le semainier sport pour amener la colonne du jour J tout à
+        // gauche (même logique que pour le semainier repas).
+        function scrollSportWeekPlannerToToday() {
+            if (window.sportWeekOffset !== 0) return;
+            const grid = document.getElementById('sport-week-planner-grid');
+            if (!grid) return;
+            const scrollContainer = grid.closest('.overflow-x-auto');
+            if (!scrollContainer) return;
+
+            const totalWidth = grid.scrollWidth;
+            const visibleWidth = scrollContainer.clientWidth;
+            if (totalWidth <= visibleWidth) return;
+
+            const dayWidth = totalWidth / 7;
+            const todayIndex = (new Date().getDay() + 6) % 7;
 
             let target = dayWidth * todayIndex;
             target = Math.max(0, Math.min(target, totalWidth - visibleWidth));
