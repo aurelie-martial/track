@@ -543,6 +543,7 @@
             <!-- Sélecteur de période partagé par les 2 graphiques Poids / Composition ci-dessous -->
             <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-wrap items-center justify-between gap-2">
                 <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+                    <button onclick="setSportChartPeriodMode('week')" id="btn-sport-period-week" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Semaine</button>
                     <button onclick="setSportChartPeriodMode('month')" id="btn-sport-period-month" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">Mois</button>
                     <button onclick="setSportChartPeriodMode('quarter')" id="btn-sport-period-quarter" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Trimestre</button>
                     <button onclick="setSportChartPeriodMode('semester')" id="btn-sport-period-semester" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Semestre</button>
@@ -3918,7 +3919,7 @@
         // Le graphique Poids peut s'afficher par mois, trimestre ou semestre (navigation
         // précédent/suivant à l'intérieur du mode choisi), pour ne pas être noyé par tout
         // l'historique quand on veut juste voir une période récente.
-        window.sportChartPeriodMode = 'month'; // 'month' | 'quarter' | 'semester'
+        window.sportChartPeriodMode = 'month'; // 'week' | 'month' | 'quarter' | 'semester'
         window.sportChartPeriodOffset = 0; // décalage par rapport à la période actuelle
 
         function setSportChartPeriodMode(mode) {
@@ -3950,6 +3951,15 @@
             const offset = window.sportChartPeriodOffset;
             const now = new Date();
 
+            if (mode === 'week') {
+                const start = getMondayOfWeek(now);
+                start.setDate(start.getDate() + offset * 7);
+                const end = new Date(start);
+                end.setDate(end.getDate() + 7);
+                const lastDay = new Date(end.getTime() - 86400000);
+                const label = `${formatDateFRShort(formatDateISO(start))} → ${formatDateFRShort(formatDateISO(lastDay))}`;
+                return { start, end, label };
+            }
             if (mode === 'quarter') {
                 const currentQuarter = Math.floor(now.getMonth() / 3);
                 const total = now.getFullYear() * 4 + currentQuarter + offset;
@@ -4179,7 +4189,7 @@
                 const typeIcon = { Renfo: '🏋️', Run: '🏃', Marche: '🚶', Autre: '✨' };
                 tbody.innerHTML = sorted.map(a => `
                     <tr class="hover:bg-slate-50/50 transition-colors">
-                        <td class="py-2 px-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">${formatDateFR(a.date)}</td>
+                        <td class="py-2 px-1.5 text-xs font-medium text-slate-600 whitespace-nowrap">${formatDateFRShort(a.date)}</td>
                         <td class="py-2 px-1.5 text-xs">${typeIcon[normalizeActivityType(a.type)] || '✨'} ${a.name}</td>
                         <td class="py-2 px-1.5 text-xs">${a.duration !== null && a.duration !== undefined ? a.duration + ' min' : '-'}</td>
                         <td class="py-2 px-1.5 text-xs font-semibold text-emerald-600">${a.calories !== null && a.calories !== undefined ? a.calories : '-'}</td>
