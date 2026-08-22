@@ -1184,6 +1184,12 @@
 
     <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
         <p>© Made in Lily - 2026</p>
+        <div class="mt-2 flex items-center justify-center gap-3">
+            <button onclick="exportBackupData()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Sauvegarder mes données</button>
+            <span class="text-slate-200">·</span>
+            <button onclick="triggerRestoreBackup()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Restaurer une sauvegarde</button>
+            <input type="file" id="backup-restore-input" accept="application/json" class="hidden" onchange="restoreBackupData(this.files[0])">
+        </div>
     </footer>
 
     <!-- FIREBASE AUTH & FIRESTORE LOGIC -->
@@ -4895,7 +4901,7 @@
                     <td class="px-4 py-2">
                         <div class="flex items-center justify-end gap-0">
                             <span class="text-slate-500">-</span>
-                            <input type="text" inputmode="decimal" value="${valueStr}" onchange="updateBudgetPlanRessource('${field}', this.value)" class="budget-amount-input bg-transparent text-xs text-slate-700 text-left focus:outline-none focus:border-b focus:border-indigo-300" style="width:${valueStr.length + 1}ch">
+                            <input type="text" inputmode="decimal" value="${valueStr}" onchange="updateBudgetPlanRessource('${field}', this.value)" class="budget-amount-input bg-transparent text-xs text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300" style="width:${valueStr.length}ch;padding:0;border:0;margin:0;">
                             <span class="text-slate-400 text-xs">€</span>
                         </div>
                     </td>
@@ -5034,6 +5040,106 @@
             }
 
         }
+
+        // --- Sauvegarde / restauration manuelle (fichier JSON local) ---
+        // Complète la synchro Firebase automatique : permet de garder une copie de secours
+        // en local, ou de restaurer un état antérieur en cas de souci.
+        function getBackupPayload() {
+            return {
+                categories: window.categories,
+                habits: window.habits,
+                moodHistory: window.moodHistory,
+                moodComments: window.moodComments,
+                todoData: window.todoData,
+                todoStarBlocks: window.todoStarBlocks,
+                planCategories: window.planCategories,
+                planGoals: window.planGoals,
+                recipeCategories: window.recipeCategories,
+                recipes: window.recipes,
+                agendaEvents: window.agendaEvents,
+                sportMeasurements: window.sportMeasurements,
+                sportActivities: window.sportActivities,
+                mealPlans: window.mealPlans,
+                sportWeekPlans: window.sportWeekPlans,
+                budgetTransactions: window.budgetTransactions,
+                budgetCategories: window.budgetCategories,
+                budgetTargets: window.budgetTargets,
+                budgetPlan: window.budgetPlan
+            };
+        }
+
+        window.exportBackupData = function() {
+            const payload = getBackupPayload();
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateStr = formatDateISO(new Date());
+            a.href = url;
+            a.download = `lily-tracker-sauvegarde-${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        window.triggerRestoreBackup = function() {
+            const input = document.getElementById('backup-restore-input');
+            if (input) input.click();
+        };
+
+        window.restoreBackupData = function(file) {
+            const input = document.getElementById('backup-restore-input');
+            if (!file) return;
+            if (!confirm("Restaurer cette sauvegarde va remplacer toutes tes données actuelles (habitudes, todos, recettes, budget, agenda...). Continuer ?")) {
+                if (input) input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    window.categories = data.categories || window.categories;
+                    window.habits = data.habits || window.habits;
+                    window.moodHistory = data.moodHistory || window.moodHistory;
+                    window.moodComments = data.moodComments || window.moodComments;
+                    window.todoData = data.todoData || window.todoData;
+                    window.todoStarBlocks = data.todoStarBlocks || window.todoStarBlocks;
+                    window.planCategories = data.planCategories || window.planCategories;
+                    window.planGoals = data.planGoals || window.planGoals;
+                    window.recipeCategories = data.recipeCategories || window.recipeCategories;
+                    window.recipes = data.recipes || window.recipes;
+                    window.agendaEvents = data.agendaEvents || window.agendaEvents;
+                    window.sportMeasurements = data.sportMeasurements || window.sportMeasurements;
+                    window.sportActivities = data.sportActivities || window.sportActivities;
+                    window.mealPlans = data.mealPlans || window.mealPlans;
+                    window.sportWeekPlans = data.sportWeekPlans || window.sportWeekPlans;
+                    window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
+                    window.budgetCategories = data.budgetCategories || window.budgetCategories;
+                    window.budgetTargets = data.budgetTargets || window.budgetTargets;
+                    window.budgetPlan = data.budgetPlan || window.budgetPlan;
+
+                    renderHabits();
+                    renderTodos();
+                    renderRecipes();
+                    renderMealPlanner();
+                    renderSportWeekPlanner();
+                    renderPlanGoals();
+                    renderAgenda();
+                    renderSport();
+                    renderBudget();
+                    refreshBudgetCategoryOptions();
+
+                    if (typeof window.saveData === 'function') window.saveData();
+                    alert("✅ Sauvegarde restaurée avec succès.");
+                } catch (err) {
+                    console.error("Erreur de restauration :", err);
+                    alert("⚠️ Ce fichier ne semble pas être une sauvegarde valide.");
+                } finally {
+                    if (input) input.value = '';
+                }
+            };
+            reader.readAsText(file);
+        };
 
         window.onload = function() {
             switchTab('habit-tracker');
