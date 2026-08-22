@@ -4695,6 +4695,19 @@
             return (window.budgetPlan[section] || []).reduce((s, l) => s + (parseFloat(l[field]) || 0), 0);
         }
 
+        // Montant à retenir pour une ligne : le "réel" prime dès qu'il est renseigné (non nul),
+        // sinon on retombe sur le "prévu". Sert au tri (plus gros montant en premier) et au total
+        // variable utilisé dans le récapitulatif Ressources.
+        function budgetPlanEffectiveAmount(line) {
+            const reel = parseFloat(line.reel);
+            if (!isNaN(reel) && reel !== 0) return reel;
+            return parseFloat(line.prevu) || 0;
+        }
+
+        function budgetPlanSectionEffectiveTotal(section) {
+            return (window.budgetPlan[section] || []).reduce((s, l) => s + budgetPlanEffectiveAmount(l), 0);
+        }
+
         function updateBudgetPlanRessource(field, value) {
             window.budgetPlan.ressources[field] = parseAmount(value);
             saveData();
@@ -4800,8 +4813,9 @@
         // Rend une table Fixe ou Variable (lignes éditables + ligne Total). Le pourcentage du
         // salaire est affiché en haut du bloc (badge dans l'en-tête coloré), pas dans le tableau.
         // Les charges fixes n'ont qu'un seul montant (pas de distinction Prévu/Réel) ; seules les
-        // charges variables gardent les deux colonnes. Les charges fixes sont triées du montant
-        // le plus élevé au plus faible (l'ordre de saisie n'a pas d'importance ici).
+        // charges variables gardent les deux colonnes. Les deux tables sont triées du montant le
+        // plus élevé au plus faible (montant "effectif" pour Variable : le réel prime sur le
+        // prévu dès qu'il est renseigné) ; l'ordre de saisie n'a pas d'importance ici.
         function renderBudgetPlanTable(section) {
             const tbody = document.getElementById(`budget-plan-${section}-tbody`);
             if (!tbody) return;
@@ -4809,7 +4823,7 @@
             const showReel = section !== 'fixe';
             const displayLines = section === 'fixe'
                 ? [...lines].sort((a, b) => (parseFloat(b.prevu) || 0) - (parseFloat(a.prevu) || 0))
-                : lines;
+                : [...lines].sort((a, b) => budgetPlanEffectiveAmount(b) - budgetPlanEffectiveAmount(a));
             const totalPrevu = budgetPlanSectionTotal(section, 'prevu');
             const totalReel = budgetPlanSectionTotal(section, 'reel');
             const salaire = window.budgetPlan.ressources.salaire || 0;
@@ -4876,7 +4890,9 @@
 
             const r = window.budgetPlan.ressources;
             const totalFixePrevu = budgetPlanSectionTotal('fixe', 'prevu');
-            const totalVariablePrevu = budgetPlanSectionTotal('variable', 'prevu');
+            // Le réel écrase le prévu dès qu'il est renseigné pour une charge variable : le total
+            // utilisé dans le récapitulatif reflète donc le montant le plus fiable connu à date.
+            const totalVariablePrevu = budgetPlanSectionEffectiveTotal('variable');
             const epargnePrevu = window.budgetPlan.epargne.prevu || 0;
             const restantAvant = (r.salaire || 0) - (r.decouvert || 0) - totalFixePrevu - totalVariablePrevu - epargnePrevu;
 
