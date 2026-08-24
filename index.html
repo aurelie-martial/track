@@ -2512,10 +2512,10 @@
 
                 const cellTitle = comment ? `${d} — ${comment.replace(/"/g, '&quot;')}` : `Clique pour renseigner l'humeur du ${d}`;
                 html += `
-                    <button onclick="openMoodDayModal('${key}')" class="relative aspect-square rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 px-0.5 overflow-hidden hover:scale-105 transition-transform duration-100" title="${cellTitle}">
+                    <button onclick="openMoodDayModal('${key}')" class="relative aspect-square sm:aspect-auto sm:min-h-[92px] rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 px-0.5 py-1 overflow-hidden hover:scale-105 transition-transform duration-100" title="${cellTitle}">
                         <span class="text-[9px] sm:text-[10px] font-bold text-slate-500">${d}</span>
                         <span class="text-xs sm:text-2xl leading-none">${emoji || ''}</span>
-                        ${comment ? `<span class="w-full text-[6px] sm:text-[8px] text-indigo-700/80 leading-tight truncate px-0.5">${escapeMoodComment(comment)}</span>` : ''}
+                        ${comment ? `<span class="w-full text-[6px] sm:text-xs text-indigo-700/80 leading-tight sm:leading-snug line-clamp-1 sm:line-clamp-3 px-0.5">${escapeMoodComment(comment)}</span>` : ''}
                     </button>
                 `;
             }
