@@ -1652,6 +1652,10 @@
             targetBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
             targetBtn.classList.remove('text-slate-600');
 
+            // Mémorise l'onglet actif pour le retrouver tel quel au prochain rechargement
+            // de la page, plutôt que de toujours revenir sur le habit tracker.
+            try { localStorage.setItem('lilytracker-active-tab', tabId); } catch (e) {}
+
             if (typeof updateImageWeightFooter === 'function') {
                 updateImageWeightFooter();
             }
@@ -5338,7 +5342,12 @@
         };
 
         window.onload = function() {
-            switchTab('habit-tracker');
+            // Rouvre l'onglet où l'on était avant le rechargement (sauvegardé dans le
+            // navigateur), plutôt que de toujours revenir sur le habit tracker.
+            const validTabs = ['habit-tracker', 'todo', 'agenda', 'sport-nutrition', 'budget'];
+            let savedTab = null;
+            try { savedTab = localStorage.getItem('lilytracker-active-tab'); } catch (e) {}
+            switchTab(validTabs.includes(savedTab) ? savedTab : 'habit-tracker');
             const currentRealMonth = new Date().getMonth();
             document.getElementById('habit-month-select').value = currentRealMonth.toString();
 
