@@ -132,6 +132,14 @@
             pointer-events: none;
         }
 
+        /* Placeholder très discret pour les champs Protéine / Féculent / Légumes du semainier
+           repas, pour ne pas donner l'impression qu'ils sont déjà remplis. */
+        .meal-field-input::placeholder {
+            color: #cbd5e1; /* slate-300 */
+            font-style: italic;
+            opacity: 1;
+        }
+
         /* Champs montants du budget (Ressources/Fixe/Variable/Épargne) : pas de flèches
            d'incrémentation, pour laisser toute la place au chiffre + au signe €. */
         .budget-amount-input::-webkit-outer-spin-button,
@@ -3105,18 +3113,18 @@
             renderMealPlanner();
         }
 
-        // Un repas est désormais composé de 3 champs (au lieu d'un simple texte libre) : protéine,
-        // féculent, légumes. emptyMeal() donne la forme vide, normalizeMeal() convertit aussi
-        // d'anciennes entrées enregistrées comme texte libre (reprises dans "Protéine" pour ne
-        // rien perdre) vers ce nouveau format objet.
+        // Un repas est composé de 3 champs (protéine, féculent, légumes) en temps normal, et d'un
+        // simple champ "note" en texte libre quand le repas est incertain (case cochée). emptyMeal()
+        // donne la forme vide, normalizeMeal() convertit aussi d'anciennes entrées enregistrées comme
+        // texte libre (reprises dans "note" pour ne rien perdre) vers ce nouveau format objet.
         function emptyMeal() {
-            return { proteine: '', feculent: '', legumes: '' };
+            return { proteine: '', feculent: '', legumes: '', note: '' };
         }
 
         function normalizeMeal(meal) {
             if (!meal) return emptyMeal();
-            if (typeof meal === 'string') return { proteine: meal, feculent: '', legumes: '' };
-            return { proteine: meal.proteine || '', feculent: meal.feculent || '', legumes: meal.legumes || '' };
+            if (typeof meal === 'string') return { proteine: '', feculent: '', legumes: '', note: meal };
+            return { proteine: meal.proteine || '', feculent: meal.feculent || '', legumes: meal.legumes || '', note: meal.note || '' };
         }
 
         function updateMealPlan(dateStr, field, component, value) {
@@ -3159,14 +3167,20 @@
             const today = new Date();
             const todayStr = formatDateISO(today);
 
-            // Génère le bloc glissable d'un créneau (déjeuner/dîner), désormais découpé en 3 champs
-            // (protéine / féculent / légumes) : le petit ⠿ n'apparaît que si au moins un des 3 champs
-            // est rempli, donc on ne peut déplacer que du contenu déjà saisi (une case vide reste un
-            // simple champ de saisie, mais reste une cible de dépose valide).
-            // La case à cocher grise le créneau (repas "hors contrôle" : resto, chez les parents...)
-            // sans empêcher d'y écrire quand même une petite note.
+            // Génère le bloc glissable d'un créneau (déjeuner/dîner) : 3 champs (protéine / féculent /
+            // légumes) en temps normal, ou un simple bloc de texte libre sans icône quand le repas est
+            // incertain (case cochée) — le petit ⠿ n'apparaît que si du contenu existe, donc on ne peut
+            // déplacer que du contenu déjà saisi (une case vide reste un simple champ de saisie, mais
+            // reste une cible de dépose valide).
             const mealSlotHtml = (dateStr, field, icon, label, meal, isUnknown) => {
-                const hasContent = !!(meal.proteine || meal.feculent || meal.legumes);
+                const hasContent = isUnknown ? !!meal.note : !!(meal.proteine || meal.feculent || meal.legumes);
+                const bodyHtml = isUnknown
+                    ? `<textarea rows="2" placeholder="..." onchange="updateMealPlan('${dateStr}', '${field}', 'note', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-slate-200 text-slate-500 resize-none">${meal.note || ''}</textarea>`
+                    : `<div class="space-y-1">
+                        ${mealComponents.map(c => `
+                            <input type="text" value="${(meal[c.key] || '').replace(/"/g, '&quot;')}" placeholder="${c.icon} ${c.label}" onchange="updateMealPlan('${dateStr}', '${field}', '${c.key}', this.value)" class="meal-field-input compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white">
+                        `).join('')}
+                    </div>`;
                 return `
                     <div class="meal-slot-container" data-date="${dateStr}" data-field="${field}">
                         <div class="meal-slot-item ${isUnknown ? 'opacity-60' : ''}">
@@ -3177,11 +3191,7 @@
                                 </label>
                                 ${hasContent ? `<span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1 shrink-0" title="Déplacer vers un autre jour">⠿</span>` : ''}
                             </div>
-                            <div class="space-y-1">
-                                ${mealComponents.map(c => `
-                                    <input type="text" value="${(meal[c.key] || '').replace(/"/g, '&quot;')}" placeholder="${c.icon} ${c.label}" onchange="updateMealPlan('${dateStr}', '${field}', '${c.key}', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 ${isUnknown ? 'bg-slate-200 text-slate-500' : 'bg-white'}">
-                                `).join('')}
-                            </div>
+                            ${bodyHtml}
                         </div>
                     </div>
                 `;
