@@ -1366,6 +1366,7 @@
                         window.sportActivities = data.sportActivities || window.sportActivities;
                         window.mealPlans = data.mealPlans || window.mealPlans;
                         window.sportWeekPlans = data.sportWeekPlans || window.sportWeekPlans;
+                        window.sportWeekDone = data.sportWeekDone || window.sportWeekDone;
                         window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
                         window.budgetCategories = data.budgetCategories || window.budgetCategories;
                         window.budgetTargets = data.budgetTargets || window.budgetTargets;
@@ -1465,6 +1466,7 @@
                 sportActivities: window.sportActivities,
                 mealPlans: window.mealPlans,
                 sportWeekPlans: window.sportWeekPlans,
+                sportWeekDone: window.sportWeekDone,
                 budgetTransactions: window.budgetTransactions,
                 budgetCategories: window.budgetCategories,
                 budgetTargets: window.budgetTargets,
@@ -1556,6 +1558,8 @@
         // --- DONNÉES SEMAINIER SPORT (organisation des séances) ---
         // Clé = date ISO ('YYYY-MM-DD') du jour concerné -> texte libre
         window.sportWeekPlans = {};
+        // Clé = date ISO ('YYYY-MM-DD') du jour concerné -> true si la séance a été faite
+        window.sportWeekDone = {};
 
         // --- DONNÉES BUDGET ---
         window.budgetTransactions = []; // { id, date: 'YYYY-MM-DD', type: 'depense'|'revenu', category, label, amount }
@@ -3229,6 +3233,19 @@
             saveData();
         }
 
+        // Coche/décoche "séance faite" pour un jour du semainier sport : la case se grise
+        // (fond vert clair) et le texte de la séance n'est plus modifiable tant qu'on ne
+        // décoche pas.
+        function toggleSportWeekDone(dateStr, checked) {
+            if (checked) {
+                window.sportWeekDone[dateStr] = true;
+            } else {
+                delete window.sportWeekDone[dateStr];
+            }
+            saveData();
+            renderSportWeekPlanner();
+        }
+
         const sportWeekDayHeaders = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
         function renderSportWeekPlanner() {
@@ -3255,15 +3272,26 @@
                 const dateStr = formatDateISO(dateObj);
                 const isToday = dateStr === todayStr;
                 const note = window.sportWeekPlans[dateStr] || '';
-                const borderClass = isToday ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-slate-100';
+                const done = !!window.sportWeekDone[dateStr];
+
+                let borderClass = isToday ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-slate-100';
+                let bgClass = 'bg-slate-50/50';
+                if (done) {
+                    borderClass = isToday ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-emerald-200';
+                    bgClass = 'bg-emerald-100';
+                }
 
                 html += `
-                    <div class="rounded-xl border ${borderClass} bg-slate-50/50 p-2.5 flex flex-col gap-1.5">
+                    <div class="rounded-xl border ${borderClass} ${bgClass} p-2.5 flex flex-col gap-1.5 transition-colors">
                         <div class="text-center">
                             <div class="text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-emerald-600' : 'text-slate-400'}">${sportWeekDayHeaders[i]}</div>
                             <div class="text-xs font-bold ${isToday ? 'text-emerald-700' : 'text-slate-600'}">${dateObj.getDate()}</div>
                         </div>
-                        <textarea rows="4" placeholder="..." onchange="updateSportWeekNote('${dateStr}', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] bg-white focus:outline-none focus:border-emerald-400 resize-none">${note}</textarea>
+                        <textarea rows="4" placeholder="..." ${done ? 'disabled' : ''} onchange="updateSportWeekNote('${dateStr}', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-emerald-400 resize-none ${done ? 'bg-emerald-50 text-slate-500 cursor-not-allowed' : 'bg-white'}">${note}</textarea>
+                        <label class="flex items-center justify-center gap-1.5 text-[10px] font-semibold ${done ? 'text-emerald-700' : 'text-slate-400'} cursor-pointer select-none pt-0.5">
+                            <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleSportWeekDone('${dateStr}', this.checked)" class="w-3.5 h-3.5 rounded border-slate-300 text-emerald-500 focus:ring-emerald-400">
+                            Séance faite
+                        </label>
                     </div>
                 `;
             }
@@ -5182,6 +5210,7 @@
                 sportActivities: window.sportActivities,
                 mealPlans: window.mealPlans,
                 sportWeekPlans: window.sportWeekPlans,
+                sportWeekDone: window.sportWeekDone,
                 budgetTransactions: window.budgetTransactions,
                 budgetCategories: window.budgetCategories,
                 budgetTargets: window.budgetTargets,
@@ -5234,6 +5263,7 @@
                     window.sportActivities = data.sportActivities || window.sportActivities;
                     window.mealPlans = data.mealPlans || window.mealPlans;
                     window.sportWeekPlans = data.sportWeekPlans || window.sportWeekPlans;
+                    window.sportWeekDone = data.sportWeekDone || window.sportWeekDone;
                     window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
                     window.budgetCategories = data.budgetCategories || window.budgetCategories;
                     window.budgetTargets = data.budgetTargets || window.budgetTargets;
