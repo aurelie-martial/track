@@ -4538,11 +4538,12 @@
                 { key: 'Marche', label: '🚶 Marche', color: '#10b981' },
                 { key: 'Autre', label: '✨ Autre', color: '#f59e0b' }
             ];
-            const sortedActivityDates = [...new Set(
-                window.sportActivities
-                    .filter(a => a.date >= periodStartISO && a.date < periodEndISO)
-                    .map(a => a.date)
-            )].sort();
+            // Tous les jours de la période sont listés (pas seulement ceux avec une séance),
+            // pour bien voir les jours sans sport comme des espaces vides sur le graphique.
+            const sortedActivityDates = [];
+            for (let dt = new Date(periodRange.start); dt < periodRange.end; dt.setDate(dt.getDate() + 1)) {
+                sortedActivityDates.push(formatDateISO(dt));
+            }
             const activityLabels = sortedActivityDates.map(d => formatDateFRShort(d));
 
             const activityDatasets = activityTypes.map(t => ({
