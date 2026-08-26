@@ -4374,14 +4374,18 @@
 
             // Période partagée par les 2 graphiques (mois / trimestre / semestre, navigable).
             const periodRange = getSportChartPeriodRange();
-            const periodStartISO = formatDateISO(periodRange.start);
-            const periodEndISO = formatDateISO(periodRange.end);
             const periodLabelEl = document.getElementById('sport-period-label');
             if (periodLabelEl) periodLabelEl.innerText = periodRange.label;
 
-            const sortedMeasurements = [...window.sportMeasurements]
-                .filter(m => m.date >= periodStartISO && m.date < periodEndISO)
-                .sort((a, b) => a.date.localeCompare(b.date));
+            // Tous les jours de la période sont listés (pas seulement ceux avec une mesure),
+            // pour bien voir les jours sans donnée comme des trous dans la courbe plutôt
+            // que de resserrer artificiellement les dates entre elles.
+            const measurementsByDate = new Map(window.sportMeasurements.map(m => [m.date, m]));
+            const sortedMeasurements = [];
+            for (let dt = new Date(periodRange.start); dt < periodRange.end; dt.setDate(dt.getDate() + 1)) {
+                const iso = formatDateISO(dt);
+                sortedMeasurements.push(measurementsByDate.get(iso) || { date: iso, weight: null, bodyFat: null, muscleMass: null });
+            }
             const measurementLabels = sortedMeasurements.map(m => formatDateFRShort(m.date));
             const comp = buildBodyCompositionSeries(sortedMeasurements);
 
