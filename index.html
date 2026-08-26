@@ -141,12 +141,17 @@
         }
         /* Hauteur fixe des 3 champs Protéine/Féculent/Légumes, et hauteur équivalente pour le bloc
            de texte libre du mode "repas incertain", pour que les jours restent alignés dans la
-           grille de la semaine quel que soit le mode affiché. */
+           grille de la semaine quel que soit le mode affiché. box-sizing + overflow explicites pour
+           que la hauteur reste identique que le champ soit vide ou rempli (pas de débordement qui
+           agrandirait visuellement le bloc). */
         .meal-field-input {
             height: 28px;
+            box-sizing: border-box;
         }
         .meal-field-block {
             height: 92px; /* 3 × 28px + 2 × 4px de gap (space-y-1) */
+            box-sizing: border-box;
+            overflow-y: auto;
         }
 
         /* Champs montants du budget (Ressources/Fixe/Variable/Épargne) : pas de flèches
@@ -3184,13 +3189,17 @@
             // reste un simple champ de saisie, mais reste une cible de dépose valide).
             const mealSlotHtml = (dateStr, field, label, meal, isUnknown) => {
                 const hasContent = isUnknown ? !!meal.note : !!(meal.proteine || meal.feculent || meal.legumes);
+                const noteBorderClass = meal.note ? 'border-slate-800' : 'border-slate-200';
                 const bodyHtml = isUnknown
-                    ? `<textarea placeholder="..." onchange="updateMealPlan('${dateStr}', '${field}', 'note', this.value)" class="meal-field-block compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-slate-200 text-slate-500 resize-none">${meal.note || ''}</textarea>`
+                    ? `<textarea placeholder="..." onchange="updateMealPlan('${dateStr}', '${field}', 'note', this.value)" class="meal-field-block compact-textarea w-full px-2 py-1 rounded-lg border ${noteBorderClass} text-[11px] focus:outline-none focus:border-amber-400 bg-slate-200 text-slate-500 resize-none overflow-y-auto">${meal.note || ''}</textarea>`
                     : `<div class="space-y-1">
                         ${mealComponents.map(c => `
-                            <input type="text" value="${(meal[c.key] || '').replace(/"/g, '&quot;')}" placeholder="${c.label}" onchange="updateMealPlan('${dateStr}', '${field}', '${c.key}', this.value)" class="meal-field-input compact-textarea w-full px-2 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white">
+                            <input type="text" value="${(meal[c.key] || '').replace(/"/g, '&quot;')}" placeholder="${c.label}" onchange="updateMealPlan('${dateStr}', '${field}', '${c.key}', this.value)" class="meal-field-input compact-textarea w-full px-2 rounded-lg border ${meal[c.key] ? 'border-slate-800' : 'border-slate-200'} text-[11px] focus:outline-none focus:border-amber-400 bg-white">
                         `).join('')}
                     </div>`;
+                // Le petit ⠿ (déplacer vers un autre jour) est toujours réservé dans la mise en page
+                // (juste rendu invisible s'il n'y a rien à déplacer), pour que la ligne d'en-tête ne
+                // se décale jamais selon que le créneau soit rempli ou non.
                 return `
                     <div class="meal-slot-container" data-date="${dateStr}" data-field="${field}">
                         <div class="meal-slot-item ${isUnknown ? 'opacity-60' : ''}">
@@ -3199,7 +3208,7 @@
                                     <input type="checkbox" ${isUnknown ? 'checked' : ''} onchange="toggleMealUnknown('${dateStr}', '${field}', this.checked)" class="w-2.5 h-2.5 shrink-0 cursor-pointer accent-slate-400" title="Repas incertain (resto, chez mes parents...) — reste modifiable">
                                     <span class="truncate">${label}</span>
                                 </label>
-                                ${hasContent ? `<span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1 shrink-0" title="Déplacer vers un autre jour">⠿</span>` : ''}
+                                <span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1 shrink-0 ${hasContent ? '' : 'invisible pointer-events-none'}" title="Déplacer vers un autre jour">⠿</span>
                             </div>
                             ${bodyHtml}
                         </div>
