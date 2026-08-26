@@ -2173,7 +2173,10 @@
             if(catSelect) catSelect.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
 
             categories.forEach((cat, catIdx) => {
-                const catHabits = habits.filter(h => h.category === cat);
+                // Une habitude archivée (supprimée) disparaît complètement à partir du mois
+                // suivant celui où elle a été supprimée ; elle reste visible (avec son
+                // historique) sur les mois antérieurs ou égaux à celui de la suppression.
+                const catHabits = habits.filter(h => h.category === cat && !(h.deletedFrom && monthIndex > h.deletedFrom.month));
                 if (catHabits.length === 0) return;
 
                 const blockColor = pastelColors[catIdx % pastelColors.length];
@@ -2224,7 +2227,9 @@
                         const key = `2026-${monthIndex}-${d}`;
                         const checkDate = new Date(2026, monthIndex, d);
                         const eventOccursToday = linkedEvent ? eventOccursOnDate(linkedEvent, checkDate) : false;
-                        const isDisabledDay = linkedEvent ? (habit.linkedEventInvert ? !eventOccursToday : eventOccursToday) : false;
+                        const isLinkedDisabledDay = linkedEvent ? (habit.linkedEventInvert ? !eventOccursToday : eventOccursToday) : false;
+                        const isArchivedDay = !!(habit.deletedFrom && monthIndex === habit.deletedFrom.month && d >= habit.deletedFrom.day);
+                        const isDisabledDay = isArchivedDay || isLinkedDisabledDay;
                         const isDone = habit.history[key] || false;
 
                         if (isDisabledDay) {
@@ -2238,8 +2243,11 @@
                         const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
 
                         if (isDisabledDay) {
+                            const disabledTitle = isArchivedDay
+                                ? `Habitude supprimée le ${habit.deletedFrom.day}/${habit.deletedFrom.month + 1}/2026`
+                                : `Désactivée ce jour : ${linkedEvent.emoji || '📌'} ${linkedEvent.title || ''}`;
                             daysHtml += `
-                                <td class="day-cell py-3 bg-slate-50 mobile-day-col ${isMobileVisible}" title="Désactivée ce jour : ${linkedEvent.emoji || '📌'} ${linkedEvent.title || ''}">
+                                <td class="day-cell py-3 bg-slate-50 mobile-day-col ${isMobileVisible}" title="${disabledTitle}">
                                     <span class="text-slate-300 text-xs">–</span>
                                 </td>
                             `;
@@ -2260,11 +2268,21 @@
                         ? (habit.linkedEventInvert ? `Désactivée en dehors de : ${linkedEvent.title || ''}` : `Désactivée pendant : ${linkedEvent.title || ''}`)
                         : '';
                     const linkedBadge = linkedEvent ? `<span class="ml-1 text-[10px]" title="${linkedBadgeTitle}">${linkedEvent.emoji || '🔗'}</span>` : '';
+                    const archivedBadge = habit.deletedFrom
+                        ? `<span class="ml-1 text-[10px]" title="Supprimée le ${habit.deletedFrom.day}/${habit.deletedFrom.month + 1}/2026 — historique conservé">🗄️</span>`
+                        : '';
+                    const deleteButtonHtml = habit.deletedFrom
+                        ? ''
+                        : `
+                            <button onclick="deleteHabit(${habit.id})" class="text-slate-300 hover:text-rose-500 p-0.5 rounded-lg transition-colors" title="Supprimer">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        `;
 
                     catHtml += `
                         <tr class="hover:bg-slate-50/50 transition-colors" data-habit-id="${habit.id}">
                             <td class="py-3 text-sm font-medium text-slate-700 truncate pr-2">
-                                <span class="habit-edit-label habit-drag-handle cursor-grab active:cursor-grabbing hover:text-indigo-600 transition-colors" onclick="editHabit(${habit.id})" title="Maintenir pour déplacer, appuyer pour modifier">${habit.title}</span>${linkedBadge}
+                                <span class="habit-edit-label habit-drag-handle cursor-grab active:cursor-grabbing hover:text-indigo-600 transition-colors" onclick="editHabit(${habit.id})" title="Maintenir pour déplacer, appuyer pour modifier">${habit.title}</span>${linkedBadge}${archivedBadge}
                             </td>
                             ${daysHtml}
                             <td class="py-3 text-right text-xs font-bold text-slate-500">
@@ -2276,9 +2294,7 @@
                                 </div>
                             </td>
                             <td class="py-3 text-center">
-                                <button onclick="deleteHabit(${habit.id})" class="text-slate-300 hover:text-rose-500 p-0.5 rounded-lg transition-colors" title="Supprimer">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                </button>
+                                ${deleteButtonHtml}
                             </td>
                         </tr>
                     `;
@@ -2714,8 +2730,17 @@
             closeHabitEditModal();
         }
 
+        // Ne supprime plus vraiment l'habitude : elle est "archivée" à partir d'aujourd'hui.
+        // L'historique déjà coché reste visible sur les mois passés, le reste du mois en cours
+        // passe en case grisée/désactivée (comme pour une habitude liée à un événement), et
+        // l'habitude n'apparaît plus du tout à partir du mois suivant.
         function deleteHabit(id) {
-            habits = habits.filter(h => h.id !== id);
+            const habit = habits.find(h => h.id === id);
+            if (!habit || habit.deletedFrom) return; // déjà archivée, on ne touche plus à la date
+
+            const now = new Date();
+            habit.deletedFrom = { month: now.getMonth(), day: now.getDate() };
+
             saveData();
             renderHabits();
         }
