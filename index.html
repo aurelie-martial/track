@@ -5151,9 +5151,9 @@
 
             const r = window.budgetPlan.ressources;
             const totalFixePrevu = budgetPlanSectionTotal('fixe', 'prevu');
-            // Le réel écrase le prévu dès qu'il est renseigné pour une charge variable : le total
-            // utilisé dans le récapitulatif reflète donc le montant le plus fiable connu à date.
-            const totalVariablePrevu = budgetPlanSectionEffectiveTotal('variable');
+            // Total variable basé sur le "prévu" uniquement (le réel n'est pas pris en compte ici,
+            // pour que ce récapitulatif reflète le budget prévisionnel plutôt que le déjà-dépensé).
+            const totalVariablePrevu = budgetPlanSectionTotal('variable', 'prevu');
             const epargnePrevu = window.budgetPlan.epargne.prevu || 0;
             const restantAvant = (r.salaire || 0) - (r.decouvert || 0) - totalFixePrevu - totalVariablePrevu - epargnePrevu;
 
