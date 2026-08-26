@@ -4978,7 +4978,7 @@
         function addBudgetPlanLine(section) {
             if (!window.budgetPlan[section]) return;
             budgetPlanLineCounter++;
-            window.budgetPlan[section].push({ id: budgetPlanLineCounter, label: '', prevu: 0, reel: 0 });
+            window.budgetPlan[section].push({ id: budgetPlanLineCounter, label: '', prevu: 0, reel: 0, debitDay: null });
             saveData();
             renderBudgetPlan();
         }
@@ -4995,6 +4995,9 @@
             if (!line) return;
             if (field === 'label') {
                 line.label = value;
+            } else if (field === 'debitDay') {
+                const day = parseInt(value, 10);
+                line.debitDay = (!isNaN(day) && day >= 1 && day <= 31) ? day : null;
             } else {
                 line[field] = parseAmount(value);
             }
@@ -5113,7 +5116,15 @@
                 return `
                 <tr class="${isLogged ? 'opacity-40' : ''}">
                     <td class="px-1.5 py-1.5 truncate">
-                        <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="budget-text-input w-full bg-transparent text-xs text-slate-700 ${struckClass} focus:outline-none focus:border-b focus:border-indigo-300">
+                        <div class="flex items-center gap-1 min-w-0">
+                            ${section === 'fixe' ? `
+                                <label class="relative inline-flex items-center justify-center w-5 h-5 rounded-sm border border-slate-300 bg-white overflow-hidden shrink-0 cursor-pointer" title="Jour du prélèvement dans le mois (1-31)">
+                                    <span class="absolute top-0 inset-x-0 h-1.5 bg-rose-400 pointer-events-none"></span>
+                                    <input type="text" inputmode="numeric" maxlength="2" value="${l.debitDay || ''}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'debitDay', this.value)" class="absolute inset-0 w-full h-full bg-transparent text-center text-[8px] font-bold text-slate-700 pt-1.5 focus:outline-none">
+                                </label>
+                            ` : ''}
+                            <input type="text" value="${(l.label || '').replace(/"/g, '&quot;')}" onchange="updateBudgetPlanLine('${section}', ${l.id}, 'label', this.value)" placeholder="Libellé" class="budget-text-input min-w-0 flex-1 bg-transparent text-xs text-slate-700 ${struckClass} focus:outline-none focus:border-b focus:border-indigo-300">
+                        </div>
                     </td>
                     <td class="px-1 py-1.5 ${montantWidth}">
                         <div class="flex items-center justify-end gap-0.5">
@@ -5142,6 +5153,32 @@
             `;
         }
 
+        // Redimensionne un champ montant du budget exactement à la largeur de son contenu actuel,
+        // en mesurant le texte réellement affiché (même police que le champ) via un <span> miroir
+        // invisible — plus fiable qu'un calcul en "ch" à la main (qui dépend de la police et de la
+        // taille d'écran, et nécessitait de recaler la valeur à chaque fois).
+        function autoSizeAmountInput(inputEl) {
+            if (!inputEl) return;
+            let mirror = document.getElementById('amount-input-mirror');
+            if (!mirror) {
+                mirror = document.createElement('span');
+                mirror.id = 'amount-input-mirror';
+                mirror.style.position = 'absolute';
+                mirror.style.visibility = 'hidden';
+                mirror.style.whiteSpace = 'pre';
+                mirror.style.top = '-9999px';
+                mirror.style.left = '-9999px';
+                document.body.appendChild(mirror);
+            }
+            const computed = window.getComputedStyle(inputEl);
+            mirror.style.fontFamily = computed.fontFamily;
+            mirror.style.fontSize = computed.fontSize;
+            mirror.style.fontWeight = computed.fontWeight;
+            mirror.style.letterSpacing = computed.letterSpacing;
+            mirror.textContent = inputEl.value || inputEl.placeholder || '0';
+            inputEl.style.width = (mirror.getBoundingClientRect().width + 2) + 'px';
+        }
+
         // Rend le bloc Ressources + les 3 tables Fixe/Variable/Épargne. Tout est saisi à la main :
         // seuls "Total fixe", "Total variable", "Epargne" et "Restant total" (Ressources) sont
         // recalculés automatiquement à partir des lignes/valeurs saisies.
@@ -5165,11 +5202,10 @@
                 .reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
             const restantApres = restantAvant - nonFixeTransactionsTotal;
 
-            // Découvert : le "-", le montant et le "€" doivent rester collés ensemble. Une largeur
-            // fixe sur l'input laisserait un vide entre les chiffres et un des deux côtés (selon
-            // l'alignement) dès que le nombre est plus court que la largeur : on donne donc à
-            // l'input une largeur "ch" calée sur le nombre de caractères affichés, pour qu'il
-            // n'ait jamais plus de place que son contenu.
+            // Découvert : le "-", le montant et le "€" doivent rester collés ensemble. La largeur de
+            // l'input est mesurée dynamiquement (voir autoSizeAmountInput) sur le texte réellement
+            // affiché, et remise à jour à chaque frappe — plus robuste qu'une largeur calculée à la
+            // main qui se décalait selon la police/l'appareil.
             const editableRow = (label, field, value) => {
                 const valueStr = formatAmountForInput(value);
                 return `
@@ -5178,7 +5214,7 @@
                     <td class="px-4 py-2">
                         <div class="flex items-center justify-end gap-0">
                             <span class="text-slate-500">-</span>
-                            <input type="text" inputmode="decimal" value="${valueStr}" onchange="updateBudgetPlanRessource('${field}', this.value)" class="budget-amount-input bg-transparent text-xs text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300" style="width:${valueStr.length}ch;padding:0;border:0;margin:0;">
+                            <input type="text" inputmode="decimal" value="${valueStr}" ${field === 'decouvert' ? 'id="budget-decouvert-input"' : ''} oninput="autoSizeAmountInput(this)" onchange="updateBudgetPlanRessource('${field}', this.value)" class="budget-amount-input bg-transparent text-xs text-slate-700 text-right focus:outline-none focus:border-b focus:border-indigo-300" style="padding:0;border:0;margin:0;">
                             <span class="text-slate-400 text-xs">€</span>
                         </div>
                     </td>
@@ -5219,6 +5255,11 @@
                     <td class="px-4 py-2 text-right">${formatEuro(restantApres)}</td>
                 </tr>
             `;
+
+            // Largeur initiale de l'input Découvert : calée sur son contenu dès l'affichage (sans
+            // attendre une saisie), la mise à jour au fil de la frappe est déjà gérée par
+            // oninput="autoSizeAmountInput(this)" ci-dessus.
+            autoSizeAmountInput(document.getElementById('budget-decouvert-input'));
 
             renderBudgetPlanTable('fixe');
             renderBudgetPlanTable('variable');
