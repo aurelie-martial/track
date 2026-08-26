@@ -822,7 +822,7 @@
                                 Ajouter une transaction
                             </button>
                         </div>
-                        <div class="p-4 overflow-x-auto max-h-[34rem] overflow-y-auto">
+                        <div class="p-4 overflow-x-auto">
                             <table class="w-full text-left border-collapse table-fixed">
                                 <thead>
                                     <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -1907,6 +1907,7 @@
             const dateStr = formatDateISO(dateObj);
             const weekend = isWeekendDay(dateObj);
             const isToday = dateStr === todayStr;
+            const isPast = dateStr < todayStr;
             const allEvents = getAgendaEventsForDate(dateObj);
             const bannerEvents = allEvents.filter(ev => ev.banner);
             const pillEvents = allEvents.filter(ev => !ev.banner);
@@ -1917,7 +1918,7 @@
             const numberClass = isToday ? 'text-indigo-600' : (muted ? 'text-slate-400' : 'text-slate-600');
 
             return `
-                <div class="min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} ${mutedClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden" onclick="openAgendaDayModal('${dateStr}')">
+                <div class="min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} ${mutedClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden ${isPast ? 'day-past-hatch' : ''}" onclick="openAgendaDayModal('${dateStr}')">
                     <div class="text-[10px] sm:text-xs font-bold ${numberClass}">${day}</div>
                     ${bannerEvents.map(ev => renderAgendaBannerBar(ev, dateObj, '-mx-1 sm:-mx-1.5')).join('')}
                     <div class="space-y-0.5">
