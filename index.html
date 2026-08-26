@@ -4445,23 +4445,6 @@
         // normalisée pour que les deux parts couvrent exactement tout le poids (répartition
         // relative entre les deux, puisque leur somme brute ne correspond pas forcément à 100%
         // du poids réel : eau, os, organes... ne sont pas suivis ici).
-        // Renvoie, pour une date donnée, la dernière valeur connue (à cette date ou avant) d'un
-        // champ de mesure (poids, masse grasse, masse musculaire) dans TOUT l'historique — et à
-        // défaut la toute première valeur connue de l'historique — pour que les courbes du sport
-        // ne soient jamais interrompues par un jour sans nouvelle pesée.
-        function getLastKnownMeasurementValue(allSortedMeasurements, dateStr, fieldKey) {
-            let result = null;
-            for (const m of allSortedMeasurements) {
-                if (m.date > dateStr) break;
-                if (m[fieldKey] !== null && m[fieldKey] !== undefined) result = m[fieldKey];
-            }
-            if (result === null) {
-                const firstKnown = allSortedMeasurements.find(m => m[fieldKey] !== null && m[fieldKey] !== undefined);
-                if (firstKnown) result = firstKnown[fieldKey];
-            }
-            return result;
-        }
-
         function buildBodyCompositionSeries(sortedMeasurements) {
             const weightArr = [];
             const fatKg = [];            // limite basse de la zone empilée (masse grasse seule)
@@ -4521,22 +4504,23 @@
             const periodLabelEl = document.getElementById('sport-period-label');
             if (periodLabelEl) periodLabelEl.innerText = periodRange.label;
 
-            // Tous les jours de la période sont listés (pas seulement ceux avec une mesure) : un
-            // jour sans nouvelle pesée reprend la dernière valeur connue (report en avant, sur
-            // tout l'historique et pas seulement la période affichée), pour que les courbes
-            // Poids / Masse grasse / Masse musculaire ne s'arrêtent jamais — même si la
-            // prochaine vraie mesure tombe dans une période suivante.
+            // Tous les jours de la période sont listés (pas seulement ceux avec une mesure), pour
+            // garder l'alignement de la grille — mais SANS jamais inventer de valeur : un jour sans
+            // pesée reste "null", et c'est spanGaps (sur les datasets Chart.js) qui trace la ligne
+            // directement entre 2 points réels de part et d'autre du trou. Aucun jour après
+            // aujourd'hui n'est renseigné, même si la période affichée (semaine en cours...)
+            // s'étend plus loin dans le futur.
             const measurementsByDate = new Map(window.sportMeasurements.map(m => [m.date, m]));
-            const allSortedMeasurements = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
+            const todayISOForCharts = formatDateISO(new Date());
             const sortedMeasurements = [];
             for (let dt = new Date(periodRange.start); dt < periodRange.end; dt.setDate(dt.getDate() + 1)) {
                 const iso = formatDateISO(dt);
-                const real = measurementsByDate.get(iso);
+                const real = iso <= todayISOForCharts ? measurementsByDate.get(iso) : null;
                 sortedMeasurements.push({
                     date: iso,
-                    weight: (real && real.weight !== null && real.weight !== undefined) ? real.weight : getLastKnownMeasurementValue(allSortedMeasurements, iso, 'weight'),
-                    bodyFat: (real && real.bodyFat !== null && real.bodyFat !== undefined) ? real.bodyFat : getLastKnownMeasurementValue(allSortedMeasurements, iso, 'bodyFat'),
-                    muscleMass: (real && real.muscleMass !== null && real.muscleMass !== undefined) ? real.muscleMass : getLastKnownMeasurementValue(allSortedMeasurements, iso, 'muscleMass')
+                    weight: (real && real.weight !== null && real.weight !== undefined) ? real.weight : null,
+                    bodyFat: (real && real.bodyFat !== null && real.bodyFat !== undefined) ? real.bodyFat : null,
+                    muscleMass: (real && real.muscleMass !== null && real.muscleMass !== undefined) ? real.muscleMass : null
                 });
             }
             const measurementLabels = sortedMeasurements.map(m => formatDateFRShort(m.date));
@@ -4567,7 +4551,11 @@
                             borderColor: '#6366f1',
                             backgroundColor: '#6366f122',
                             borderWidth: 2.5,
-                            pointRadius: 3,
+                            // Pas de point sur les jours sans pesée : seuls les jours où un poids a
+                            // réellement été enregistré affichent un marqueur, la ligne se contente
+                            // de relier les points réels entre eux (via spanGaps).
+                            pointRadius: (ctx) => (comp.weightArr[ctx.dataIndex] === null || comp.weightArr[ctx.dataIndex] === undefined) ? 0 : 3,
+                            pointHoverRadius: (ctx) => (comp.weightArr[ctx.dataIndex] === null || comp.weightArr[ctx.dataIndex] === undefined) ? 0 : 5,
                             pointBackgroundColor: '#6366f1',
                             tension: 0.3,
                             spanGaps: true,
@@ -4630,7 +4618,9 @@
                             borderColor: '#f59e0b',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
-                            pointRadius: 2,
+                            // Idem que pour le poids : pas de point les jours sans mesure.
+                            pointRadius: (ctx) => (comp.fatKgRaw[ctx.dataIndex] === null || comp.fatKgRaw[ctx.dataIndex] === undefined) ? 0 : 2,
+                            pointHoverRadius: (ctx) => (comp.fatKgRaw[ctx.dataIndex] === null || comp.fatKgRaw[ctx.dataIndex] === undefined) ? 0 : 4,
                             pointBackgroundColor: '#f59e0b',
                             tension: 0.3,
                             spanGaps: true,
@@ -4642,7 +4632,8 @@
                             borderColor: '#10b981',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
-                            pointRadius: 2,
+                            pointRadius: (ctx) => (comp.muscleKgRaw[ctx.dataIndex] === null || comp.muscleKgRaw[ctx.dataIndex] === undefined) ? 0 : 2,
+                            pointHoverRadius: (ctx) => (comp.muscleKgRaw[ctx.dataIndex] === null || comp.muscleKgRaw[ctx.dataIndex] === undefined) ? 0 : 4,
                             pointBackgroundColor: '#10b981',
                             tension: 0.3,
                             spanGaps: true,
