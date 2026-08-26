@@ -139,6 +139,15 @@
             font-style: italic;
             opacity: 1;
         }
+        /* Hauteur fixe des 3 champs Protéine/Féculent/Légumes, et hauteur équivalente pour le bloc
+           de texte libre du mode "repas incertain", pour que les jours restent alignés dans la
+           grille de la semaine quel que soit le mode affiché. */
+        .meal-field-input {
+            height: 28px;
+        }
+        .meal-field-block {
+            height: 92px; /* 3 × 28px + 2 × 4px de gap (space-y-1) */
+        }
 
         /* Champs montants du budget (Ressources/Fixe/Variable/Épargne) : pas de flèches
            d'incrémentation, pour laisser toute la place au chiffre + au signe €. */
@@ -3145,9 +3154,9 @@
 
         const mealDayHeaders = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
         const mealComponents = [
-            { key: 'proteine', icon: '🥩', label: 'Protéine' },
-            { key: 'feculent', icon: '🍚', label: 'Féculent' },
-            { key: 'legumes', icon: '🥦', label: 'Légumes' }
+            { key: 'proteine', label: 'Protéine' },
+            { key: 'feculent', label: 'Féculent' },
+            { key: 'legumes', label: 'Légumes' }
         ];
 
         function renderMealPlanner() {
@@ -3167,18 +3176,19 @@
             const today = new Date();
             const todayStr = formatDateISO(today);
 
-            // Génère le bloc glissable d'un créneau (déjeuner/dîner) : 3 champs (protéine / féculent /
-            // légumes) en temps normal, ou un simple bloc de texte libre sans icône quand le repas est
-            // incertain (case cochée) — le petit ⠿ n'apparaît que si du contenu existe, donc on ne peut
-            // déplacer que du contenu déjà saisi (une case vide reste un simple champ de saisie, mais
-            // reste une cible de dépose valide).
-            const mealSlotHtml = (dateStr, field, icon, label, meal, isUnknown) => {
+            // Génère le bloc glissable d'un créneau (midi/soir) : 3 champs (protéine / féculent /
+            // légumes) en temps normal, ou un simple bloc de texte libre quand le repas est incertain
+            // (case cochée) — de hauteur fixe, identique à celle des 3 champs empilés, pour que les
+            // jours restent alignés entre eux dans la grille de la semaine. Le petit ⠿ n'apparaît que
+            // si du contenu existe, donc on ne peut déplacer que du contenu déjà saisi (une case vide
+            // reste un simple champ de saisie, mais reste une cible de dépose valide).
+            const mealSlotHtml = (dateStr, field, label, meal, isUnknown) => {
                 const hasContent = isUnknown ? !!meal.note : !!(meal.proteine || meal.feculent || meal.legumes);
                 const bodyHtml = isUnknown
-                    ? `<textarea rows="2" placeholder="..." onchange="updateMealPlan('${dateStr}', '${field}', 'note', this.value)" class="compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-slate-200 text-slate-500 resize-none">${meal.note || ''}</textarea>`
+                    ? `<textarea placeholder="..." onchange="updateMealPlan('${dateStr}', '${field}', 'note', this.value)" class="meal-field-block compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-slate-200 text-slate-500 resize-none">${meal.note || ''}</textarea>`
                     : `<div class="space-y-1">
                         ${mealComponents.map(c => `
-                            <input type="text" value="${(meal[c.key] || '').replace(/"/g, '&quot;')}" placeholder="${c.icon} ${c.label}" onchange="updateMealPlan('${dateStr}', '${field}', '${c.key}', this.value)" class="meal-field-input compact-textarea w-full px-2 py-1 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white">
+                            <input type="text" value="${(meal[c.key] || '').replace(/"/g, '&quot;')}" placeholder="${c.label}" onchange="updateMealPlan('${dateStr}', '${field}', '${c.key}', this.value)" class="meal-field-input compact-textarea w-full px-2 rounded-lg border border-slate-200 text-[11px] focus:outline-none focus:border-amber-400 bg-white">
                         `).join('')}
                     </div>`;
                 return `
@@ -3187,7 +3197,7 @@
                             <div class="flex items-center justify-between mb-0.5 gap-1">
                                 <label class="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase min-w-0">
                                     <input type="checkbox" ${isUnknown ? 'checked' : ''} onchange="toggleMealUnknown('${dateStr}', '${field}', this.checked)" class="w-2.5 h-2.5 shrink-0 cursor-pointer accent-slate-400" title="Repas incertain (resto, chez mes parents...) — reste modifiable">
-                                    <span class="truncate">${icon} ${label}</span>
+                                    <span class="truncate">${label}</span>
                                 </label>
                                 ${hasContent ? `<span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1 shrink-0" title="Déplacer vers un autre jour">⠿</span>` : ''}
                             </div>
@@ -3213,8 +3223,8 @@
                             <div class="text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-amber-600' : 'text-slate-400'}">${mealDayHeaders[i]}</div>
                             <div class="text-xs font-bold ${isToday ? 'text-amber-700' : 'text-slate-600'}">${dateObj.getDate()}</div>
                         </div>
-                        ${mealSlotHtml(dateStr, 'lunch', '🍽️', 'Déjeuner', normalizeMeal(plan.lunch), !!plan.lunchUnknown)}
-                        ${mealSlotHtml(dateStr, 'dinner', '🌙', 'Dîner', normalizeMeal(plan.dinner), !!plan.dinnerUnknown)}
+                        ${mealSlotHtml(dateStr, 'lunch', 'Midi', normalizeMeal(plan.lunch), !!plan.lunchUnknown)}
+                        ${mealSlotHtml(dateStr, 'dinner', 'Soir', normalizeMeal(plan.dinner), !!plan.dinnerUnknown)}
                     </div>
                 `;
             }
