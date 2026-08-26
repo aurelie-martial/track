@@ -118,6 +118,20 @@
             }
         }
 
+        /* Hachures grisées sur tout un bloc jour (semainier repas / sport) quand le jour est
+           passé : overlay non cliquable, le contenu du dessous reste consultable/modifiable. */
+        .day-past-hatch {
+            position: relative;
+        }
+        .day-past-hatch::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(45deg, rgba(100, 116, 139, 0.18) 0, rgba(100, 116, 139, 0.18) 6px, transparent 6px, transparent 12px);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
         /* Champs montants du budget (Ressources/Fixe/Variable/Épargne) : pas de flèches
            d'incrémentation, pour laisser toute la place au chiffre + au signe €. */
         .budget-amount-input::-webkit-outer-spin-button,
@@ -543,8 +557,8 @@
             <!-- Sélecteur de période partagé par les 2 graphiques Poids / Composition ci-dessous -->
             <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-wrap items-center justify-between gap-2">
                 <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
-                    <button onclick="setSportChartPeriodMode('week')" id="btn-sport-period-week" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Semaine</button>
-                    <button onclick="setSportChartPeriodMode('month')" id="btn-sport-period-month" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">Mois</button>
+                    <button onclick="setSportChartPeriodMode('week')" id="btn-sport-period-week" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">Semaine</button>
+                    <button onclick="setSportChartPeriodMode('month')" id="btn-sport-period-month" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Mois</button>
                     <button onclick="setSportChartPeriodMode('quarter')" id="btn-sport-period-quarter" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Trimestre</button>
                     <button onclick="setSportChartPeriodMode('semester')" id="btn-sport-period-semester" class="sport-period-btn px-2.5 py-1 text-[11px] font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">Semestre</button>
                 </div>
@@ -3122,11 +3136,12 @@
                 dateObj.setDate(monday.getDate() + i);
                 const dateStr = formatDateISO(dateObj);
                 const isToday = dateStr === todayStr;
+                const isPast = dateStr < todayStr;
                 const plan = window.mealPlans[dateStr] || { lunch: '', dinner: '' };
                 const borderClass = isToday ? 'border-amber-400 ring-1 ring-amber-200' : 'border-slate-100';
 
                 html += `
-                    <div class="rounded-xl border ${borderClass} bg-slate-50/50 p-2.5 flex flex-col gap-1.5" data-meal-day-col="${i}">
+                    <div class="rounded-xl border ${borderClass} bg-slate-50/50 p-2.5 flex flex-col gap-1.5 ${isPast ? 'day-past-hatch' : ''}" data-meal-day-col="${i}">
                         <div class="text-center">
                             <div class="text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-amber-600' : 'text-slate-400'}">${mealDayHeaders[i]}</div>
                             <div class="text-xs font-bold ${isToday ? 'text-amber-700' : 'text-slate-600'}">${dateObj.getDate()}</div>
@@ -3271,6 +3286,7 @@
                 dateObj.setDate(monday.getDate() + i);
                 const dateStr = formatDateISO(dateObj);
                 const isToday = dateStr === todayStr;
+                const isPast = dateStr < todayStr;
                 const note = window.sportWeekPlans[dateStr] || '';
                 const done = !!window.sportWeekDone[dateStr];
 
@@ -3282,7 +3298,7 @@
                 }
 
                 html += `
-                    <div class="rounded-xl border ${borderClass} ${bgClass} p-2.5 flex flex-col gap-1.5 transition-colors">
+                    <div class="rounded-xl border ${borderClass} ${bgClass} p-2.5 flex flex-col gap-1.5 transition-colors ${isPast ? 'day-past-hatch' : ''}">
                         <div class="text-center">
                             <div class="text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-emerald-600' : 'text-slate-400'}">${sportWeekDayHeaders[i]}</div>
                             <div class="text-xs font-bold ${isToday ? 'text-emerald-700' : 'text-slate-600'}">${dateObj.getDate()}</div>
@@ -4048,7 +4064,7 @@
         // Le graphique Poids peut s'afficher par mois, trimestre ou semestre (navigation
         // précédent/suivant à l'intérieur du mode choisi), pour ne pas être noyé par tout
         // l'historique quand on veut juste voir une période récente.
-        window.sportChartPeriodMode = 'month'; // 'week' | 'month' | 'quarter' | 'semester'
+        window.sportChartPeriodMode = 'week'; // 'week' | 'month' | 'quarter' | 'semester'
         window.sportChartPeriodOffset = 0; // décalage par rapport à la période actuelle
 
         function setSportChartPeriodMode(mode) {
@@ -4346,6 +4362,23 @@
         // normalisée pour que les deux parts couvrent exactement tout le poids (répartition
         // relative entre les deux, puisque leur somme brute ne correspond pas forcément à 100%
         // du poids réel : eau, os, organes... ne sont pas suivis ici).
+        // Renvoie, pour une date donnée, la dernière valeur connue (à cette date ou avant) d'un
+        // champ de mesure (poids, masse grasse, masse musculaire) dans TOUT l'historique — et à
+        // défaut la toute première valeur connue de l'historique — pour que les courbes du sport
+        // ne soient jamais interrompues par un jour sans nouvelle pesée.
+        function getLastKnownMeasurementValue(allSortedMeasurements, dateStr, fieldKey) {
+            let result = null;
+            for (const m of allSortedMeasurements) {
+                if (m.date > dateStr) break;
+                if (m[fieldKey] !== null && m[fieldKey] !== undefined) result = m[fieldKey];
+            }
+            if (result === null) {
+                const firstKnown = allSortedMeasurements.find(m => m[fieldKey] !== null && m[fieldKey] !== undefined);
+                if (firstKnown) result = firstKnown[fieldKey];
+            }
+            return result;
+        }
+
         function buildBodyCompositionSeries(sortedMeasurements) {
             const weightArr = [];
             const fatKg = [];            // limite basse de la zone empilée (masse grasse seule)
@@ -4405,14 +4438,23 @@
             const periodLabelEl = document.getElementById('sport-period-label');
             if (periodLabelEl) periodLabelEl.innerText = periodRange.label;
 
-            // Tous les jours de la période sont listés (pas seulement ceux avec une mesure),
-            // pour bien voir les jours sans donnée comme des trous dans la courbe plutôt
-            // que de resserrer artificiellement les dates entre elles.
+            // Tous les jours de la période sont listés (pas seulement ceux avec une mesure) : un
+            // jour sans nouvelle pesée reprend la dernière valeur connue (report en avant, sur
+            // tout l'historique et pas seulement la période affichée), pour que les courbes
+            // Poids / Masse grasse / Masse musculaire ne s'arrêtent jamais — même si la
+            // prochaine vraie mesure tombe dans une période suivante.
             const measurementsByDate = new Map(window.sportMeasurements.map(m => [m.date, m]));
+            const allSortedMeasurements = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
             const sortedMeasurements = [];
             for (let dt = new Date(periodRange.start); dt < periodRange.end; dt.setDate(dt.getDate() + 1)) {
                 const iso = formatDateISO(dt);
-                sortedMeasurements.push(measurementsByDate.get(iso) || { date: iso, weight: null, bodyFat: null, muscleMass: null });
+                const real = measurementsByDate.get(iso);
+                sortedMeasurements.push({
+                    date: iso,
+                    weight: (real && real.weight !== null && real.weight !== undefined) ? real.weight : getLastKnownMeasurementValue(allSortedMeasurements, iso, 'weight'),
+                    bodyFat: (real && real.bodyFat !== null && real.bodyFat !== undefined) ? real.bodyFat : getLastKnownMeasurementValue(allSortedMeasurements, iso, 'bodyFat'),
+                    muscleMass: (real && real.muscleMass !== null && real.muscleMass !== undefined) ? real.muscleMass : getLastKnownMeasurementValue(allSortedMeasurements, iso, 'muscleMass')
+                });
             }
             const measurementLabels = sortedMeasurements.map(m => formatDateFRShort(m.date));
             const comp = buildBodyCompositionSeries(sortedMeasurements);
@@ -4466,15 +4508,13 @@
                                 afterLabel: function(context) {
                                     const idx = context.dataIndex;
                                     const lines = [];
-                                    const fatKg = comp.fatKgRaw[idx];
                                     const fatPct = comp.fatPercentArr[idx];
-                                    const muscleKg = comp.muscleKgRaw[idx];
                                     const musclePct = comp.musclePercentArr[idx];
-                                    if (fatKg !== null && fatKg !== undefined) {
-                                        lines.push(`Masse grasse : ${fatKg} kg${fatPct !== null ? ' (' + fatPct + '%)' : ''}`);
+                                    if (fatPct !== null && fatPct !== undefined) {
+                                        lines.push(`Masse grasse : ${fatPct}%`);
                                     }
-                                    if (muscleKg !== null && muscleKg !== undefined) {
-                                        lines.push(`Masse musculaire : ${muscleKg} kg${musclePct !== null ? ' (' + musclePct + '%)' : ''}`);
+                                    if (musclePct !== null && musclePct !== undefined) {
+                                        lines.push(`Masse musculaire : ${musclePct}%`);
                                     }
                                     return lines;
                                 }
@@ -4538,16 +4578,21 @@
                             callbacks: {
                                 label: function(context) {
                                     const idx = context.dataIndex;
-                                    if (context.datasetIndex === 0) {
-                                        const kg = comp.fatKgRaw[idx];
-                                        const pct = comp.fatPercentArr[idx];
-                                        if (kg === null || kg === undefined) return null;
-                                        return `Masse grasse : ${kg} kg${pct !== null ? ' (' + pct + '%)' : ''}`;
-                                    }
-                                    const kg = comp.muscleKgRaw[idx];
-                                    const pct = comp.musclePercentArr[idx];
+                                    const arr = context.datasetIndex === 0 ? comp.fatKgRaw : comp.muscleKgRaw;
+                                    const name = context.datasetIndex === 0 ? 'Masse grasse' : 'Masse musculaire';
+                                    const kg = arr[idx];
                                     if (kg === null || kg === undefined) return null;
-                                    return `Masse musculaire : ${kg} kg${pct !== null ? ' (' + pct + '%)' : ''}`;
+                                    let deltaText = '';
+                                    if (idx > 0) {
+                                        const prevKg = arr[idx - 1];
+                                        if (prevKg !== null && prevKg !== undefined) {
+                                            const delta = Math.round((kg - prevKg) * 10) / 10;
+                                            if (delta > 0) deltaText = ` (+${delta.toFixed(1)} kg)`;
+                                            else if (delta < 0) deltaText = ` (${delta.toFixed(1)} kg)`;
+                                            else deltaText = ' (stable)';
+                                        }
+                                    }
+                                    return `${name} : ${kg} kg${deltaText}`;
                                 }
                             }
                         }
