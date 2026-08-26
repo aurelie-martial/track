@@ -3189,12 +3189,12 @@
             // reste un simple champ de saisie, mais reste une cible de dépose valide).
             const mealSlotHtml = (dateStr, field, label, meal, isUnknown) => {
                 const hasContent = isUnknown ? !!meal.note : !!(meal.proteine || meal.feculent || meal.legumes);
-                const noteBorderClass = meal.note ? 'border-slate-800' : 'border-slate-200';
+                const noteBorderClass = meal.note ? 'border-slate-500' : 'border-slate-200';
                 const bodyHtml = isUnknown
                     ? `<textarea placeholder="..." onchange="updateMealPlan('${dateStr}', '${field}', 'note', this.value)" class="meal-field-block compact-textarea w-full px-2 py-1 rounded-lg border ${noteBorderClass} text-[11px] focus:outline-none focus:border-amber-400 bg-slate-200 text-slate-500 resize-none overflow-y-auto">${meal.note || ''}</textarea>`
                     : `<div class="space-y-1">
                         ${mealComponents.map(c => `
-                            <input type="text" value="${(meal[c.key] || '').replace(/"/g, '&quot;')}" placeholder="${c.label}" onchange="updateMealPlan('${dateStr}', '${field}', '${c.key}', this.value)" class="meal-field-input compact-textarea w-full px-2 rounded-lg border ${meal[c.key] ? 'border-slate-800' : 'border-slate-200'} text-[11px] focus:outline-none focus:border-amber-400 bg-white">
+                            <input type="text" value="${(meal[c.key] || '').replace(/"/g, '&quot;')}" placeholder="${c.label}" onchange="updateMealPlan('${dateStr}', '${field}', '${c.key}', this.value)" class="meal-field-input compact-textarea w-full px-2 rounded-lg border ${meal[c.key] ? 'border-slate-500' : 'border-slate-200'} text-[11px] focus:outline-none focus:border-amber-400 bg-white">
                         `).join('')}
                     </div>`;
                 // Le petit ⠿ (déplacer vers un autre jour) est toujours réservé dans la mise en page
@@ -3204,10 +3204,7 @@
                     <div class="meal-slot-container" data-date="${dateStr}" data-field="${field}">
                         <div class="meal-slot-item ${isUnknown ? 'opacity-60' : ''}">
                             <div class="flex items-center justify-between mb-0.5 gap-1">
-                                <label class="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase min-w-0">
-                                    <input type="checkbox" ${isUnknown ? 'checked' : ''} onchange="toggleMealUnknown('${dateStr}', '${field}', this.checked)" class="w-2.5 h-2.5 shrink-0 cursor-pointer accent-slate-400" title="Repas incertain (resto, chez mes parents...) — reste modifiable">
-                                    <span class="truncate">${label}</span>
-                                </label>
+                                <span class="truncate text-[9px] font-semibold text-slate-400 uppercase cursor-pointer hover:text-amber-500 transition-colors min-w-0" onclick="toggleMealUnknown('${dateStr}', '${field}', ${!isUnknown})" title="Basculer en repas incertain (resto, chez mes parents...) — reste modifiable">${label}</span>
                                 <span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1 shrink-0 ${hasContent ? '' : 'invisible pointer-events-none'}" title="Déplacer vers un autre jour">⠿</span>
                             </div>
                             ${bodyHtml}
