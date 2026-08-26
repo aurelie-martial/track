@@ -1081,7 +1081,7 @@
 
     <!-- MODAL : HUMEUR + COMMENTAIRE DU JOUR -->
     <div id="mood-comment-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4" onclick="if (event.target === this) closeMoodCommentModal();">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-sm w-full p-6 space-y-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-sm sm:max-w-xl w-full p-6 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 id="mood-comment-modal-title" class="font-bold text-slate-800 text-lg">Humeur du jour</h3>
                 <button onclick="closeMoodCommentModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
@@ -1091,7 +1091,7 @@
 
             <div>
                 <label class="block text-xs font-semibold text-slate-500 mb-1">Commentaire</label>
-                <textarea id="mood-comment-modal-textarea" rows="3" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" placeholder="Comment s'est passée ta journée ?"></textarea>
+                <textarea id="mood-comment-modal-textarea" rows="4" class="w-full px-3 py-2 sm:py-3 rounded-xl border border-slate-200 text-sm sm:text-base sm:min-h-[160px] focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" placeholder="Comment s'est passée ta journée ?"></textarea>
             </div>
 
             <div class="flex justify-between items-center pt-2">
@@ -2357,19 +2357,6 @@
             return found ? found.emoji : null;
         }
 
-        // Un clic fait avancer d'un cran (😞→😕→😐→🙂→😄), puis revient à "non renseigné".
-        function cycleMoodDay(key) {
-            const current = window.moodHistory[key] || 0;
-            const next = current >= 5 ? 0 : current + 1;
-            if (next === 0) {
-                delete window.moodHistory[key];
-            } else {
-                window.moodHistory[key] = next;
-            }
-            saveData();
-            renderMoodTracker();
-        }
-
         // Ouvre l'overlay d'humeur + commentaire pour une journée donnée (affiche l'humeur
         // sélectionnable et le commentaire libre, modifiables tous les deux au même endroit).
         window.moodCommentModalKey = null;
@@ -2379,11 +2366,7 @@
             const day = key.split('-')[2];
             document.getElementById('mood-comment-modal-title').innerText = `Humeur du ${day}`;
 
-            const level = window.moodHistory[key] || 0;
-            const emojiWrap = document.getElementById('mood-comment-modal-emojis');
-            emojiWrap.innerHTML = MOOD_LEVELS.map(m => `
-                <button onclick="setMoodLevelInModal(${m.level})" class="text-xl sm:text-2xl w-10 h-10 sm:w-11 sm:h-11 rounded-xl border flex items-center justify-center transition-all ${level === m.level ? getMoodColorClasses(m.level) + ' ring-2 ring-indigo-400' : 'border-slate-100 hover:bg-slate-50'}">${m.emoji}</button>
-            `).join('');
+            renderMoodCommentModalEmojis();
 
             document.getElementById('mood-comment-modal-textarea').value = window.moodComments[key] || '';
             document.getElementById('mood-comment-modal-delete').classList.toggle('hidden', !window.moodComments[key]);
@@ -2391,7 +2374,20 @@
             document.getElementById('mood-comment-modal').classList.remove('hidden');
         }
 
-        // Change l'humeur directement depuis l'overlay (re-clic sur le même niveau = on efface).
+        // Dessine juste la rangée d'émojis sélectionnables, sans toucher au champ commentaire —
+        // appelée à l'ouverture de l'overlay et à chaque changement d'humeur.
+        function renderMoodCommentModalEmojis() {
+            const key = window.moodCommentModalKey;
+            if (!key) return;
+            const level = window.moodHistory[key] || 0;
+            const emojiWrap = document.getElementById('mood-comment-modal-emojis');
+            emojiWrap.innerHTML = MOOD_LEVELS.map(m => `
+                <button onclick="setMoodLevelInModal(${m.level})" class="text-xl sm:text-2xl w-10 h-10 sm:w-11 sm:h-11 rounded-xl border flex items-center justify-center transition-all ${level === m.level ? getMoodColorClasses(m.level) + ' ring-2 ring-indigo-400' : 'border-slate-100 hover:bg-slate-50'}">${m.emoji}</button>
+            `).join('');
+        }
+
+        // Change l'humeur directement depuis l'overlay (re-clic sur le même niveau = on efface),
+        // sans jamais toucher au commentaire en cours de saisie.
         function setMoodLevelInModal(level) {
             const key = window.moodCommentModalKey;
             if (!key) return;
@@ -2401,7 +2397,7 @@
             } else {
                 window.moodHistory[key] = level;
             }
-            openMoodCommentModal(key); // ré-affiche l'overlay avec la sélection à jour
+            renderMoodCommentModalEmojis(); // met à jour uniquement la sélection d'émoji
         }
 
         function closeMoodCommentModal() {
@@ -2501,13 +2497,10 @@
                 const escapedComment = comment.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
                 html += `
-                    <button onclick="cycleMoodDay('${key}')" class="relative aspect-square rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform duration-100 p-0.5 overflow-hidden" title="Clique pour changer l'humeur du ${d}">
+                    <button onclick="openMoodCommentModal('${key}')" class="relative aspect-square rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform duration-100 p-0.5 overflow-hidden" title="Clique pour renseigner l'humeur du ${d}">
                         <span class="text-[9px] sm:text-[10px] font-bold text-slate-500">${d}</span>
                         <span class="text-xs sm:text-2xl leading-none">${emoji || ''}</span>
-                        ${comment
-                            ? `<span onclick="event.stopPropagation(); openMoodCommentModal('${key}')" class="text-[6px] sm:text-[8px] leading-tight text-indigo-700 font-medium truncate w-full text-center px-0.5" title="${escapedComment}">${escapedComment}</span>`
-                            : `<span onclick="event.stopPropagation(); openMoodCommentModal('${key}')" class="absolute bottom-0.5 right-0.5 text-[8px] sm:text-[9px] leading-none text-slate-300" title="Ajouter un commentaire">💬</span>`
-                        }
+                        ${comment ? `<span class="text-[6px] sm:text-[8px] leading-tight text-indigo-700 font-medium truncate w-full text-center px-0.5" title="${escapedComment}">${escapedComment}</span>` : ''}
                     </button>
                 `;
             }
