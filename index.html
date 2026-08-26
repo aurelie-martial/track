@@ -2500,7 +2500,7 @@
                     <button onclick="openMoodCommentModal('${key}')" class="relative rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center gap-0.5 hover:scale-[1.02] transition-transform duration-100 p-1 sm:p-1.5 h-20 sm:h-32 overflow-hidden" title="Clique pour renseigner l'humeur du ${d}">
                         <span class="text-[9px] sm:text-[10px] font-bold text-slate-500">${d}</span>
                         <span class="text-xs sm:text-2xl leading-none">${emoji || ''}</span>
-                        <span class="block text-[6px] sm:text-[10px] leading-tight text-indigo-700 font-medium line-clamp-3 w-full text-center px-0.5">${escapedComment}</span>
+                        <span class="block text-[8px] sm:text-sm leading-tight text-indigo-700 font-medium line-clamp-3 w-full text-center px-0.5">${escapedComment}</span>
                     </button>
                 `;
             }
@@ -3989,6 +3989,34 @@
         let sportActivityChartInstance = null;
         let moodChartInstance = null;
 
+        // Plugin Chart.js générique : grise en fond les colonnes correspondant à un
+        // samedi ou un dimanche, pour repérer visuellement les week-ends sur les
+        // graphiques du suivi sport (dates alignées avec les labels de l'axe X).
+        const weekendBackgroundPlugin = {
+            id: 'weekendBackground',
+            beforeDraw(chart, args, options) {
+                const dates = options.dates;
+                if (!dates || dates.length === 0) return;
+                const { ctx, chartArea, scales: { x } } = chart;
+                if (!chartArea) return;
+                const bandWidth = dates.length > 1
+                    ? Math.abs(x.getPixelForValue(1) - x.getPixelForValue(0))
+                    : chartArea.width;
+                ctx.save();
+                ctx.fillStyle = options.color || 'rgba(100, 116, 139, 0.12)';
+                dates.forEach((dateStr, i) => {
+                    if (!dateStr) return;
+                    const day = new Date(dateStr + 'T00:00:00').getDay(); // 0 = dimanche, 6 = samedi
+                    if (day === 0 || day === 6) {
+                        const center = x.getPixelForValue(i);
+                        ctx.fillRect(center - bandWidth / 2, chartArea.top, bandWidth, chartArea.bottom - chartArea.top);
+                    }
+                });
+                ctx.restore();
+            }
+        };
+        if (typeof Chart !== 'undefined') Chart.register(weekendBackgroundPlugin);
+
         // Le graphique Poids peut s'afficher par mois, trimestre ou semestre (navigation
         // précédent/suivant à l'intérieur du mode choisi), pour ne pas être noyé par tout
         // l'historique quand on veut juste voir une période récente.
@@ -4396,6 +4424,7 @@
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: false },
+                        weekendBackground: { dates: sortedMeasurements.map(m => m.date) },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
@@ -4472,6 +4501,7 @@
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+                        weekendBackground: { dates: sortedMeasurements.map(m => m.date) },
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
@@ -4537,7 +4567,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } } },
+                    plugins: {
+                        legend: { display: true, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+                        weekendBackground: { dates: sortedActivityDates }
+                    },
                     scales: {
                         // "stacked" : comme les 4 types d'activité ne sont jamais combinés le même
                         // jour, on évite de réserver 4 créneaux de barre par date ; une seule
