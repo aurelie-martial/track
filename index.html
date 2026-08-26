@@ -5187,10 +5187,14 @@
             const restantAvant = (r.salaire || 0) - (r.decouvert || 0) - totalFixePrevu - totalVariablePrevu - epargnePrevu;
 
             // Transactions du mois en cours, hors charges "Fixe" (déjà comptées dans "Total fixe"
-            // ci-dessus) : sert à afficher l'impact réel des transactions saisies à la main.
+            // ci-dessus) ET hors catégories qui correspondent à une ligne de dépense variable (déjà
+            // comptées dans "Total variable" via le Prévu) : sinon ces dépenses étaient déduites deux
+            // fois (une fois via le Prévu, une fois via la transaction elle-même).
             const monthDateForPlan = getBudgetMonthDate();
+            const normCat = s => (s || '').trim().toLowerCase();
+            const variableCategoryLabels = new Set((window.budgetPlan.variable || []).map(l => normCat(l.label)));
             const nonFixeTransactionsTotal = window.budgetTransactions
-                .filter(t => isDateInBudgetPeriod(t.date, monthDateForPlan) && t.category !== 'Fixe')
+                .filter(t => isDateInBudgetPeriod(t.date, monthDateForPlan) && t.category !== 'Fixe' && !variableCategoryLabels.has(normCat(t.category)))
                 .reduce((s, t) => s + (parseFloat(t.amount) || 0), 0);
             const restantApres = restantAvant - nonFixeTransactionsTotal;
 
@@ -5239,7 +5243,7 @@
                     <td class="px-4 py-2 text-right text-slate-800">${formatEuro(restantAvant)}</td>
                 </tr>
                 <tr class="border-b border-slate-100">
-                    <td class="px-4 py-2 text-slate-600">Transactions (hors Fixe)</td>
+                    <td class="px-4 py-2 text-slate-600">Transactions (hors Fixe/Variable)</td>
                     <td class="px-4 py-2 text-right text-slate-700">-${formatEuro(nonFixeTransactionsTotal)}</td>
                 </tr>
                 <tr class="bg-slate-800 text-white font-bold">
