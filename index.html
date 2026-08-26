@@ -2480,7 +2480,7 @@
             `;
 
             for (let i = 0; i < leadingBlanks; i++) {
-                html += `<div></div>`;
+                html += `<div class="h-20 sm:h-32"></div>`;
             }
 
             for (let d = 1; d <= totalDays; d++) {
@@ -2497,16 +2497,16 @@
                 const escapedComment = comment.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
                 html += `
-                    <button onclick="openMoodCommentModal('${key}')" class="relative aspect-square rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform duration-100 p-0.5 overflow-hidden" title="Clique pour renseigner l'humeur du ${d}">
+                    <button onclick="openMoodCommentModal('${key}')" class="relative rounded-lg border ${colorClasses} ${todayRing} flex flex-col items-center gap-0.5 hover:scale-[1.02] transition-transform duration-100 p-1 sm:p-1.5 h-20 sm:h-32 overflow-hidden" title="Clique pour renseigner l'humeur du ${d}">
                         <span class="text-[9px] sm:text-[10px] font-bold text-slate-500">${d}</span>
                         <span class="text-xs sm:text-2xl leading-none">${emoji || ''}</span>
-                        ${comment ? `<span class="text-[6px] sm:text-[8px] leading-tight text-indigo-700 font-medium truncate w-full text-center px-0.5" title="${escapedComment}">${escapedComment}</span>` : ''}
+                        <span class="block text-[6px] sm:text-[10px] leading-tight text-indigo-700 font-medium line-clamp-3 w-full text-center px-0.5">${escapedComment}</span>
                     </button>
                 `;
             }
 
             for (let i = 0; i < trailingBlanks; i++) {
-                html += `<div></div>`;
+                html += `<div class="h-20 sm:h-32"></div>`;
             }
 
             const avgLevel = countLevels > 0 ? Math.round(sumLevels / countLevels) : 0;
