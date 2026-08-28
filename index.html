@@ -119,7 +119,8 @@
         }
 
         /* Hachures grisées sur tout un bloc jour (semainier repas / sport) quand le jour est
-           passé : overlay non cliquable, le contenu du dessous reste consultable/modifiable. */
+           passé : overlay non cliquable, le contenu du dessous reste consultable/modifiable.
+           Volontairement discrètes pour ne pas écraser visuellement le contenu du dessous. */
         .day-past-hatch {
             position: relative;
         }
@@ -127,9 +128,20 @@
             content: '';
             position: absolute;
             inset: 0;
-            background-image: repeating-linear-gradient(45deg, rgba(100, 116, 139, 0.18) 0, rgba(100, 116, 139, 0.18) 6px, transparent 6px, transparent 12px);
+            background-image: repeating-linear-gradient(45deg, rgba(100, 116, 139, 0.09) 0, rgba(100, 116, 139, 0.09) 6px, transparent 6px, transparent 12px);
             border-radius: inherit;
             pointer-events: none;
+        }
+
+        /* Hachures très discrètes sur les lignes de l'historique des transactions du budget qui
+           correspondent à une charge "Fixe" ou à une catégorie de dépense "Variable" planifiée :
+           signale que ces lignes sont déjà comptées via le Prévu (tables Fixe/Variable), sans
+           les rendre illisibles. Toujours plus subtile que .day-past-hatch ci-dessus. */
+        .budget-tx-planned-hatch {
+            background-image: repeating-linear-gradient(45deg, rgba(100, 116, 139, 0.06) 0, rgba(100, 116, 139, 0.06) 5px, transparent 5px, transparent 10px);
+        }
+        .budget-tx-planned-hatch > td {
+            opacity: 0.62;
         }
 
         /* Placeholder très discret pour les champs Protéine / Féculent / Légumes du semainier
@@ -5330,6 +5342,13 @@
                 if (sorted.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">Aucune transaction ce mois-ci.</td></tr>`;
                 } else {
+                    // Catégories déjà comptées via le Prévu (tables Fixe/Variable du budget) : ces
+                    // transactions sont affichées hachurées et atténuées dans l'historique pour bien
+                    // les distinguer des dépenses "libres" (cf. .budget-tx-planned-hatch ci-dessus).
+                    const normCatTx = s => (s || '').trim().toLowerCase();
+                    const variableCategoryLabelsTx = new Set((window.budgetPlan.variable || []).map(l => normCatTx(l.label)));
+                    const isPlannedCategoryTx = t => t.category === 'Fixe' || variableCategoryLabelsTx.has(normCatTx(t.category));
+
                     tbody.innerHTML = sorted.map((t, idx) => {
                         // Séparation fine et grise entre 2 transactions d'un même jour ; séparation
                         // nettement plus foncée et épaisse au changement de jour, pour bien repérer
@@ -5338,8 +5357,9 @@
                         // se marchent jamais dessus.
                         const dayChanged = idx > 0 && t.date !== sorted[idx - 1].date;
                         const borderClass = idx === 0 ? '' : (dayChanged ? 'border-t-4 border-slate-600' : 'border-t border-slate-100');
+                        const hatchClass = isPlannedCategoryTx(t) ? 'budget-tx-planned-hatch' : '';
                         return `
-                        <tr class="${borderClass}">
+                        <tr class="${borderClass} ${hatchClass}">
                             <td class="py-2 px-1.5 whitespace-nowrap">${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</td>
                             <td class="py-2 px-1.5 truncate">${budgetCategoryTag(t.category)}</td>
                             <td class="py-2 px-1.5 text-slate-500 truncate">${t.label || '—'}</td>
