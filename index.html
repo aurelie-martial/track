@@ -867,6 +867,9 @@
                             <span id="budget-plan-fixe-percent" class="text-xs font-bold bg-white/40 px-2 py-0.5 rounded-full">0% du salaire</span>
                         </div>
                         <div class="p-3">
+                            <!-- Tri des charges fixes : par montant ou par jour de prélèvement, croissant/décroissant.
+                                 Rempli dynamiquement par renderBudgetPlanTable('fixe') pour refléter le tri actif. -->
+                            <div id="budget-fixe-sort-controls" class="flex items-center gap-1 mb-1.5"></div>
                             <table class="w-full text-xs border-collapse table-fixed">
                                 <tbody id="budget-plan-fixe-tbody" class="divide-y divide-rose-100"></tbody>
                             </table>
@@ -928,10 +931,11 @@
     <div id="budget-tx-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden">
             <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-800 text-sm">Nouvelle transaction</h3>
+                <h3 id="budget-tx-modal-title" class="font-bold text-slate-800 text-sm">Nouvelle transaction</h3>
                 <button onclick="closeNewTransactionOverlay()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
             </div>
             <div class="p-6 space-y-3">
+                <input type="hidden" id="editing-budget-tx-id">
                 <div>
                     <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
                     <input type="date" id="new-budget-date" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-36 px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
@@ -949,7 +953,7 @@
                     <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Montant (€)</label>
                     <input type="text" inputmode="decimal" id="new-budget-amount" placeholder="50" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
                 </div>
-                <button onclick="addBudgetTransaction()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-1.5">
+                <button id="budget-tx-modal-submit" onclick="addBudgetTransaction()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Ajouter
                 </button>
@@ -1417,6 +1421,7 @@
                         window.sportWeekDone = data.sportWeekDone || window.sportWeekDone;
                         window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
                         window.budgetCategories = data.budgetCategories || window.budgetCategories;
+                        window.budgetCategoryColors = data.budgetCategoryColors || window.budgetCategoryColors;
                         window.budgetTargets = data.budgetTargets || window.budgetTargets;
                         window.budgetPlan = data.budgetPlan || window.budgetPlan;
 
@@ -1517,6 +1522,7 @@
                 sportWeekDone: window.sportWeekDone,
                 budgetTransactions: window.budgetTransactions,
                 budgetCategories: window.budgetCategories,
+                budgetCategoryColors: window.budgetCategoryColors,
                 budgetTargets: window.budgetTargets,
                 budgetPlan: window.budgetPlan
             };
@@ -1615,6 +1621,10 @@
             depense: ["Logement", "Alimentation", "Transport", "Loisirs", "Abonnements", "Santé", "Autre"],
             revenu: ["Salaire", "Autre revenu"]
         };
+        // Couleur choisie manuellement pour une catégorie de dépense (index dans
+        // budgetCategoryColorPalette, cf. plus bas). Une catégorie absente de cet objet garde
+        // la couleur automatique (basée sur sa position dans la liste).
+        window.budgetCategoryColors = {};
         window.budgetTargets = { // budget mensuel prévu par catégorie de dépense (en €)
             "Logement": 800,
             "Alimentation": 350,
@@ -1629,6 +1639,11 @@
         // Tableau saisi entièrement à la main (Prévu ET Réel), façon tableur, indépendant des
         // transactions ci-dessus. C'est un budget mensuel "type" qu'on ajuste au fil de l'eau,
         // pas rattaché à un mois précis.
+
+        // Tri de la table Fixe : par 'montant' (Prévu) ou par 'date' (jour de prélèvement),
+        // dans le sens 'asc' ou 'desc'. Purement local à l'affichage (pas persisté).
+        window.budgetPlanFixeSort = { field: 'montant', dir: 'desc' };
+
         window.budgetPlan = {
             ressources: {
                 salaire: 3272,
@@ -4888,8 +4903,34 @@
         function openNewTransactionOverlay() {
             const modal = document.getElementById('budget-tx-modal');
             if (!modal) return;
+            document.getElementById('editing-budget-tx-id').value = '';
+            const titleEl = document.getElementById('budget-tx-modal-title');
+            if (titleEl) titleEl.innerText = 'Nouvelle transaction';
+            const submitEl = document.getElementById('budget-tx-modal-submit');
+            if (submitEl) submitEl.lastChild.textContent = 'Ajouter';
             const dateEl = document.getElementById('new-budget-date');
             if (dateEl && !dateEl.value) dateEl.value = formatDateISO(new Date());
+            refreshBudgetCategoryOptions();
+            modal.classList.remove('hidden');
+        }
+
+        // Overlay en mode édition : pré-remplit les 4 champs avec la transaction visée. Le même
+        // modal et le même bouton "addBudgetTransaction" sont réutilisés ; c'est la présence d'un
+        // id dans "editing-budget-tx-id" qui bascule en mode modification.
+        function openEditTransactionOverlay(id) {
+            const tx = window.budgetTransactions.find(t => t.id === id);
+            if (!tx) return;
+            const modal = document.getElementById('budget-tx-modal');
+            if (!modal) return;
+            document.getElementById('editing-budget-tx-id').value = tx.id;
+            const titleEl = document.getElementById('budget-tx-modal-title');
+            if (titleEl) titleEl.innerText = 'Modifier la transaction';
+            const submitEl = document.getElementById('budget-tx-modal-submit');
+            if (submitEl) submitEl.lastChild.textContent = 'Enregistrer';
+            document.getElementById('new-budget-date').value = tx.date;
+            document.getElementById('new-budget-label').value = tx.label || '';
+            document.getElementById('new-budget-amount').value = formatAmountForInput(tx.amount);
+            document.getElementById('new-budget-category').value = tx.category;
             refreshBudgetCategoryOptions();
             modal.classList.remove('hidden');
         }
@@ -4900,6 +4941,8 @@
         }
 
         function addBudgetTransaction() {
+            const editingId = parseInt(document.getElementById('editing-budget-tx-id').value, 10);
+            const isEditing = !isNaN(editingId);
             const date = document.getElementById('new-budget-date').value;
             const category = document.getElementById('new-budget-category').value;
             const label = document.getElementById('new-budget-label').value.trim();
@@ -4910,8 +4953,22 @@
                 return;
             }
 
-            window.budgetTransactions.push({ id: Date.now(), date, type: 'depense', category, label, amount });
-            applyTransactionToVariableReel(category, amount, 1);
+            if (isEditing) {
+                const tx = window.budgetTransactions.find(t => t.id === editingId);
+                if (!tx) { closeNewTransactionOverlay(); return; }
+                // On retire l'effet de l'ancien montant/catégorie sur le Réel de la ligne variable
+                // correspondante avant d'appliquer les nouvelles valeurs, pour ne rien compter en trop.
+                applyTransactionToVariableReel(tx.category, tx.amount, -1);
+                tx.date = date;
+                tx.category = category;
+                tx.label = label;
+                tx.amount = amount;
+                applyTransactionToVariableReel(category, amount, 1);
+            } else {
+                window.budgetTransactions.push({ id: Date.now(), date, type: 'depense', category, label, amount });
+                applyTransactionToVariableReel(category, amount, 1);
+            }
+            document.getElementById('editing-budget-tx-id').value = '';
             document.getElementById('new-budget-label').value = '';
             document.getElementById('new-budget-amount').value = '';
             saveData();
@@ -4971,6 +5028,62 @@
 
         function budgetPlanSectionEffectiveTotal(section) {
             return (window.budgetPlan[section] || []).reduce((s, l) => s + budgetPlanEffectiveAmount(l), 0);
+        }
+
+        // Tri des lignes de la table Fixe selon window.budgetPlanFixeSort. Deux champs possibles :
+        // - 'montant' : sur le Prévu.
+        // - 'date' : sur le jour de prélèvement (l.debitDay, 1-31) ; les lignes sans jour renseigné
+        //   sont toujours reléguées en fin de liste, quel que soit le sens du tri, pour ne pas
+        //   polluer le haut du tableau avec des "vides".
+        function sortFixeLines(lines) {
+            const { field, dir } = window.budgetPlanFixeSort;
+            const mult = dir === 'asc' ? 1 : -1;
+            if (field === 'date') {
+                return [...lines].sort((a, b) => {
+                    const da = parseInt(a.debitDay, 10), db = parseInt(b.debitDay, 10);
+                    const aEmpty = isNaN(da), bEmpty = isNaN(db);
+                    if (aEmpty && bEmpty) return 0;
+                    if (aEmpty) return 1;
+                    if (bEmpty) return -1;
+                    return (da - db) * mult;
+                });
+            }
+            return [...lines].sort((a, b) => ((parseFloat(a.prevu) || 0) - (parseFloat(b.prevu) || 0)) * mult);
+        }
+
+        // Bascule le tri de la table Fixe : cliquer sur le champ déjà actif inverse le sens,
+        // cliquer sur l'autre champ l'active avec un sens de départ adapté (les plus gros montants
+        // d'abord pour "Montant", du 1er au 31 du mois pour "Date").
+        function setBudgetPlanFixeSort(field) {
+            const current = window.budgetPlanFixeSort;
+            if (current.field === field) {
+                current.dir = current.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                current.field = field;
+                current.dir = field === 'date' ? 'asc' : 'desc';
+            }
+            renderBudgetPlanTable('fixe');
+        }
+
+        // Rend les 2 boutons de tri (Montant / Date) au-dessus de la table Fixe, avec la flèche
+        // ↑/↓ affichée sur le champ actif pour indiquer le sens courant.
+        function renderBudgetFixeSortControls() {
+            const el = document.getElementById('budget-fixe-sort-controls');
+            if (!el) return;
+            const { field, dir } = window.budgetPlanFixeSort;
+            const arrow = dir === 'asc' ? '↑' : '↓';
+            const btn = (key, label) => {
+                const active = field === key;
+                const cls = active
+                    ? 'bg-rose-400 text-white'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200';
+                return `<button onclick="setBudgetPlanFixeSort('${key}')" class="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${cls}">${label}${active ? ` ${arrow}` : ''}</button>`;
+            };
+            el.innerHTML = `
+                <span class="text-[10px] text-slate-400">Trier :</span>
+                ${btn('montant', 'Montant')}
+                ${btn('date', 'Date')}
+            `;
         }
 
         function updateBudgetPlanRessource(field, value) {
@@ -5052,12 +5165,98 @@
         ];
         const budgetFixeTagColor = { bg: 'bg-slate-200', text: 'text-slate-600', border: 'border-slate-300' };
 
-        function getBudgetCategoryColor(categoryName) {
-            if (categoryName === 'Fixe') return budgetFixeTagColor;
+        function budgetCategoryColorIndexFor(categoryName) {
+            if (window.budgetCategoryColors && window.budgetCategoryColors[categoryName] !== undefined) {
+                return window.budgetCategoryColors[categoryName];
+            }
             const cats = window.budgetCategories.depense || [];
             const index = cats.indexOf(categoryName);
-            const colorIndex = index >= 0 ? index % budgetCategoryColorPalette.length : 0;
-            return budgetCategoryColorPalette[colorIndex];
+            return index >= 0 ? index % budgetCategoryColorPalette.length : 0;
+        }
+
+        function getBudgetCategoryColor(categoryName) {
+            if (categoryName === 'Fixe') return budgetFixeTagColor;
+            return budgetCategoryColorPalette[budgetCategoryColorIndexFor(categoryName)];
+        }
+
+        // Choix manuel d'une couleur pour une catégorie (palette de swatches dans l'éditeur de
+        // catégorie ci-dessous).
+        function setBudgetCategoryColor(name, paletteIndex) {
+            if (!window.budgetCategoryColors) window.budgetCategoryColors = {};
+            window.budgetCategoryColors[name] = paletteIndex;
+            saveData();
+            renderBudget();
+        }
+
+        // Renomme une catégorie de dépense et répercute le changement partout où le nom est
+        // utilisé : couleur associée, budget cible, transactions déjà enregistrées, et la ligne
+        // de dépense variable correspondante (comparaison normalisée, comme pour le pointage
+        // automatique Réel des dépenses variables).
+        function renameBudgetCategory(oldName, newNameRaw) {
+            const newName = (newNameRaw || '').trim();
+            if (!(window.budgetCategories.depense || []).includes(oldName)) return; // déjà renommée (ex: blur après un Enter)
+            if (!newName || newName === oldName) return;
+            if (window.budgetCategories.depense.includes(newName)) {
+                alert("Cette catégorie existe déjà.");
+                renderBudget();
+                return;
+            }
+            window.budgetCategories.depense = window.budgetCategories.depense.map(c => c === oldName ? newName : c);
+            if (window.budgetCategoryColors && window.budgetCategoryColors[oldName] !== undefined) {
+                window.budgetCategoryColors[newName] = window.budgetCategoryColors[oldName];
+                delete window.budgetCategoryColors[oldName];
+            }
+            if (window.budgetTargets && window.budgetTargets[oldName] !== undefined) {
+                window.budgetTargets[newName] = window.budgetTargets[oldName];
+                delete window.budgetTargets[oldName];
+            }
+            window.budgetTransactions.forEach(t => { if (t.category === oldName) t.category = newName; });
+            const norm = s => (s || '').trim().toLowerCase();
+            (window.budgetPlan.variable || []).forEach(l => { if (norm(l.label) === norm(oldName)) l.label = newName; });
+
+            window.budgetCatEditingName = newName;
+            saveData();
+            renderBudget();
+            refreshBudgetCategoryOptions();
+        }
+
+        // Ouvre/ferme le petit panneau d'édition (renommer + couleur) sous une catégorie.
+        function toggleBudgetCategoryEditor(name) {
+            window.budgetCatEditingName = (window.budgetCatEditingName === name) ? null : name;
+            renderBudget();
+        }
+
+        // Rend la liste de catégories de dépense : chips en lecture, ou panneau d'édition
+        // (renommer + swatches de couleur) pour la catégorie actuellement ouverte.
+        function renderBudgetCategoryList() {
+            const el = document.getElementById('budget-cat-list-depense');
+            if (!el) return;
+            const cats = [...(window.budgetCategories.depense || [])].sort((a, b) => a.localeCompare(b, 'fr'));
+            const esc = s => (s || '').replace(/'/g, "\\'");
+            el.innerHTML = cats.map(c => {
+                const col = getBudgetCategoryColor(c);
+                if (window.budgetCatEditingName !== c) {
+                    return `
+                    <span class="inline-flex items-center gap-1 ${col.bg} ${col.text} border ${col.border} rounded-full px-2.5 py-1 text-xs font-medium">
+                        <button type="button" onclick="toggleBudgetCategoryEditor('${esc(c)}')" class="hover:underline" title="Modifier le nom ou la couleur">${c}</button>
+                        <button onclick="deleteBudgetCategory('depense', '${esc(c)}')" class="${col.text} hover:opacity-70 ml-0.5">✕</button>
+                    </span>
+                `;
+                }
+                const activeIndex = budgetCategoryColorIndexFor(c);
+                const swatches = budgetCategoryColorPalette.map((p, i) => `
+                    <button type="button" onclick="setBudgetCategoryColor('${esc(c)}', ${i})" title="${p.text.replace('text-', '').replace('-600', '')}" class="w-4 h-4 rounded-full ${p.bg} border ${i === activeIndex ? 'border-slate-700 ring-1 ring-offset-1 ring-slate-400' : p.border}"></button>
+                `).join('');
+                return `
+                <div class="basis-full w-full flex flex-col gap-1.5 ${col.bg} border ${col.border} rounded-xl px-2.5 py-2">
+                    <div class="flex items-center gap-1.5">
+                        <input type="text" value="${c.replace(/"/g, '&quot;')}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" onblur="renameBudgetCategory('${esc(c)}', this.value)" class="flex-1 min-w-0 px-2 py-1 rounded-lg border border-slate-200 text-xs bg-white focus:outline-none focus:border-indigo-400">
+                        <button type="button" onclick="toggleBudgetCategoryEditor('${esc(c)}')" class="text-[10px] font-semibold text-slate-500 hover:text-slate-700 px-1.5 py-1 rounded-lg bg-white border border-slate-200">Terminé</button>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-wrap">${swatches}</div>
+                </div>
+            `;
+            }).join('');
         }
 
         // Tag coloré pour une catégorie (historique des transactions + gestion des catégories).
@@ -5090,8 +5289,9 @@
             const lines = window.budgetPlan[section] || [];
             const showReel = section !== 'fixe';
             const displayLines = section === 'fixe'
-                ? [...lines].sort((a, b) => (parseFloat(b.prevu) || 0) - (parseFloat(a.prevu) || 0))
+                ? sortFixeLines(lines)
                 : [...lines].sort((a, b) => budgetPlanEffectiveAmount(b) - budgetPlanEffectiveAmount(a));
+            if (section === 'fixe') renderBudgetFixeSortControls();
             const totalPrevu = budgetPlanSectionTotal(section, 'prevu');
             const totalReel = budgetPlanSectionTotal(section, 'reel');
             const salaire = window.budgetPlan.ressources.salaire || 0;
@@ -5259,8 +5459,8 @@
                     <td class="px-4 py-2 text-right text-slate-700">-${formatEuro(nonFixeTransactionsTotal)}</td>
                 </tr>
                 <tr class="bg-slate-800 text-white font-bold">
-                    <td class="px-4 py-2">Restant total après transactions</td>
-                    <td class="px-4 py-2 text-right">${formatEuro(restantApres)}</td>
+                    <td class="px-4 py-3 text-base">Restant total</td>
+                    <td class="px-4 py-3 text-right text-lg">${formatEuro(restantApres)}</td>
                 </tr>
             `;
 
@@ -5318,21 +5518,9 @@
 
             renderBudgetPlan();
 
-            const depenseCategories = [...(window.budgetCategories.depense || [])].sort((a, b) => a.localeCompare(b, 'fr'));
-
-            // Listes de catégories (gestion)
-            const depenseListEl = document.getElementById('budget-cat-list-depense');
-            if (depenseListEl) {
-                depenseListEl.innerHTML = depenseCategories.map(c => {
-                    const col = getBudgetCategoryColor(c);
-                    return `
-                    <span class="inline-flex items-center gap-1 ${col.bg} ${col.text} border ${col.border} rounded-full px-2.5 py-1 text-xs font-medium">
-                        ${c}
-                        <button onclick="deleteBudgetCategory('depense', '${c.replace(/'/g, "\\'")}')" class="${col.text} hover:opacity-70 ml-0.5">✕</button>
-                    </span>
-                `;
-                }).join('');
-            }
+            // Liste de catégories (gestion) : rendu délégué à renderBudgetCategoryList (chips +
+            // panneau d'édition renommer/couleur).
+            renderBudgetCategoryList();
 
             // Historique des transactions du mois, les plus récemment ajoutées en premier
             // (tri par date, puis par id de création en cas d'égalité de date).
@@ -5365,7 +5553,8 @@
                             <td class="py-2 px-1.5 text-slate-500 truncate">${t.label || '—'}</td>
                             <td class="py-2 px-1.5 text-right font-semibold whitespace-nowrap ${t.type === 'revenu' ? 'text-emerald-600' : 'text-rose-500'}">${t.type === 'revenu' ? '+' : '-'}${t.amount.toFixed(2)} €</td>
                             <td class="py-2 px-1.5 text-right whitespace-nowrap">
-                                <button onclick="deleteBudgetTransaction(${t.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs">🗑️</button>
+                                <button onclick="openEditTransactionOverlay(${t.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs" title="Modifier">✎</button>
+                                <button onclick="deleteBudgetTransaction(${t.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs" title="Supprimer">🗑️</button>
                             </td>
                         </tr>
                     `;
@@ -5398,6 +5587,7 @@
                 sportWeekDone: window.sportWeekDone,
                 budgetTransactions: window.budgetTransactions,
                 budgetCategories: window.budgetCategories,
+                budgetCategoryColors: window.budgetCategoryColors,
                 budgetTargets: window.budgetTargets,
                 budgetPlan: window.budgetPlan
             };
@@ -5451,6 +5641,7 @@
                     window.sportWeekDone = data.sportWeekDone || window.sportWeekDone;
                     window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
                     window.budgetCategories = data.budgetCategories || window.budgetCategories;
+                    window.budgetCategoryColors = data.budgetCategoryColors || window.budgetCategoryColors;
                     window.budgetTargets = data.budgetTargets || window.budgetTargets;
                     window.budgetPlan = data.budgetPlan || window.budgetPlan;
 
