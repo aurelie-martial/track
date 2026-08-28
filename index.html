@@ -806,6 +806,17 @@
 
         <!-- ================= PARTIE BUDGET ================= -->
         <section id="budget" class="tab-content space-y-6">
+            <div class="flex bg-slate-100 p-1 rounded-xl w-fit gap-1">
+                <button onclick="switchBudgetSubTab('budget-main')" id="btn-subtab-budget-main" class="subtab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 bg-white text-indigo-600 shadow-sm">
+                    💳 Budget
+                </button>
+                <button onclick="switchBudgetSubTab('budget-savings')" id="btn-subtab-budget-savings" class="subtab-btn px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 text-slate-600 hover:text-slate-900">
+                    🐖 Épargne
+                </button>
+            </div>
+
+            <!-- SOUS-ONGLET : BUDGET (mensuel, existant) -->
+            <div id="subtab-budget-main" class="subtab-content active space-y-6">
             <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h2 class="text-base sm:text-lg font-bold text-slate-800">Budget mensuel</h2>
@@ -923,6 +934,71 @@
                     </div>
                 </div>
             </div>
+            </div>
+
+            <!-- SOUS-ONGLET : ÉPARGNE (comptes + versements/retraits, distinct du plan mensuel) -->
+            <div id="subtab-budget-savings" class="subtab-content space-y-6">
+                <!-- Total toutes épargnes confondues : le chiffre qui compte en premier, mis en avant
+                     comme "Restant total" côté Budget. -->
+                <div class="bg-slate-800 rounded-2xl p-4 sm:p-5 flex items-center justify-between">
+                    <span class="text-sm font-semibold text-slate-300 uppercase tracking-wide">Épargne totale</span>
+                    <span id="savings-total-amount" class="text-2xl sm:text-3xl font-extrabold text-white">0 €</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-[1.6fr_2.4fr] gap-6 items-start">
+                    <!-- Comptes d'épargne : solde de départ + versements/retraits déjà enregistrés = solde actuel. -->
+                    <div class="order-2 lg:order-1 space-y-6 min-w-0">
+                        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                            <div class="px-4 py-3 bg-emerald-500 text-white">
+                                <span class="text-xs font-bold uppercase tracking-wide">Comptes</span>
+                            </div>
+                            <div class="p-3">
+                                <table class="w-full text-xs border-collapse table-fixed">
+                                    <thead>
+                                        <tr class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                                            <th class="px-1.5 py-1 text-left">Nom</th>
+                                            <th class="px-1.5 py-1 text-right w-20">Départ</th>
+                                            <th class="px-1.5 py-1 text-right w-20">Actuel</th>
+                                            <th class="px-1 py-1 w-5"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="savings-accounts-tbody" class="divide-y divide-emerald-100"></tbody>
+                                </table>
+                                <div class="mt-2 text-center">
+                                    <button onclick="addSavingsAccount()" class="text-xs font-semibold text-emerald-600 hover:text-emerald-800">+ Ajouter un compte</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Historique des versements/retraits : même logique que les Transactions du Budget. -->
+                    <div class="order-1 lg:order-2 space-y-6">
+                        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                            <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                                <h3 class="font-bold text-slate-800 text-sm">Versements / retraits</h3>
+                                <button onclick="openNewSavingsMovementOverlay()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-1.5 px-3 rounded-xl shadow-xs transition-colors text-xs flex items-center justify-center gap-1.5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                    Ajouter
+                                </button>
+                            </div>
+                            <div class="p-4 overflow-x-auto">
+                                <table class="w-full text-left border-collapse table-fixed">
+                                    <thead>
+                                        <tr class="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                            <th class="py-2 px-1.5 w-[16%]">Date</th>
+                                            <th class="py-2 px-1.5 w-[26%]">Compte</th>
+                                            <th class="py-2 px-1.5">Note</th>
+                                            <th class="py-2 px-1.5 text-right w-[20%]">Montant</th>
+                                            <th class="py-2 px-1.5 text-right w-[10%]"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="savings-movements-tbody" class="text-xs text-slate-600"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
     </main>
@@ -954,6 +1030,48 @@
                     <input type="text" inputmode="decimal" id="new-budget-amount" placeholder="50" onkeydown="if(event.key==='Enter'){event.preventDefault();addBudgetTransaction();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
                 </div>
                 <button id="budget-tx-modal-submit" onclick="addBudgetTransaction()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-1.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    Ajouter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL : NOUVEAU VERSEMENT / RETRAIT (ÉPARGNE) -->
+    <div id="savings-mvt-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <h3 id="savings-mvt-modal-title" class="font-bold text-slate-800 text-sm">Nouveau versement</h3>
+                <button onclick="closeSavingsMovementOverlay()" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
+            </div>
+            <div class="p-6 space-y-3">
+                <input type="hidden" id="editing-savings-mvt-id">
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Type</label>
+                    <div class="flex gap-1.5">
+                        <button type="button" id="savings-mvt-type-versement" onclick="selectSavingsMovementType('versement')" class="flex-1 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all">+ Versement</button>
+                        <button type="button" id="savings-mvt-type-retrait" onclick="selectSavingsMovementType('retrait')" class="flex-1 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all">− Retrait</button>
+                    </div>
+                    <input type="hidden" id="new-savings-mvt-type" value="versement">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Date</label>
+                    <input type="date" id="new-savings-mvt-date" onkeydown="if(event.key==='Enter'){event.preventDefault();addSavingsMovement();}" class="w-36 px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Compte</label>
+                    <div id="new-savings-mvt-account-chips" class="flex flex-wrap gap-1.5"></div>
+                    <input type="hidden" id="new-savings-mvt-account">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Note (optionnel)</label>
+                    <input type="text" id="new-savings-mvt-note" placeholder="Ex: Prime, virement mensuel..." onkeydown="if(event.key==='Enter'){event.preventDefault();addSavingsMovement();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Montant (€)</label>
+                    <input type="text" inputmode="decimal" id="new-savings-mvt-amount" placeholder="100" onkeydown="if(event.key==='Enter'){event.preventDefault();addSavingsMovement();}" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-400">
+                </div>
+                <button id="savings-mvt-modal-submit" onclick="addSavingsMovement()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2.5 px-4 rounded-xl shadow-xs transition-colors text-sm flex items-center justify-center gap-1.5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                     Ajouter
                 </button>
@@ -1424,6 +1542,8 @@
                         window.budgetCategoryColors = data.budgetCategoryColors || window.budgetCategoryColors;
                         window.budgetTargets = data.budgetTargets || window.budgetTargets;
                         window.budgetPlan = data.budgetPlan || window.budgetPlan;
+                        window.savingsAccounts = data.savingsAccounts || window.savingsAccounts;
+                        window.savingsMovements = data.savingsMovements || window.savingsMovements;
 
                         renderHabits();
                         renderTodos();
@@ -1524,7 +1644,9 @@
                 budgetCategories: window.budgetCategories,
                 budgetCategoryColors: window.budgetCategoryColors,
                 budgetTargets: window.budgetTargets,
-                budgetPlan: window.budgetPlan
+                budgetPlan: window.budgetPlan,
+                savingsAccounts: window.savingsAccounts,
+                savingsMovements: window.savingsMovements
             };
 
             // Vérification préventive AVANT l'envoi : Firestore limite un document à 1 Mo (≈1024 Ko)
@@ -1635,6 +1757,18 @@
             "Autre": 50
         };
 
+        // --- ÉPARGNE (sous-onglet Budget) ---
+        // Indépendant du plan mensuel Fixe/Variable/Épargne ci-dessous : ici on suit le solde
+        // réel de chaque support (Livret A, Assurance vie, Compte entreprise...), pas un montant
+        // prévisionnel mensuel. "initial" = solde de départ au moment où on commence à suivre le
+        // compte ici ; le solde actuel = initial + somme des versements - somme des retraits.
+        window.savingsAccounts = [
+            { id: 1, name: "Livret A", initial: 0 },
+            { id: 2, name: "Assurance vie", initial: 0 },
+            { id: 3, name: "Compte entreprise", initial: 0 }
+        ];
+        window.savingsMovements = []; // { id, date: 'YYYY-MM-DD', accountId, type: 'versement'|'retrait', amount, note }
+
         // --- PLAN BUDGÉTAIRE (Ressources + Fixe/Variable/Épargne) ---
         // Tableau saisi entièrement à la main (Prévu ET Réel), façon tableur, indépendant des
         // transactions ci-dessus. C'est un budget mensuel "type" qu'on ajuste au fil de l'eau,
@@ -1729,6 +1863,25 @@
 
             if (tabId === 'budget' && typeof renderBudget === 'function') {
                 requestAnimationFrame(renderBudget);
+            }
+        }
+
+        // Sous-onglets du Budget : "Budget" (plan mensuel + transactions, existant) et "Épargne"
+        // (comptes + versements/retraits, indépendant du mois affiché côté Budget).
+        function switchBudgetSubTab(subtabId) {
+            document.querySelectorAll('#budget .subtab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('#budget .subtab-btn').forEach(el => {
+                el.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
+                el.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`subtab-${subtabId}`).classList.add('active');
+            const targetBtn = document.getElementById(`btn-subtab-${subtabId}`);
+            targetBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
+            targetBtn.classList.remove('text-slate-600');
+
+            if (subtabId === 'budget-savings' && typeof renderSavings === 'function') {
+                requestAnimationFrame(renderSavings);
             }
         }
 
@@ -5161,7 +5314,11 @@
             { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-200' },
             { bg: 'bg-teal-50', text: 'text-teal-600', border: 'border-teal-200' },
             { bg: 'bg-pink-50', text: 'text-pink-600', border: 'border-pink-200' },
-            { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' }
+            { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' },
+            { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300' },
+            { bg: 'bg-slate-800', text: 'text-white', border: 'border-slate-900' },
+            { bg: 'bg-green-50', text: 'text-green-600', border: 'border-green-200' },
+            { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-300' }
         ];
         const budgetFixeTagColor = { bg: 'bg-slate-200', text: 'text-slate-600', border: 'border-slate-300' };
 
@@ -5275,6 +5432,246 @@
                     <span class="text-slate-400 text-xs">€</span>
                 </div>
             `;
+        }
+
+        // --- ÉPARGNE (sous-onglet Budget) : comptes (Livret A, Assurance vie, Compte
+        // entreprise...) + historique des versements/retraits. Indépendant du plan mensuel
+        // Fixe/Variable/Épargne (qui reste un montant prévisionnel, pas un solde réel).
+        let savingsMvtCounter = Date.now();
+
+        // Couleur d'un compte : même palette que les catégories de dépense, indexée par position
+        // dans la liste des comptes (pas de risque de collision visuelle avec les tags catégories,
+        // ce sont deux contextes distincts à l'écran).
+        function getSavingsAccountColor(accountId) {
+            const accounts = window.savingsAccounts || [];
+            const index = accounts.findIndex(a => a.id === accountId);
+            return budgetCategoryColorPalette[index >= 0 ? index % budgetCategoryColorPalette.length : 0];
+        }
+
+        function savingsAccountBalance(accountId) {
+            const acc = (window.savingsAccounts || []).find(a => a.id === accountId);
+            const initial = acc ? (parseFloat(acc.initial) || 0) : 0;
+            const sum = (window.savingsMovements || [])
+                .filter(m => m.accountId === accountId)
+                .reduce((s, m) => s + (m.type === 'retrait' ? -m.amount : m.amount), 0);
+            return initial + sum;
+        }
+
+        function savingsTotalBalance() {
+            return (window.savingsAccounts || []).reduce((s, a) => s + savingsAccountBalance(a.id), 0);
+        }
+
+        function addSavingsAccount() {
+            const name = prompt("Nom du nouveau compte d'épargne :");
+            const trimmed = (name || '').trim();
+            if (!trimmed) return;
+            if ((window.savingsAccounts || []).some(a => a.name.toLowerCase() === trimmed.toLowerCase())) {
+                alert("Ce compte existe déjà.");
+                return;
+            }
+            window.savingsAccounts.push({ id: Date.now(), name: trimmed, initial: 0 });
+            saveData();
+            renderSavings();
+        }
+
+        function renameSavingsAccount(id, newNameRaw) {
+            const newName = (newNameRaw || '').trim();
+            const acc = (window.savingsAccounts || []).find(a => a.id === id);
+            if (!acc || !newName || newName === acc.name) { renderSavings(); return; }
+            acc.name = newName;
+            saveData();
+            renderSavings();
+        }
+
+        function updateSavingsAccountInitial(id, value) {
+            const acc = (window.savingsAccounts || []).find(a => a.id === id);
+            if (!acc) return;
+            acc.initial = parseAmount(value);
+            saveData();
+            renderSavings();
+        }
+
+        function deleteSavingsAccount(id) {
+            const acc = (window.savingsAccounts || []).find(a => a.id === id);
+            if (!acc) return;
+            const hasMovements = (window.savingsMovements || []).some(m => m.accountId === id);
+            const msg = hasMovements
+                ? `Supprimer le compte "${acc.name}" ? Les versements/retraits déjà enregistrés dessus seront aussi supprimés.`
+                : `Supprimer le compte "${acc.name}" ?`;
+            if (!confirm(msg)) return;
+            window.savingsAccounts = window.savingsAccounts.filter(a => a.id !== id);
+            window.savingsMovements = window.savingsMovements.filter(m => m.accountId !== id);
+            saveData();
+            renderSavings();
+        }
+
+        // Chips de sélection du compte dans le modal Versement/Retrait (même logique que les
+        // catégories de transaction budget : un champ caché porte la valeur choisie).
+        function refreshSavingsAccountChips() {
+            const chipsEl = document.getElementById('new-savings-mvt-account-chips');
+            const hiddenInput = document.getElementById('new-savings-mvt-account');
+            if (!chipsEl || !hiddenInput) return;
+            const accounts = window.savingsAccounts || [];
+            const currentId = parseInt(hiddenInput.value, 10);
+            if (!accounts.some(a => a.id === currentId)) hiddenInput.value = accounts[0] ? accounts[0].id : '';
+            chipsEl.innerHTML = accounts.map(a => {
+                const col = getSavingsAccountColor(a.id);
+                const isSelected = a.id === parseInt(hiddenInput.value, 10);
+                return `<button type="button" onclick="selectSavingsMovementAccount(${a.id})" class="inline-flex items-center ${col.bg} ${col.text} rounded-full px-2.5 py-1 text-xs font-medium border-2 ${isSelected ? col.border + ' ring-2 ring-offset-1 ring-emerald-300' : 'border-transparent opacity-60 hover:opacity-100'} transition-all">${a.name}</button>`;
+            }).join('');
+        }
+
+        function selectSavingsMovementAccount(id) {
+            const hiddenInput = document.getElementById('new-savings-mvt-account');
+            if (hiddenInput) hiddenInput.value = id;
+            refreshSavingsAccountChips();
+        }
+
+        function selectSavingsMovementType(type) {
+            const hiddenInput = document.getElementById('new-savings-mvt-type');
+            if (hiddenInput) hiddenInput.value = type;
+            const verBtn = document.getElementById('savings-mvt-type-versement');
+            const retBtn = document.getElementById('savings-mvt-type-retrait');
+            if (verBtn) verBtn.className = `flex-1 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${type === 'versement' ? 'bg-emerald-50 text-emerald-700 border-emerald-400' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`;
+            if (retBtn) retBtn.className = `flex-1 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${type === 'retrait' ? 'bg-rose-50 text-rose-700 border-rose-400' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`;
+        }
+
+        function openNewSavingsMovementOverlay() {
+            const modal = document.getElementById('savings-mvt-modal');
+            if (!modal) return;
+            document.getElementById('editing-savings-mvt-id').value = '';
+            document.getElementById('savings-mvt-modal-title').innerText = 'Nouveau versement';
+            document.getElementById('savings-mvt-modal-submit').lastChild.textContent = 'Ajouter';
+            const dateEl = document.getElementById('new-savings-mvt-date');
+            if (dateEl && !dateEl.value) dateEl.value = formatDateISO(new Date());
+            document.getElementById('new-savings-mvt-note').value = '';
+            document.getElementById('new-savings-mvt-amount').value = '';
+            selectSavingsMovementType('versement');
+            refreshSavingsAccountChips();
+            modal.classList.remove('hidden');
+        }
+
+        function openEditSavingsMovementOverlay(id) {
+            const mvt = (window.savingsMovements || []).find(m => m.id === id);
+            if (!mvt) return;
+            const modal = document.getElementById('savings-mvt-modal');
+            if (!modal) return;
+            document.getElementById('editing-savings-mvt-id').value = mvt.id;
+            document.getElementById('savings-mvt-modal-title').innerText = 'Modifier le mouvement';
+            document.getElementById('savings-mvt-modal-submit').lastChild.textContent = 'Enregistrer';
+            document.getElementById('new-savings-mvt-date').value = mvt.date;
+            document.getElementById('new-savings-mvt-note').value = mvt.note || '';
+            document.getElementById('new-savings-mvt-amount').value = formatAmountForInput(mvt.amount);
+            document.getElementById('new-savings-mvt-account').value = mvt.accountId;
+            selectSavingsMovementType(mvt.type);
+            refreshSavingsAccountChips();
+            modal.classList.remove('hidden');
+        }
+
+        function closeSavingsMovementOverlay() {
+            const modal = document.getElementById('savings-mvt-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function addSavingsMovement() {
+            const editingId = parseInt(document.getElementById('editing-savings-mvt-id').value, 10);
+            const isEditing = !isNaN(editingId);
+            const type = document.getElementById('new-savings-mvt-type').value || 'versement';
+            const date = document.getElementById('new-savings-mvt-date').value;
+            const accountId = parseInt(document.getElementById('new-savings-mvt-account').value, 10);
+            const note = document.getElementById('new-savings-mvt-note').value.trim();
+            const amount = parseAmount(document.getElementById('new-savings-mvt-amount').value);
+
+            if (!date || isNaN(accountId) || amount <= 0) {
+                alert("Merci de renseigner au moins la date, le compte et un montant valide.");
+                return;
+            }
+
+            if (isEditing) {
+                const mvt = (window.savingsMovements || []).find(m => m.id === editingId);
+                if (!mvt) { closeSavingsMovementOverlay(); return; }
+                mvt.date = date;
+                mvt.accountId = accountId;
+                mvt.type = type;
+                mvt.note = note;
+                mvt.amount = amount;
+            } else {
+                window.savingsMovements.push({ id: savingsMvtCounter++, date, accountId, type, note, amount });
+            }
+            saveData();
+            renderSavings();
+            closeSavingsMovementOverlay();
+        }
+
+        function deleteSavingsMovement(id) {
+            window.savingsMovements = window.savingsMovements.filter(m => m.id !== id);
+            saveData();
+            renderSavings();
+        }
+
+        // Rend le total, la table des comptes et l'historique des versements/retraits. Appelée
+        // depuis renderBudget() à chaque changement (même logique que le reste de l'app : tout est
+        // tenu à jour en continu, indépendamment de l'onglet affiché).
+        function renderSavings() {
+            const totalEl = document.getElementById('savings-total-amount');
+            if (!totalEl) return; // sous-onglet pas encore présent dans le DOM
+
+            totalEl.innerText = formatEuro(savingsTotalBalance());
+
+            const accountsTbody = document.getElementById('savings-accounts-tbody');
+            if (accountsTbody) {
+                const accounts = window.savingsAccounts || [];
+                if (accounts.length === 0) {
+                    accountsTbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-slate-400">Aucun compte pour l'instant.</td></tr>`;
+                } else {
+                    accountsTbody.innerHTML = accounts.map(a => {
+                        const col = getSavingsAccountColor(a.id);
+                        const balance = savingsAccountBalance(a.id);
+                        return `
+                        <tr>
+                            <td class="px-1.5 py-1.5 truncate">
+                                <span class="inline-flex items-center gap-1 ${col.bg} ${col.text} border ${col.border} rounded-full px-2 py-0.5 max-w-full">
+                                    <input type="text" value="${a.name.replace(/"/g, '&quot;')}" onchange="renameSavingsAccount(${a.id}, this.value)" class="min-w-0 flex-1 bg-transparent text-[11px] font-medium focus:outline-none" style="width:${Math.max(4, a.name.length)}ch">
+                                </span>
+                            </td>
+                            <td class="px-1 py-1.5">${budgetEuroInput(a.initial, `updateSavingsAccountInitial(${a.id}, this.value)`)}</td>
+                            <td class="px-1.5 py-1.5 text-right font-semibold ${balance < 0 ? 'text-rose-500' : 'text-emerald-600'}">${formatEuro(balance)}</td>
+                            <td class="px-0.5 py-1.5 text-center">
+                                <button onclick="deleteSavingsAccount(${a.id})" class="text-slate-300 hover:text-rose-500 text-xs">✕</button>
+                            </td>
+                        </tr>
+                    `;
+                    }).join('');
+                }
+            }
+
+            const movementsTbody = document.getElementById('savings-movements-tbody');
+            if (movementsTbody) {
+                const sorted = [...(window.savingsMovements || [])].sort((a, b) => b.date.localeCompare(a.date) || (b.id - a.id));
+                if (sorted.length === 0) {
+                    movementsTbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">Aucun versement pour l'instant.</td></tr>`;
+                } else {
+                    movementsTbody.innerHTML = sorted.map((m, idx) => {
+                        const dayChanged = idx > 0 && m.date !== sorted[idx - 1].date;
+                        const borderClass = idx === 0 ? '' : (dayChanged ? 'border-t-4 border-slate-600' : 'border-t border-slate-100');
+                        const acc = (window.savingsAccounts || []).find(a => a.id === m.accountId);
+                        const col = acc ? getSavingsAccountColor(acc.id) : { bg: 'bg-slate-100', text: 'text-slate-500', border: 'border-slate-200' };
+                        const accountTag = `<span class="inline-flex items-center ${col.bg} ${col.text} border ${col.border} rounded-full px-2 py-0.5 text-[11px] font-medium whitespace-nowrap">${acc ? acc.name : '—'}</span>`;
+                        return `
+                        <tr class="${borderClass}">
+                            <td class="py-2 px-1.5 whitespace-nowrap">${new Date(m.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</td>
+                            <td class="py-2 px-1.5 truncate">${accountTag}</td>
+                            <td class="py-2 px-1.5 text-slate-500 truncate">${m.note || '—'}</td>
+                            <td class="py-2 px-1.5 text-right font-semibold whitespace-nowrap ${m.type === 'retrait' ? 'text-rose-500' : 'text-emerald-600'}">${m.type === 'retrait' ? '-' : '+'}${m.amount.toFixed(2)} €</td>
+                            <td class="py-2 px-1.5 text-right whitespace-nowrap">
+                                <button onclick="openEditSavingsMovementOverlay(${m.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs" title="Modifier">✎</button>
+                                <button onclick="deleteSavingsMovement(${m.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs" title="Supprimer">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                    }).join('');
+                }
+            }
         }
 
         // Rend une table Fixe ou Variable (lignes éditables + ligne Total). Le pourcentage du
@@ -5551,7 +5948,7 @@
                             <td class="py-2 px-1.5 whitespace-nowrap">${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</td>
                             <td class="py-2 px-1.5 truncate">${budgetCategoryTag(t.category)}</td>
                             <td class="py-2 px-1.5 text-slate-500 truncate">${t.label || '—'}</td>
-                            <td class="py-2 px-1.5 text-right font-semibold whitespace-nowrap ${t.type === 'revenu' ? 'text-emerald-600' : 'text-rose-500'}">${t.type === 'revenu' ? '+' : '-'}${t.amount.toFixed(2)} €</td>
+                            <td class="py-2 px-1.5 text-right font-semibold whitespace-nowrap ${t.type === 'revenu' ? 'text-emerald-600' : (isPlannedCategoryTx(t) ? 'text-slate-400' : 'text-orange-400')}">${t.type === 'revenu' ? '+' : '-'}${t.amount.toFixed(2)} €</td>
                             <td class="py-2 px-1.5 text-right whitespace-nowrap">
                                 <button onclick="openEditTransactionOverlay(${t.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs" title="Modifier">✎</button>
                                 <button onclick="deleteBudgetTransaction(${t.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs" title="Supprimer">🗑️</button>
@@ -5562,6 +5959,9 @@
                 }
             }
 
+            // Épargne (sous-onglet indépendant) : toujours tenue à jour même si l'onglet n'est pas
+            // affiché, pour être immédiate au clic (même logique que le reste de l'app).
+            if (typeof renderSavings === 'function') renderSavings();
         }
 
         // --- Sauvegarde / restauration manuelle (fichier JSON local) ---
@@ -5589,7 +5989,9 @@
                 budgetCategories: window.budgetCategories,
                 budgetCategoryColors: window.budgetCategoryColors,
                 budgetTargets: window.budgetTargets,
-                budgetPlan: window.budgetPlan
+                budgetPlan: window.budgetPlan,
+                savingsAccounts: window.savingsAccounts,
+                savingsMovements: window.savingsMovements
             };
         }
 
@@ -5644,6 +6046,8 @@
                     window.budgetCategoryColors = data.budgetCategoryColors || window.budgetCategoryColors;
                     window.budgetTargets = data.budgetTargets || window.budgetTargets;
                     window.budgetPlan = data.budgetPlan || window.budgetPlan;
+                    window.savingsAccounts = data.savingsAccounts || window.savingsAccounts;
+                    window.savingsMovements = data.savingsMovements || window.savingsMovements;
 
                     renderHabits();
                     renderTodos();
