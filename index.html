@@ -106,6 +106,12 @@
                 padding-left: 6px !important;
                 padding-right: 6px !important;
             }
+            /* Le semainier repas (Protéine/Féculent/Légumes) cumule .compact-textarea (10px) et
+               .meal-field-input : on repasse à 16px pour ces champs précis afin d'éviter le zoom
+               auto iOS/Android au focus (règle plus spécifique, déclarée après, donc prioritaire). */
+            input.meal-field-input.compact-textarea {
+                font-size: 16px !important;
+            }
             input.budget-amount-input {
                 font-size: 12px !important;
                 padding-right: 1px !important;
@@ -4951,9 +4957,17 @@
         // ============ BUDGET ============
         window.budgetMonthOffset = 0; // décalage en mois par rapport au mois en cours
 
+        // Ajoute un espace insécable comme séparateur de milliers (ex: 10000 -> "10 000").
+        function addThousandsSpace(numStr) {
+            const [intPart, decPart] = numStr.split(',');
+            const withSpaces = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+            return decPart !== undefined ? `${withSpaces},${decPart}` : withSpaces;
+        }
+
         function formatEuro(n) {
             const rounded = Math.round((n + Number.EPSILON) * 100) / 100;
-            return Number.isInteger(rounded) ? `${rounded} €` : `${rounded.toFixed(2)} €`;
+            const numStr = Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(2).replace('.', ',');
+            return `${addThousandsSpace(numStr)} €`;
         }
 
         // Lit un montant saisi à la main, en acceptant la virgule ou le point comme séparateur décimal.
