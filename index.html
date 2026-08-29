@@ -4906,7 +4906,7 @@
         // qui redeviendrait "13,6" une fois réaffiché depuis le nombre stocké.
         function formatAmountForInput(n) {
             const num = parseFloat(n) || 0;
-            return num.toFixed(2).replace('.', ',');
+            return addThousandsSpace(num.toFixed(2).replace('.', ','));
         }
 
         // Le salaire tombe autour du 20 du mois (20, 21 ou 22 selon les mois) : "un mois" dans le
@@ -5781,7 +5781,7 @@
                             <td class="py-2 px-1.5 whitespace-nowrap">${new Date(t.date + 'T00:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</td>
                             <td class="py-2 px-1.5 truncate">${budgetCategoryTag(t.category)}</td>
                             <td class="py-2 px-1.5 text-slate-500 truncate">${t.label || '—'}</td>
-                            <td class="py-2 px-1.5 text-right font-semibold whitespace-nowrap ${t.type === 'revenu' ? 'text-emerald-600' : (isPlannedCategoryTx(t) ? 'text-slate-400' : 'text-orange-400')}">${t.type === 'revenu' ? '+' : '-'}${t.amount.toFixed(2)} €</td>
+                            <td class="py-2 px-1.5 text-right font-semibold whitespace-nowrap ${t.type === 'revenu' ? 'text-emerald-600' : (isPlannedCategoryTx(t) ? 'text-slate-400' : 'text-orange-400')}">${t.type === 'revenu' ? '+' : '-'}${formatEuro(t.amount)}</td>
                             <td class="py-2 px-1.5 text-right whitespace-nowrap">
                                 <button onclick="openEditTransactionOverlay(${t.id})" class="text-slate-400 hover:text-indigo-500 p-1 text-xs" title="Modifier">✎</button>
                                 <button onclick="deleteBudgetTransaction(${t.id})" class="text-slate-400 hover:text-rose-500 p-1 text-xs" title="Supprimer">🗑️</button>
