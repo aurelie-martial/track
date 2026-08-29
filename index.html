@@ -107,9 +107,10 @@
                 padding-right: 6px !important;
             }
             /* Le semainier repas (Protéine/Féculent/Légumes) cumule .compact-textarea (10px) et
-               .meal-field-input : on repasse à 16px pour ces champs précis afin d'éviter le zoom
-               auto iOS/Android au focus (règle plus spécifique, déclarée après, donc prioritaire). */
-            input.meal-field-input.compact-textarea {
+               .meal-field-input : on garde l'affichage petit au repos, et on ne passe à 16px
+               qu'au focus (le navigateur vérifie la taille au moment du focus, donc ça évite le
+               zoom auto iOS/Android sans agrandir le texte le reste du temps). */
+            input.meal-field-input.compact-textarea:focus {
                 font-size: 16px !important;
             }
             input.budget-amount-input {
@@ -770,7 +771,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <div id="meal-planner-grid" class="p-4 sm:p-6 grid grid-cols-7 gap-2 sm:gap-3 min-w-[760px] sm:min-w-0">
+                    <div id="meal-planner-grid" class="p-4 sm:p-6 grid grid-cols-7 gap-2 sm:gap-3 min-w-[912px] sm:min-w-0">
                         <!-- Généré par JS -->
                     </div>
                 </div>
