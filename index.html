@@ -2527,7 +2527,16 @@
                     const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
                     catHtml += `<td class="day-cell py-2 font-bold text-slate-600 ${weekendClass} mobile-day-col ${isMobileVisible}">${catColumnTotal}</td>`;
                 }
-                catHtml += `<td colspan="2"></td></tr></tfoot></table></div></div>`;
+                const catEscaped = cat.replace(/'/g, "\\'");
+                catHtml += `<td colspan="2"></td></tr></tfoot></table></div>
+                        <div class="px-4 pb-4 pt-1 flex gap-2 items-center border-t border-slate-100">
+                            <input type="text" id="quick-add-habit-${catIdx}" placeholder="Ajouter une habitude dans ${cat}..." onkeydown="if(event.key === 'Enter') quickAddHabit(${catIdx}, '${catEscaped}')" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all">
+                            <button onclick="quickAddHabit(${catIdx}, '${catEscaped}')" class="shrink-0 bg-emerald-400 hover:bg-emerald-500 text-white font-medium px-3 py-2 rounded-xl shadow-xs transition-colors text-xs flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                                Ajouter
+                            </button>
+                        </div>
+                    </div>`;
                 container.innerHTML += catHtml;
             });
 
@@ -2881,6 +2890,19 @@
 
             habits.push({ id: Date.now(), title: titleInput.value.trim(), category: catSelect.value, history: {} });
             titleInput.value = '';
+            saveData();
+            renderHabits();
+        }
+
+        // Ajout rapide d'une habitude directement depuis le bas d'un bloc de catégorie
+        // dans la vue Habitudes, sans passer par le formulaire "Nouvelle Habitude".
+        function quickAddHabit(catIdx, category) {
+            const input = document.getElementById(`quick-add-habit-${catIdx}`);
+            if (!input) return;
+            const title = input.value.trim();
+            if (!title) return;
+
+            habits.push({ id: Date.now(), title, category, history: {} });
             saveData();
             renderHabits();
         }
