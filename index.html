@@ -1603,8 +1603,20 @@
                 console.warn("Impossible d'estimer la taille des données avant sauvegarde :", e);
             }
 
+            // Filet de sécurité : Firestore refuse tout champ "undefined" (ex: un bug de
+            // tri qui écraserait un élément d'un tableau par erreur). On passe le payload
+            // par un aller-retour JSON, qui élimine silencieusement les "undefined"
+            // (supprimés des objets, transformés en null dans les tableaux), plutôt que
+            // de faire échouer toute la sauvegarde à cause d'un seul champ invalide.
+            let safePayload = payload;
             try {
-                await setDoc(currentUserDocRef, payload);
+                safePayload = JSON.parse(JSON.stringify(payload));
+            } catch (e) {
+                console.warn("Impossible de nettoyer le payload avant sauvegarde :", e);
+            }
+
+            try {
+                await setDoc(currentUserDocRef, safePayload);
             } catch (e) {
                 console.error("Erreur de sauvegarde Firebase: ", e);
                 alert("⚠️ La sauvegarde a échoué. Vos derniers changements (peut-être une photo trop volumineuse) n'ont pas été enregistrés.");
@@ -2553,9 +2565,13 @@
                     touchStartThreshold: 5,
                     onEnd: function() {
                         const newIds = Array.from(tbodyEl.children).map(tr => parseInt(tr.dataset.habitId));
+                        // Important : ne prendre en compte que les habitudes réellement visibles
+                        // ce mois-ci (donc pas celles archivées/supprimées et masquées pour ce mois),
+                        // sinon on désaligne les index et on écrase une habitude archivée avec
+                        // "undefined" (ce que Firestore refuse à la sauvegarde).
                         const sameCatIndices = habits
                             .map((h, i) => ({ h, i }))
-                            .filter(o => o.h.category === cat)
+                            .filter(o => o.h.category === cat && !(o.h.deletedFrom && monthIndex > o.h.deletedFrom.month))
                             .map(o => o.i);
                         const newCatHabits = newIds.map(id => habits.find(h => h.id === id));
                         sameCatIndices.forEach((globalIdx, k) => { habits[globalIdx] = newCatHabits[k]; });
