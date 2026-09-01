@@ -3412,6 +3412,42 @@
             renderMealPlanner();
         }
 
+        // Copier-coller d'un bloc midi/soir entier (contrairement au glisser-déposer, qui échange
+        // toujours le contenu des deux cases, le copier-coller duplique sans toucher à la source, et
+        // remplace ce qu'il y avait dans la case de destination). Presse-papier en mémoire uniquement,
+        // remis à zéro à chaque rechargement de la page.
+        window.mealClipboard = null;
+
+        function copyMealSlot(dateStr, field) {
+            const plan = window.mealPlans[dateStr] || { lunch: emptyMeal(), dinner: emptyMeal() };
+            const meal = normalizeMeal(plan[field]);
+            window.mealClipboard = {
+                proteine: meal.proteine,
+                feculent: meal.feculent,
+                legumes: meal.legumes,
+                note: meal.note,
+                isUnknown: !!plan[field + 'Unknown']
+            };
+            renderMealPlanner();
+        }
+
+        function pasteMealSlot(dateStr, field) {
+            if (!window.mealClipboard) return;
+            if (!window.mealPlans[dateStr]) window.mealPlans[dateStr] = { lunch: emptyMeal(), dinner: emptyMeal() };
+
+            const clip = window.mealClipboard;
+            window.mealPlans[dateStr][field] = {
+                proteine: clip.proteine,
+                feculent: clip.feculent,
+                legumes: clip.legumes,
+                note: clip.note
+            };
+            window.mealPlans[dateStr][field + 'Unknown'] = clip.isUnknown;
+
+            saveData();
+            renderMealPlanner();
+        }
+
         const mealDayHeaders = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
         const mealComponents = [
             { key: 'proteine', label: 'Protéine' },
@@ -3455,12 +3491,23 @@
                 // Le petit ⠿ (déplacer vers un autre jour) est toujours réservé dans la mise en page
                 // (juste rendu invisible s'il n'y a rien à déplacer), pour que la ligne d'en-tête ne
                 // se décale jamais selon que le créneau soit rempli ou non.
+                // Copier-coller d'un bloc midi/soir entier vers un autre créneau : le presse-papier
+                // (window.mealClipboard) est un simple objet en mémoire (pas sauvegardé), donc le
+                // bouton "coller" n'apparaît que tant qu'un copier a été fait dans la session en cours.
+                const copyPasteHtml = `
+                    <button type="button" onclick="copyMealSlot('${dateStr}', '${field}')" class="text-slate-300 hover:text-amber-500 text-[10px] px-0.5 shrink-0" title="Copier ce repas">📋</button>
+                    ${window.mealClipboard ? `<button type="button" onclick="pasteMealSlot('${dateStr}', '${field}')" class="text-slate-300 hover:text-emerald-500 text-[10px] px-0.5 shrink-0" title="Coller ici (remplace ce repas)">📌</button>` : ''}
+                `;
+
                 return `
                     <div class="meal-slot-container" data-date="${dateStr}" data-field="${field}">
                         <div class="meal-slot-item ${isUnknown ? 'opacity-60' : ''}">
                             <div class="flex items-center justify-between mb-0.5 gap-1">
                                 <span class="truncate text-[9px] font-semibold text-slate-400 uppercase cursor-pointer hover:text-amber-500 transition-colors min-w-0" onclick="toggleMealUnknown('${dateStr}', '${field}', ${!isUnknown})" title="Basculer en repas incertain (resto, chez mes parents...) — reste modifiable">${label}</span>
-                                <span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1 shrink-0 ${hasContent ? '' : 'invisible pointer-events-none'}" title="Déplacer vers un autre jour">⠿</span>
+                                <span class="flex items-center gap-0.5 shrink-0">
+                                    ${copyPasteHtml}
+                                    <span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1 shrink-0 ${hasContent ? '' : 'invisible pointer-events-none'}" title="Déplacer vers un autre jour">⠿</span>
+                                </span>
                             </div>
                             ${bodyHtml}
                         </div>
