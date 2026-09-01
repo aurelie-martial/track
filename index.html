@@ -3448,6 +3448,15 @@
             renderMealPlanner();
         }
 
+        // Vide un créneau de repas (protéine/féculent/légumes/note + statut "incertain").
+        function clearMealSlot(dateStr, field) {
+            if (!window.mealPlans[dateStr]) return;
+            window.mealPlans[dateStr][field] = emptyMeal();
+            window.mealPlans[dateStr][field + 'Unknown'] = false;
+            saveData();
+            renderMealPlanner();
+        }
+
         const mealDayHeaders = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
         const mealComponents = [
             { key: 'proteine', label: 'Protéine' },
@@ -3492,21 +3501,29 @@
                 // (juste rendu invisible s'il n'y a rien à déplacer), pour que la ligne d'en-tête ne
                 // se décale jamais selon que le créneau soit rempli ou non.
                 // Copier-coller d'un bloc midi/soir entier vers un autre créneau : le presse-papier
-                // (window.mealClipboard) est un simple objet en mémoire (pas sauvegardé), donc le
-                // bouton "coller" n'apparaît que tant qu'un copier a été fait dans la session en cours.
+                // (window.mealClipboard) est un simple objet en mémoire (pas sauvegardé), donc le lien
+                // "Coller" n'apparaît que tant qu'un copier a été fait dans la session en cours. Le
+                // glisser-déposer a été retiré : copier-coller suffit et évite les échanges accidentels.
                 const copyPasteHtml = `
-                    <button type="button" onclick="copyMealSlot('${dateStr}', '${field}')" class="text-slate-300 hover:text-amber-500 text-[10px] px-0.5 shrink-0" title="Copier ce repas">📋</button>
-                    ${window.mealClipboard ? `<button type="button" onclick="pasteMealSlot('${dateStr}', '${field}')" class="text-slate-300 hover:text-emerald-500 text-[10px] px-0.5 shrink-0" title="Coller ici (remplace ce repas)">📌</button>` : ''}
+                    <button type="button" onclick="copyMealSlot('${dateStr}', '${field}')" class="text-[9px] font-semibold text-slate-400 hover:text-amber-500 transition-colors shrink-0" title="Copier ce repas">Copier</button>
+                    ${window.mealClipboard ? `<button type="button" onclick="pasteMealSlot('${dateStr}', '${field}')" class="text-[9px] font-semibold text-slate-400 hover:text-emerald-500 transition-colors shrink-0" title="Coller ici (remplace ce repas)">Coller</button>` : ''}
                 `;
+                const clearButtonHtml = hasContent
+                    ? `
+                        <button type="button" onclick="clearMealSlot('${dateStr}', '${field}')" class="text-slate-300 hover:text-rose-500 p-0.5 rounded transition-colors shrink-0" title="Effacer ce repas">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    `
+                    : '';
 
                 return `
                     <div class="meal-slot-container" data-date="${dateStr}" data-field="${field}">
                         <div class="meal-slot-item ${isUnknown ? 'opacity-60' : ''}">
                             <div class="flex items-center justify-between mb-0.5 gap-1">
                                 <span class="truncate text-[9px] font-semibold text-slate-400 uppercase cursor-pointer hover:text-amber-500 transition-colors min-w-0" onclick="toggleMealUnknown('${dateStr}', '${field}', ${!isUnknown})" title="Basculer en repas incertain (resto, chez mes parents...) — reste modifiable">${label}</span>
-                                <span class="flex items-center gap-0.5 shrink-0">
+                                <span class="flex items-center gap-1 shrink-0">
                                     ${copyPasteHtml}
-                                    <span class="meal-drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-amber-500 text-xs px-1 shrink-0 ${hasContent ? '' : 'invisible pointer-events-none'}" title="Déplacer vers un autre jour">⠿</span>
+                                    ${clearButtonHtml}
                                 </span>
                             </div>
                             ${bodyHtml}
@@ -3539,53 +3556,7 @@
 
             grid.innerHTML = html;
 
-            initMealPlannerSortable();
             requestAnimationFrame(scrollMealPlannerToToday);
-        }
-
-        // Glisser-déposer entre créneaux (jour x déjeuner/dîner) : on échange toujours le contenu des
-        // deux cases concernées (jamais de perte), puis on redessine entièrement depuis les données
-        // pour repartir d'un DOM propre (1 item par case).
-        window.mealSlotSortables = [];
-
-        function initMealPlannerSortable() {
-            if (typeof Sortable === 'undefined') return;
-            window.mealSlotSortables.forEach(s => s.destroy());
-            window.mealSlotSortables = [];
-
-            document.querySelectorAll('.meal-slot-container').forEach(container => {
-                const instance = Sortable.create(container, {
-                    group: 'meal-planner',
-                    animation: 150,
-                    ghostClass: 'opacity-40',
-                    handle: '.meal-drag-handle',
-                    delay: 150,
-                    delayOnTouchOnly: true,
-                    touchStartThreshold: 5,
-                    onEnd: function(evt) {
-                        const fromDate = evt.from.dataset.date;
-                        const fromField = evt.from.dataset.field;
-                        const toDate = evt.to.dataset.date;
-                        const toField = evt.to.dataset.field;
-
-                        if (fromDate !== toDate || fromField !== toField) {
-                            if (!window.mealPlans[fromDate]) window.mealPlans[fromDate] = { lunch: emptyMeal(), dinner: emptyMeal() };
-                            if (!window.mealPlans[toDate]) window.mealPlans[toDate] = { lunch: emptyMeal(), dinner: emptyMeal() };
-
-                            const movedValue = normalizeMeal(window.mealPlans[fromDate][fromField]);
-                            const existingValue = normalizeMeal(window.mealPlans[toDate][toField]);
-
-                            window.mealPlans[toDate][toField] = movedValue;
-                            window.mealPlans[fromDate][fromField] = existingValue;
-
-                            saveData();
-                        }
-
-                        renderMealPlanner(); // repart d'un DOM propre dans tous les cas (même sans changement)
-                    }
-                });
-                window.mealSlotSortables.push(instance);
-            });
         }
 
         // Fait défiler horizontalement le semainier pour amener la colonne du jour J tout à gauche
