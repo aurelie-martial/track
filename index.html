@@ -2473,13 +2473,23 @@
                     const archivedBadge = habit.deletedFrom
                         ? `<span class="ml-1 text-[10px]" title="Supprimée le ${archivedBadgeDay}/${archivedBadgeMonth + 1}/2026 — historique conservé">🗄️</span>`
                         : '';
-                    const deleteButtonHtml = habit.deletedFrom
-                        ? ''
-                        : `
+                    // Tant qu'on est dans le mois où l'habitude a été archivée (suppression après
+                    // le 5 du mois : cases grisées sur le reste du mois), on propose un bouton pour
+                    // la supprimer complètement de ce mois aussi, sans attendre le mois suivant.
+                    const isArchivedThisMonth = habit.deletedFrom && monthIndex === habit.deletedFrom.month;
+                    const deleteButtonHtml = !habit.deletedFrom
+                        ? `
                             <button onclick="deleteHabit(${habit.id})" class="text-slate-300 hover:text-rose-500 p-0.5 rounded-lg transition-colors" title="Supprimer">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
-                        `;
+                        `
+                        : (isArchivedThisMonth
+                            ? `
+                                <button onclick="finalizeHabitDeletion(${habit.id})" class="text-slate-300 hover:text-rose-500 p-0.5 rounded-lg transition-colors" title="Supprimer définitivement ce mois-ci">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                            `
+                            : '');
 
                     catHtml += `
                         <tr class="hover:bg-slate-50/50 transition-colors" data-habit-id="${habit.id}">
@@ -2954,6 +2964,21 @@
             } else {
                 habit.deletedFrom = { month: month, day: day };
             }
+
+            saveData();
+            renderHabits();
+        }
+
+        // Complète la suppression d'une habitude déjà archivée (grisée sur le reste du
+        // mois car supprimée après le 5) : la fait disparaître du mois en cours aussi,
+        // sans attendre le mois suivant. L'historique des mois antérieurs est inchangé.
+        function finalizeHabitDeletion(id) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit || !habit.deletedFrom) return;
+
+            const originalMonth = habit.deletedFrom.displayMonth ?? habit.deletedFrom.month;
+            const originalDay = habit.deletedFrom.displayDay ?? habit.deletedFrom.day;
+            habit.deletedFrom = { month: habit.deletedFrom.month - 1, day: 32, displayMonth: originalMonth, displayDay: originalDay };
 
             saveData();
             renderHabits();
