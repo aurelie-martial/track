@@ -151,6 +151,14 @@
             opacity: 0.62;
         }
 
+        /* Mise en évidence de la cellule jour de l'agenda quand on y glisse un événement,
+           pour déplacer un événement d'un jour à l'autre par glisser-déposer. */
+        .agenda-drop-hover {
+            outline: 2px dashed #6366f1;
+            outline-offset: -2px;
+            background-color: rgba(99, 102, 241, 0.08) !important;
+        }
+
         /* Placeholder très discret pour les champs Protéine / Féculent / Légumes du semainier
            repas, pour ne pas donner l'impression qu'ils sont déjà remplis. */
         .meal-field-input::placeholder {
@@ -1982,7 +1990,8 @@
                 : segment === 'end' ? 'rounded-r-full'
                 : '';
             const label = ev.title ? `${ev.emoji || '📌'} ${ev.title}` : (ev.emoji || '📌');
-            return `<div class="h-1.5 sm:h-2 ${edgeMarginClass} mt-0.5 ${roundingClass}" style="background-color:${ev.color || '#6366f1'};" title="${label}"></div>`;
+            const dateStr = formatDateISO(dateObj);
+            return `<div class="h-1.5 sm:h-2 ${edgeMarginClass} mt-0.5 ${roundingClass} cursor-grab active:cursor-grabbing" draggable="true" ondragstart="agendaEventDragStart(event, ${ev.id}, '${dateStr}')" style="background-color:${ev.color || '#6366f1'};" title="${label} (glisser pour déplacer)"></div>`;
         }
 
         // Seule la vue Mois existe désormais (vue Semaine retirée) : navigation toujours par mois.
@@ -2009,10 +2018,11 @@
             return `background-color:${c}1f; color:${c}; border:1px solid ${c}55;`;
         }
 
-        function renderAgendaEventPill(ev, compact) {
+        function renderAgendaEventPill(ev, compact, dateStr) {
             const label = ev.title ? `${ev.emoji || '📌'} ${ev.title}` : `${ev.emoji || '📌'}`;
             const sizeClasses = compact ? 'text-[9px] px-1 py-0.5 truncate' : 'text-xs px-2 py-1';
-            return `<div class="${sizeClasses} rounded-md font-semibold cursor-pointer mt-0.5" style="${agendaPillStyle(ev.color)}" title="${ev.title || ''}">${label}</div>`;
+            const dragAttr = dateStr ? `draggable="true" ondragstart="agendaEventDragStart(event, ${ev.id}, '${dateStr}')"` : '';
+            return `<div class="${sizeClasses} rounded-md font-semibold cursor-grab active:cursor-grabbing mt-0.5" ${dragAttr} style="${agendaPillStyle(ev.color)}" title="${ev.title || ''} (glisser pour déplacer)">${label}</div>`;
         }
 
         function renderAgendaDayCell(dateObj, day, muted, todayStr) {
@@ -2030,15 +2040,70 @@
             const numberClass = isToday ? 'text-indigo-600' : (muted ? 'text-slate-400' : 'text-slate-600');
 
             return `
-                <div class="min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} ${mutedClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden ${isPast ? 'day-past-hatch' : ''}" onclick="openAgendaDayModal('${dateStr}')">
+                <div class="agenda-day-cell min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} ${mutedClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden ${isPast ? 'day-past-hatch' : ''}" onclick="openAgendaDayModal('${dateStr}')" ondragover="agendaEventDragOver(event, this)" ondragleave="agendaEventDragLeave(event, this)" ondrop="agendaEventDrop(event, this, '${dateStr}')">
                     <div class="text-[10px] sm:text-xs font-bold ${numberClass}">${day}</div>
                     ${bannerEvents.map(ev => renderAgendaBannerBar(ev, dateObj, '-mx-1 sm:-mx-1.5')).join('')}
                     <div class="space-y-0.5">
-                        ${pillEvents.slice(0, 3).map(ev => renderAgendaEventPill(ev, true)).join('')}
+                        ${pillEvents.slice(0, 3).map(ev => renderAgendaEventPill(ev, true, dateStr)).join('')}
                         ${pillEvents.length > 3 ? `<div class="text-[9px] text-slate-400 font-medium">+${pillEvents.length - 3}</div>` : ''}
                     </div>
                 </div>
             `;
+        }
+
+        // --- Déplacement d'un événement par glisser-déposer sur le calendrier ---
+        function agendaEventDragStart(evt, eventId, dateStr) {
+            evt.stopPropagation();
+            window.agendaDragEventId = eventId;
+            window.agendaDragSourceDate = dateStr;
+            if (evt.dataTransfer) {
+                evt.dataTransfer.effectAllowed = 'move';
+                try { evt.dataTransfer.setData('text/plain', String(eventId)); } catch (e) {}
+            }
+        }
+
+        function agendaEventDragOver(evt, cellEl) {
+            if (!window.agendaDragEventId) return;
+            evt.preventDefault();
+            if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move';
+            cellEl.classList.add('agenda-drop-hover');
+        }
+
+        function agendaEventDragLeave(evt, cellEl) {
+            cellEl.classList.remove('agenda-drop-hover');
+        }
+
+        function shiftDateStr(dateStr, deltaDays) {
+            const d = new Date(dateStr + 'T00:00:00');
+            d.setDate(d.getDate() + deltaDays);
+            return formatDateISO(d);
+        }
+
+        function agendaEventDrop(evt, cellEl, targetDateStr) {
+            evt.preventDefault();
+            cellEl.classList.remove('agenda-drop-hover');
+
+            const eventId = window.agendaDragEventId;
+            const sourceDateStr = window.agendaDragSourceDate;
+            window.agendaDragEventId = null;
+            window.agendaDragSourceDate = null;
+            if (!eventId || !sourceDateStr || sourceDateStr === targetDateStr) return;
+
+            const ev = window.agendaEvents.find(e => e.id === eventId);
+            if (!ev) return;
+
+            const msPerDay = 86400000;
+            const delta = Math.round((new Date(targetDateStr + 'T00:00:00') - new Date(sourceDateStr + 'T00:00:00')) / msPerDay);
+            if (!delta) return;
+
+            // On décale toute la période (début, fin, et date de fin de récurrence
+            // éventuelle) du même nombre de jours pour garder la durée de l'événement.
+            ev.start = shiftDateStr(ev.start, delta);
+            if (ev.end) ev.end = shiftDateStr(ev.end, delta);
+            if (ev.until) ev.until = shiftDateStr(ev.until, delta);
+
+            saveData();
+            renderAgenda();
         }
 
         function renderAgendaMonthView() {
@@ -2403,8 +2468,10 @@
                         ? (habit.linkedEventInvert ? `Désactivée en dehors de : ${linkedEvent.title || ''}` : `Désactivée pendant : ${linkedEvent.title || ''}`)
                         : '';
                     const linkedBadge = linkedEvent ? `<span class="ml-1 text-[10px]" title="${linkedBadgeTitle}">${linkedEvent.emoji || '🔗'}</span>` : '';
+                    const archivedBadgeDay = habit.deletedFrom ? (habit.deletedFrom.displayDay ?? habit.deletedFrom.day) : null;
+                    const archivedBadgeMonth = habit.deletedFrom ? (habit.deletedFrom.displayMonth ?? habit.deletedFrom.month) : null;
                     const archivedBadge = habit.deletedFrom
-                        ? `<span class="ml-1 text-[10px]" title="Supprimée le ${habit.deletedFrom.day}/${habit.deletedFrom.month + 1}/2026 — historique conservé">🗄️</span>`
+                        ? `<span class="ml-1 text-[10px]" title="Supprimée le ${archivedBadgeDay}/${archivedBadgeMonth + 1}/2026 — historique conservé">🗄️</span>`
                         : '';
                     const deleteButtonHtml = habit.deletedFrom
                         ? ''
@@ -2874,7 +2941,19 @@
             if (!habit || habit.deletedFrom) return; // déjà archivée, on ne touche plus à la date
 
             const now = new Date();
-            habit.deletedFrom = { month: now.getMonth(), day: now.getDate() };
+            const day = now.getDate();
+            const month = now.getMonth();
+
+            if (day <= 5) {
+                // Suppression en tout début de mois (du 1er au 5) : pas de cases grisées
+                // sur le mois en cours, l'habitude disparaît directement de ce mois (comme
+                // si elle avait été supprimée à la fin du mois précédent). L'historique des
+                // mois antérieurs, s'il existe, reste consultable. displayMonth/displayDay
+                // gardent la vraie date de suppression pour l'affichage (badge/tooltip).
+                habit.deletedFrom = { month: month - 1, day: 32, displayMonth: month, displayDay: day };
+            } else {
+                habit.deletedFrom = { month: month, day: day };
+            }
 
             saveData();
             renderHabits();
