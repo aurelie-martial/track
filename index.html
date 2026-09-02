@@ -1315,7 +1315,7 @@
     <!-- FIREBASE AUTH & FIRESTORE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDocFromServer } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDocFromServer, getDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
@@ -1352,6 +1352,7 @@
         let unsubscribeSnapshot = null;
         let unsubscribeWithingsSnapshot = null;
         let currentUserDocRef = null;
+        let dailyBackupChecked = false;
 
         // Connexion Google
         const loginGoogle = () => {
@@ -1497,6 +1498,7 @@
                         renderSport();
                         renderBudget();
                         refreshBudgetCategoryOptions();
+                        maybeRunDailyBackup();
                     } else if (!docSnap.metadata.fromCache) {
                         // Garde-fou anti-perte de données : le 2 sept. 2026, un "docSnap.exists() === false"
                         // passager (souci réseau/cache au premier chargement) a fait écraser silencieusement
@@ -1536,6 +1538,7 @@
                 if (unsubscribeSnapshot) unsubscribeSnapshot();
                 if (unsubscribeWithingsSnapshot) unsubscribeWithingsSnapshot();
                 currentUserDocRef = null;
+                dailyBackupChecked = false;
                 window.withingsStatus = null;
             }
         });
@@ -1583,10 +1586,12 @@
             }
         };
 
-        window.saveData = async function() {
-            if (!currentUserDocRef) return;
-
-            const payload = {
+        // Rassemble l'état courant en un seul objet — utilisé à la fois par saveData() (écrit
+        // dans le document principal) et par la sauvegarde automatique quotidienne (écrit une
+        // copie datée dans users/{uid}/backups/) pour ne jamais avoir deux listes de champs à
+        // maintenir séparément.
+        function buildDataPayload() {
+            return {
                 categories: window.categories,
                 habits: window.habits,
                 moodHistory: window.moodHistory,
@@ -1610,6 +1615,12 @@
                 budgetPlan: window.budgetPlan,
                 savingsAccounts: window.savingsAccounts
             };
+        }
+
+        window.saveData = async function() {
+            if (!currentUserDocRef) return;
+
+            const payload = buildDataPayload();
 
             // Vérification préventive AVANT l'envoi : Firestore limite un document à 1 Mo (≈1024 Ko)
             // pour TOUTES les données cumulées (recettes, habitudes, todos, agenda...). Sans ce contrôle,
@@ -1643,6 +1654,48 @@
                 alert("⚠️ La sauvegarde a échoué. Vos derniers changements (peut-être une photo trop volumineuse) n'ont pas été enregistrés.");
             }
         };
+
+        // Sauvegarde automatique quotidienne — aucune action manuelle requise.
+        // À chaque ouverture de l'app où les vraies données ont bien été chargées, copie
+        // l'état courant dans users/{uid}/backups/{AAAA-MM-JJ} (une fois par jour calendaire
+        // maximum : on vérifie d'abord si la sauvegarde du jour existe déjà). C'est un filet
+        // de secours indépendant du document principal : même si un futur bug l'écrase à
+        // nouveau, un instantané d'un jour précédent reste récupérable. Purge automatiquement
+        // les sauvegardes de plus de 30 jours pour ne jamais accumuler indéfiniment ni générer
+        // de coût de stockage significatif (cette app est très légère : quelques dizaines de Ko).
+        async function maybeRunDailyBackup() {
+            if (!currentUserDocRef || dailyBackupChecked) return;
+            dailyBackupChecked = true; // au plus une tentative par chargement de page
+
+            function isoDate(d) {
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+
+            try {
+                const now = new Date();
+                const dateStr = isoDate(now);
+                const backupRef = doc(currentUserDocRef, "backups", dateStr);
+
+                const existing = await getDoc(backupRef);
+                if (existing.exists()) return; // déjà sauvegardé aujourd'hui
+
+                const payload = buildDataPayload();
+                payload._backupCreatedAt = now.toISOString();
+                const safePayload = JSON.parse(JSON.stringify(payload));
+                await setDoc(backupRef, safePayload);
+
+                // Purge des sauvegardes de plus de 30 jours.
+                const cutoff = new Date(now);
+                cutoff.setDate(cutoff.getDate() - 30);
+                const cutoffStr = isoDate(cutoff);
+                const snap = await getDocs(collection(currentUserDocRef, "backups"));
+                snap.forEach((d) => {
+                    if (d.id < cutoffStr) deleteDoc(d.ref).catch(() => {});
+                });
+            } catch (e) {
+                console.warn("Sauvegarde automatique quotidienne impossible :", e);
+            }
+        }
     </script>
 
     <!-- CLASSIC APPLICATION LOGIC -->
