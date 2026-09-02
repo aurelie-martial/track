@@ -1320,12 +1320,7 @@
 
     <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
         <p>© Made in Lily - 2026</p>
-        <div class="mt-2 flex items-center justify-center gap-3 flex-wrap">
-            <button onclick="exportBackupData()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Sauvegarder mes données</button>
-            <span class="text-slate-200">·</span>
-            <button onclick="triggerRestoreBackup()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Restaurer une sauvegarde</button>
-            <input type="file" id="backup-restore-input" accept="application/json" class="hidden" onchange="restoreBackupData(this.files[0])">
-            <span class="text-slate-200">·</span>
+        <div class="mt-2 flex items-center justify-center">
             <button onclick="openAutoBackupRestoreModal()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Restaurer une sauvegarde automatique</button>
         </div>
         <p id="auto-backup-status" class="mt-1.5 text-[11px] text-slate-300"></p>
@@ -6173,124 +6168,6 @@
             // affiché, pour être immédiate au clic (même logique que le reste de l'app).
             if (typeof renderSavings === 'function') renderSavings();
         }
-
-        // --- Sauvegarde / restauration manuelle (fichier JSON local) ---
-        // Complète la synchro Firebase automatique : permet de garder une copie de secours
-        // en local, ou de restaurer un état antérieur en cas de souci.
-        function getBackupPayload() {
-            return {
-                categories: window.categories,
-                habits: window.habits,
-                moodHistory: window.moodHistory,
-                moodComments: window.moodComments,
-                todoData: window.todoData,
-                todoStarBlocks: window.todoStarBlocks,
-                planCategories: window.planCategories,
-                planGoals: window.planGoals,
-                recipeCategories: window.recipeCategories,
-                recipes: window.recipes,
-                agendaEvents: window.agendaEvents,
-                sportMeasurements: window.sportMeasurements,
-                sportActivities: window.sportActivities,
-                mealPlans: window.mealPlans,
-                sportWeekPlans: window.sportWeekPlans,
-                sportWeekDone: window.sportWeekDone,
-                budgetTransactions: window.budgetTransactions,
-                budgetCategories: window.budgetCategories,
-                budgetCategoryColors: window.budgetCategoryColors,
-                budgetTargets: window.budgetTargets,
-                budgetPlan: window.budgetPlan,
-                savingsAccounts: window.savingsAccounts
-            };
-        }
-
-        window.exportBackupData = function() {
-            const payload = getBackupPayload();
-            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const dateStr = formatDateISO(new Date());
-            a.href = url;
-            a.download = `lily-tracker-sauvegarde-${dateStr}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        };
-
-        window.triggerRestoreBackup = function() {
-            const input = document.getElementById('backup-restore-input');
-            if (input) input.click();
-        };
-
-        window.restoreBackupData = function(file) {
-            const input = document.getElementById('backup-restore-input');
-            if (!file) return;
-            if (!confirm("Restaurer cette sauvegarde va remplacer toutes tes données actuelles (habitudes, todos, recettes, budget, agenda...). Continuer ?")) {
-                if (input) input.value = '';
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    window.categories = data.categories || window.categories;
-                    window.habits = data.habits || window.habits;
-                    window.moodHistory = data.moodHistory || window.moodHistory;
-                    window.moodComments = data.moodComments || window.moodComments;
-                    window.todoData = data.todoData || window.todoData;
-                    window.todoStarBlocks = data.todoStarBlocks || window.todoStarBlocks;
-                    window.planCategories = data.planCategories || window.planCategories;
-                    window.planGoals = data.planGoals || window.planGoals;
-                    window.recipeCategories = data.recipeCategories || window.recipeCategories;
-                    window.recipes = data.recipes || window.recipes;
-                    window.agendaEvents = data.agendaEvents || window.agendaEvents;
-                    window.sportMeasurements = data.sportMeasurements || window.sportMeasurements;
-                    window.sportActivities = data.sportActivities || window.sportActivities;
-                    window.mealPlans = data.mealPlans || window.mealPlans;
-                    window.sportWeekPlans = data.sportWeekPlans || window.sportWeekPlans;
-                    window.sportWeekDone = data.sportWeekDone || window.sportWeekDone;
-                    window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
-                    window.budgetCategories = data.budgetCategories || window.budgetCategories;
-                    window.budgetCategoryColors = data.budgetCategoryColors || window.budgetCategoryColors;
-                    window.budgetTargets = data.budgetTargets || window.budgetTargets;
-                    window.budgetPlan = data.budgetPlan || window.budgetPlan;
-                    if (data.savingsAccounts) {
-                        const oldMovements = data.savingsMovements || [];
-                        window.savingsAccounts = data.savingsAccounts.map(a => {
-                            if (a.amount === undefined) {
-                                const sum = oldMovements.filter(m => m.accountId === a.id)
-                                    .reduce((s, m) => s + (m.type === 'retrait' ? -m.amount : m.amount), 0);
-                                a.amount = (parseFloat(a.initial) || 0) + sum;
-                            }
-                            if (!a.owner) a.owner = 'moi';
-                            delete a.initial;
-                            return a;
-                        });
-                    }
-
-                    renderHabits();
-                    renderTodos();
-                    renderRecipes();
-                    renderMealPlanner();
-                    renderSportWeekPlanner();
-                    renderPlanGoals();
-                    renderAgenda();
-                    renderSport();
-                    renderBudget();
-                    refreshBudgetCategoryOptions();
-
-                    if (typeof window.saveData === 'function') window.saveData();
-                    alert("✅ Sauvegarde restaurée avec succès.");
-                } catch (err) {
-                    console.error("Erreur de restauration :", err);
-                    alert("⚠️ Ce fichier ne semble pas être une sauvegarde valide.");
-                } finally {
-                    if (input) input.value = '';
-                }
-            };
-            reader.readAsText(file);
-        };
 
         window.onload = function() {
             // Rouvre l'onglet où l'on était avant le rechargement (sauvegardé dans le
