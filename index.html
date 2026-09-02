@@ -1310,6 +1310,7 @@
             <button onclick="triggerRestoreBackup()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Restaurer une sauvegarde</button>
             <input type="file" id="backup-restore-input" accept="application/json" class="hidden" onchange="restoreBackupData(this.files[0])">
         </div>
+        <p id="auto-backup-status" class="mt-1.5 text-[11px] text-slate-300"></p>
     </footer>
 
     <!-- FIREBASE AUTH & FIRESTORE LOGIC -->
@@ -1677,12 +1678,16 @@
                 const backupRef = doc(currentUserDocRef, "backups", dateStr);
 
                 const existing = await getDoc(backupRef);
-                if (existing.exists()) return; // déjà sauvegardé aujourd'hui
+                if (existing.exists()) {
+                    renderAutoBackupStatus(dateStr);
+                    return; // déjà sauvegardé aujourd'hui
+                }
 
                 const payload = buildDataPayload();
                 payload._backupCreatedAt = now.toISOString();
                 const safePayload = JSON.parse(JSON.stringify(payload));
                 await setDoc(backupRef, safePayload);
+                renderAutoBackupStatus(dateStr);
 
                 // Purge des sauvegardes de plus de 30 jours.
                 const cutoff = new Date(now);
@@ -1694,7 +1699,22 @@
                 });
             } catch (e) {
                 console.warn("Sauvegarde automatique quotidienne impossible :", e);
+                renderAutoBackupStatus(null);
             }
+        }
+
+        // Petit indicateur discret dans le pied de page (à côté de "Sauvegarder mes données")
+        // qui confirme que la sauvegarde automatique du jour est bien en place, sans avoir à
+        // aller la chercher dans la console Firebase.
+        function renderAutoBackupStatus(dateStr) {
+            const el = document.getElementById('auto-backup-status');
+            if (!el) return;
+            if (!dateStr) {
+                el.textContent = "Sauvegarde automatique : indisponible pour le moment";
+                return;
+            }
+            const [y, m, d] = dateStr.split('-');
+            el.textContent = `Sauvegarde automatique à jour (${d}/${m}/${y})`;
         }
     </script>
 
