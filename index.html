@@ -1315,7 +1315,7 @@
     <!-- FIREBASE AUTH & FIRESTORE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDocFromServer } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
@@ -1497,9 +1497,30 @@
                         renderSport();
                         renderBudget();
                         refreshBudgetCategoryOptions();
-                    } else {
-                        saveData(); // Première sauvegarde si les données n'existent pas encore pour cet utilisateur
+                    } else if (!docSnap.metadata.fromCache) {
+                        // Garde-fou anti-perte de données : le 2 sept. 2026, un "docSnap.exists() === false"
+                        // passager (souci réseau/cache au premier chargement) a fait écraser silencieusement
+                        // toutes les données réelles par les valeurs par défaut ci-dessous. Comme cette app n'a
+                        // qu'une seule utilisatrice autorisée (ALLOWED_UID), ce cas ne devrait jamais se produire
+                        // en usage normal une fois le compte créé. On ignore d'abord toute réponse venant
+                        // seulement du cache local (docSnap.metadata.fromCache), puis on re-vérifie une
+                        // dernière fois directement auprès du serveur, et on demande une confirmation
+                        // EXPLICITE avant de créer quoi que ce soit — jamais d'écriture silencieuse.
+                        getDocFromServer(currentUserDocRef).then((serverSnap) => {
+                            if (serverSnap.exists()) return; // faux négatif du listener : on ne touche à rien
+                            const confirmed = window.confirm(
+                                "⚠️ Aucune donnée trouvée sur le serveur pour ce compte.\n\n" +
+                                "Si tu utilises déjà LilyTracker normalement, NE CONTINUE PAS : ferme cette page " +
+                                "plutôt que de risquer d'écraser tes données existantes.\n\n" +
+                                "Créer quand même un nouveau document avec les valeurs par défaut ?"
+                            );
+                            if (confirmed) saveData();
+                        }).catch((err) => {
+                            console.error("Vérification serveur impossible avant création du document par défaut :", err);
+                        });
                     }
+                    // Si docSnap.metadata.fromCache est true ici, on ignore silencieusement : ce n'est
+                    // qu'une réponse locale en attendant la confirmation du serveur juste après.
                 });
 
             } else {
