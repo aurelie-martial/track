@@ -1302,13 +1302,31 @@
         </div>
     </div>
 
+    <!-- MODAL : RESTAURATION D'UNE SAUVEGARDE AUTOMATIQUE -->
+    <div id="auto-backup-restore-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-800 text-lg">Restaurer une sauvegarde automatique</h3>
+                <button onclick="closeAutoBackupRestoreModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
+
+            <p class="text-xs text-slate-500">Sauvegardes quotidiennes automatiques, conservées 30 jours. Restaurer remplace toutes tes données actuelles par celles de ce jour-là.</p>
+
+            <div id="auto-backup-restore-list" class="space-y-1.5 max-h-72 overflow-y-auto">
+                <p class="text-xs text-slate-400 text-center py-4">Chargement…</p>
+            </div>
+        </div>
+    </div>
+
     <footer class="bg-white border-t border-slate-100 py-6 mt-12 text-center text-xs text-slate-400">
         <p>© Made in Lily - 2026</p>
-        <div class="mt-2 flex items-center justify-center gap-3">
+        <div class="mt-2 flex items-center justify-center gap-3 flex-wrap">
             <button onclick="exportBackupData()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Sauvegarder mes données</button>
             <span class="text-slate-200">·</span>
             <button onclick="triggerRestoreBackup()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Restaurer une sauvegarde</button>
             <input type="file" id="backup-restore-input" accept="application/json" class="hidden" onchange="restoreBackupData(this.files[0])">
+            <span class="text-slate-200">·</span>
+            <button onclick="openAutoBackupRestoreModal()" class="text-slate-300 hover:text-slate-500 underline underline-offset-2">Restaurer une sauvegarde automatique</button>
         </div>
         <p id="auto-backup-status" class="mt-1.5 text-[11px] text-slate-300"></p>
     </footer>
@@ -1716,6 +1734,111 @@
             const [y, m, d] = dateStr.split('-');
             el.textContent = `Sauvegarde automatique à jour (${d}/${m}/${y})`;
         }
+
+        // Restauration depuis une sauvegarde automatique quotidienne (users/{uid}/backups/{date}),
+        // distincte de l'import de fichier JSON manuel ci-dessus. Ouvre une liste des sauvegardes
+        // disponibles (30 derniers jours max) pour que Lily choisisse elle-même laquelle restaurer.
+        window.openAutoBackupRestoreModal = async function() {
+            const modal = document.getElementById('auto-backup-restore-modal');
+            const listEl = document.getElementById('auto-backup-restore-list');
+            if (!modal || !listEl) return;
+            modal.classList.remove('hidden');
+            listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Chargement…</p>';
+
+            if (!currentUserDocRef) {
+                listEl.innerHTML = '<p class="text-xs text-rose-500 text-center py-4">Impossible de charger les sauvegardes (non connecté).</p>';
+                return;
+            }
+
+            try {
+                const snap = await getDocs(collection(currentUserDocRef, "backups"));
+                const dates = [];
+                snap.forEach((d) => dates.push(d.id));
+                dates.sort().reverse(); // AAAA-MM-JJ trie chronologiquement : du plus récent au plus ancien
+
+                if (dates.length === 0) {
+                    listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Aucune sauvegarde automatique disponible pour le moment.</p>';
+                    return;
+                }
+
+                listEl.innerHTML = dates.map((dateStr) => {
+                    const [y, m, d] = dateStr.split('-');
+                    return `<div class="flex items-center justify-between px-3 py-2 rounded-xl border border-slate-100 hover:bg-slate-50">
+                        <span class="text-sm text-slate-700">${d}/${m}/${y}</span>
+                        <button onclick="confirmRestoreAutoBackup('${dateStr}')" class="text-xs font-semibold text-indigo-500 hover:text-indigo-700">Restaurer</button>
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                console.error("Erreur de chargement des sauvegardes automatiques :", e);
+                listEl.innerHTML = '<p class="text-xs text-rose-500 text-center py-4">Erreur lors du chargement des sauvegardes.</p>';
+            }
+        };
+
+        window.closeAutoBackupRestoreModal = function() {
+            const modal = document.getElementById('auto-backup-restore-modal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        window.confirmRestoreAutoBackup = async function(dateStr) {
+            const [y, m, d] = dateStr.split('-');
+            if (!confirm(`Restaurer la sauvegarde du ${d}/${m}/${y} va remplacer TOUTES tes données actuelles (habitudes, todos, recettes, budget, agenda...). Cette action est irréversible. Continuer ?`)) {
+                return;
+            }
+            if (!currentUserDocRef) {
+                alert("⚠️ Impossible de restaurer : non connecté.");
+                return;
+            }
+            try {
+                const backupRef = doc(currentUserDocRef, "backups", dateStr);
+                const snap = await getDoc(backupRef);
+                if (!snap.exists()) {
+                    alert("⚠️ Cette sauvegarde n'existe plus.");
+                    return;
+                }
+                const data = snap.data();
+                window.categories = data.categories || window.categories;
+                window.habits = data.habits || window.habits;
+                window.moodHistory = data.moodHistory || window.moodHistory;
+                window.moodComments = data.moodComments || window.moodComments;
+                window.todoData = data.todoData || window.todoData;
+                window.todoStarBlocks = data.todoStarBlocks || window.todoStarBlocks;
+                window.planCategories = data.planCategories || window.planCategories;
+                window.planGoals = data.planGoals || window.planGoals;
+                window.recipeCategories = data.recipeCategories || window.recipeCategories;
+                window.recipes = data.recipes || window.recipes;
+                window.agendaEvents = data.agendaEvents || window.agendaEvents;
+                window.sportMeasurements = data.sportMeasurements || window.sportMeasurements;
+                window.sportActivities = data.sportActivities || window.sportActivities;
+                window.mealPlans = data.mealPlans || window.mealPlans;
+                window.sportWeekPlans = data.sportWeekPlans || window.sportWeekPlans;
+                window.sportWeekDone = data.sportWeekDone || window.sportWeekDone;
+                window.budgetTransactions = data.budgetTransactions || window.budgetTransactions;
+                window.budgetCategories = data.budgetCategories || window.budgetCategories;
+                window.budgetCategoryColors = data.budgetCategoryColors || window.budgetCategoryColors;
+                window.budgetTargets = data.budgetTargets || window.budgetTargets;
+                window.budgetPlan = data.budgetPlan || window.budgetPlan;
+                if (data.savingsAccounts) window.savingsAccounts = data.savingsAccounts;
+
+                renderHabits();
+                renderTodos();
+                renderRecipes();
+                renderMealPlanner();
+                renderSportWeekPlanner();
+                renderPlanGoals();
+                renderAgenda();
+                renderSport();
+                renderBudget();
+                refreshBudgetCategoryOptions();
+
+                if (typeof window.saveData === 'function') await window.saveData();
+
+                closeAutoBackupRestoreModal();
+                alert(`✅ Sauvegarde du ${d}/${m}/${y} restaurée avec succès.`);
+            } catch (e) {
+                console.error("Erreur de restauration automatique :", e);
+                alert("⚠️ La restauration a échoué.");
+            }
+        };
     </script>
 
     <!-- CLASSIC APPLICATION LOGIC -->
