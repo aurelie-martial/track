@@ -770,7 +770,11 @@
 
             <!-- Semainier / Planning de repas de la semaine -->
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div class="p-4 sm:p-6 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center justify-end gap-3">
+                <div class="p-4 sm:p-6 bg-slate-50/50 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-1.5 sm:gap-2">
+                        <button onclick="copyMealWeek()" class="px-2.5 sm:px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-lg shadow-xs text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap" title="Copier les repas de la semaine affichée">📋 Copier la semaine</button>
+                        <button id="btn-paste-meal-week" onclick="pasteMealWeek()" class="hidden px-2.5 sm:px-3 py-1.5 bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-lg shadow-xs text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap" title="Coller la semaine copiée ici (remplace cette semaine)">📥 Coller la semaine</button>
+                    </div>
                     <div class="flex items-center gap-1.5 sm:gap-2">
                         <button onclick="navigateMealWeek(-1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">←</button>
                         <span id="meal-week-label" class="text-xs sm:text-sm font-bold text-amber-700 min-w-[140px] text-center"></span>
@@ -1136,6 +1140,22 @@
             <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
                 <button id="btn-delete-detail-recipe" class="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">Supprimer</button>
                 <button id="btn-edit-detail-recipe" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors">Modifier</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL : SUGGESTIONS DE RECETTES POUR UN REPAS DU SEMAINIER -->
+    <div id="meal-suggest-modal" onclick="if(event.target === this) closeMealSuggestModal()" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-2">
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm sm:text-base">💡 Suggestions de recettes</h3>
+                    <p id="meal-suggest-subtitle" class="text-[11px] sm:text-xs text-slate-400 mt-0.5"></p>
+                </div>
+                <button onclick="closeMealSuggestModal()" class="text-slate-400 hover:text-slate-600 rounded-full w-8 h-8 flex items-center justify-center font-bold shrink-0">✕</button>
+            </div>
+            <div id="meal-suggest-list" class="p-4 sm:p-5 space-y-2 overflow-y-auto flex-1">
+                <!-- Généré par JS -->
             </div>
         </div>
     </div>
@@ -3660,6 +3680,56 @@
             renderMealPlanner();
         }
 
+        // Copier-coller d'une semaine ENTIÈRE de repas (les 7 jours affichés) vers une autre semaine.
+        // Presse-papier en mémoire uniquement (comme le copier-coller d'un créneau), remis à zéro au
+        // rechargement de la page. Le collage remplace entièrement les 7 jours de la semaine affichée
+        // au moment du clic, donc une confirmation est demandée avant d'écraser quoi que ce soit.
+        window.mealWeekClipboard = null;
+
+        function copyMealWeek() {
+            const monday = getMealWeekMonday();
+            const days = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dateStr = formatDateISO(d);
+                const plan = window.mealPlans[dateStr] || { lunch: emptyMeal(), dinner: emptyMeal() };
+                days.push({
+                    lunch: normalizeMeal(plan.lunch),
+                    dinner: normalizeMeal(plan.dinner),
+                    lunchUnknown: !!plan.lunchUnknown,
+                    dinnerUnknown: !!plan.dinnerUnknown
+                });
+            }
+            window.mealWeekClipboard = { days };
+
+            const btn = document.getElementById('btn-paste-meal-week');
+            if (btn) btn.classList.remove('hidden');
+        }
+
+        function pasteMealWeek() {
+            if (!window.mealWeekClipboard) return;
+            const label = document.getElementById('meal-week-label');
+            const weekLabel = label ? label.innerText : 'cette semaine';
+            if (!confirm(`Remplacer tous les repas de la semaine du ${weekLabel} par ceux copiés ? Le contenu actuel de cette semaine sera écrasé.`)) return;
+
+            const monday = getMealWeekMonday();
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dateStr = formatDateISO(d);
+                const source = window.mealWeekClipboard.days[i];
+                window.mealPlans[dateStr] = {
+                    lunch: { proteine: source.lunch.proteine, feculent: source.lunch.feculent, legumes: source.lunch.legumes, note: source.lunch.note },
+                    dinner: { proteine: source.dinner.proteine, feculent: source.dinner.feculent, legumes: source.dinner.legumes, note: source.dinner.note },
+                    lunchUnknown: source.lunchUnknown,
+                    dinnerUnknown: source.dinnerUnknown
+                };
+            }
+            saveData();
+            renderMealPlanner();
+        }
+
         // Vide un créneau de repas (protéine/féculent/légumes/note + statut "incertain").
         function clearMealSlot(dateStr, field) {
             if (!window.mealPlans[dateStr]) return;
@@ -3717,6 +3787,7 @@
                 // "Coller" n'apparaît que tant qu'un copier a été fait dans la session en cours. Le
                 // glisser-déposer a été retiré : copier-coller suffit et évite les échanges accidentels.
                 const copyPasteHtml = `
+                    <button type="button" onclick="openMealRecipeSuggestions('${dateStr}', '${field}')" class="text-slate-300 hover:text-amber-500 transition-colors shrink-0" title="Suggestions de recettes pour ce repas">💡</button>
                     <button type="button" onclick="copyMealSlot('${dateStr}', '${field}')" class="text-[9px] font-semibold text-slate-400 hover:text-amber-500 transition-colors shrink-0" title="Copier ce repas">Copier</button>
                     ${window.mealClipboard ? `<button type="button" onclick="pasteMealSlot('${dateStr}', '${field}')" class="text-[9px] font-semibold text-slate-400 hover:text-emerald-500 transition-colors shrink-0" title="Coller ici (remplace ce repas)">Coller</button>` : ''}
                 `;
@@ -3790,6 +3861,164 @@
             let target = dayWidth * todayIndex;
             target = Math.max(0, Math.min(target, totalWidth - visibleWidth));
             scrollContainer.scrollLeft = target;
+        }
+
+        // --- SUGGESTIONS DE RECETTES POUR LE SEMAINIER ---
+        // Petits dictionnaires de mots-clés utilisés pour deviner, dans le texte libre des
+        // ingrédients d'une recette, quelle ligne correspond à la protéine / au féculent / aux
+        // légumes. Best-effort uniquement : sert à pré-remplir un repas quand on choisit une
+        // suggestion, le résultat reste ensuite librement modifiable comme n'importe quel repas.
+        const mealKeywordDictionary = {
+            proteine: ['poulet', 'boeuf', 'bœuf', 'porc', 'veau', 'dinde', 'saumon', 'poisson', 'thon', 'cabillaud', 'oeuf', 'œuf', 'oeufs', 'œufs', 'tofu', 'crevette', 'crevettes', 'jambon', 'steak', 'lardons', 'viande', 'merguez', 'agneau', 'canard', 'sardine', 'maquereau', 'seitan'],
+            feculent: ['riz', 'pâtes', 'pate', 'pates', 'pomme de terre', 'pommes de terre', 'patate', 'patates', 'quinoa', 'semoule', 'boulgour', 'pain', 'polenta', 'nouilles', 'couscous', 'lentilles', 'pois chiche', 'pois chiches', 'haricots blancs', 'haricots rouges'],
+            legumes: ['carotte', 'carottes', 'courgette', 'courgettes', 'brocoli', 'brocolis', 'épinard', 'épinards', 'poireau', 'poireaux', 'tomate', 'tomates', 'salade', 'haricot vert', 'haricots verts', 'poivron', 'poivrons', 'aubergine', 'aubergines', 'champignon', 'champignons', 'chou', 'choux', 'oignon', 'oignons', 'potiron', 'courge', 'asperge', 'asperges', 'betterave', 'céleri', 'fenouil', 'endive', 'endives']
+        };
+
+        // Enlève les accents pour comparer plus largement (ex : "épinard" retrouvé même écrit
+        // "epinard", et inversement).
+        function normalizeMealText(str) {
+            return (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        // Tente de retrouver, dans les ingrédients d'une recette, une ligne correspondant à la
+        // catégorie demandée (proteine/feculent/legumes), pour pré-remplir la case correspondante.
+        function extractRecipeComponentGuess(recipe, category) {
+            const lines = (recipe.ingredients || '').split('\n');
+            const keywords = mealKeywordDictionary[category].map(normalizeMealText);
+            for (const line of lines) {
+                const norm = normalizeMealText(line);
+                if (keywords.some(k => norm.includes(k))) {
+                    // Retire les puces/tirets et espaces de début pour garder une valeur courte et
+                    // lisible dans la case, plutôt que la ligne d'ingrédient complète (avec sa quantité).
+                    return line.replace(/^[\s\-•*]+/, '').trim().slice(0, 60);
+                }
+            }
+            return '';
+        }
+
+        // Score de pertinence d'une recette par rapport à une liste de mots (3 caractères ou plus,
+        // sans accents) : nombre de ces mots retrouvés dans le titre ou les ingrédients de la recette.
+        function scoreRecipeForMealWords(recipe, words) {
+            if (words.length === 0) return 0;
+            const haystack = normalizeMealText(recipe.title + ' ' + (recipe.ingredients || ''));
+            return words.reduce((score, w) => haystack.includes(w) ? score + 1 : score, 0);
+        }
+
+        function mealTextToWords(text) {
+            return normalizeMealText(text).split(/[^a-z0-9]+/).filter(w => w.length >= 3);
+        }
+
+        // Recettes dont le contenu (titre/ingrédients) correspond fortement à un repas déjà planifié
+        // cette semaine (2 mots communs ou plus) : sert à signaler "déjà prévue cette semaine" dans
+        // les suggestions, pour repérer les répétitions involontaires.
+        function getRecipesUsedInWeek(monday) {
+            const usedIds = new Set();
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dateStr = formatDateISO(d);
+                const plan = window.mealPlans[dateStr];
+                if (!plan) continue;
+                [plan.lunch, plan.dinner].forEach(rawMeal => {
+                    const meal = normalizeMeal(rawMeal);
+                    const words = mealTextToWords([meal.proteine, meal.feculent, meal.legumes].filter(Boolean).join(' '));
+                    if (words.length === 0) return;
+                    window.recipes.forEach(r => {
+                        if (scoreRecipeForMealWords(r, words) >= 2) usedIds.add(r.id);
+                    });
+                });
+            }
+            return usedIds;
+        }
+
+        window.mealSuggestContext = null;
+
+        // Ouvre la fenêtre de suggestions pour un créneau donné : si le créneau contient déjà du
+        // texte (protéine/féculent/légumes), les recettes sont classées par pertinence par rapport à
+        // ce texte ; sinon, les recettes pas encore utilisées cette semaine sont mises en avant, pour
+        // varier les repas.
+        function openMealRecipeSuggestions(dateStr, field) {
+            if (!window.recipes || window.recipes.length === 0) {
+                alert("Aucune recette enregistrée pour l'instant : ajoute des recettes dans l'onglet Recettes pour avoir des suggestions.");
+                return;
+            }
+
+            const plan = window.mealPlans[dateStr] || { lunch: emptyMeal(), dinner: emptyMeal() };
+            const meal = normalizeMeal(plan[field]);
+            window.mealSuggestContext = { dateStr, field };
+
+            const queryWords = mealTextToWords([meal.proteine, meal.feculent, meal.legumes].filter(Boolean).join(' '));
+            const usedIds = getRecipesUsedInWeek(getMealWeekMonday());
+
+            let scored = window.recipes.map(r => ({
+                recipe: r,
+                score: scoreRecipeForMealWords(r, queryWords),
+                alreadyUsed: usedIds.has(r.id)
+            }));
+
+            if (queryWords.length > 0) {
+                scored = scored.filter(s => s.score > 0);
+                scored.sort((a, b) => b.score - a.score || a.recipe.title.localeCompare(b.recipe.title));
+            } else {
+                scored.sort((a, b) => (a.alreadyUsed - b.alreadyUsed) || a.recipe.title.localeCompare(b.recipe.title));
+            }
+
+            const subtitle = document.getElementById('meal-suggest-subtitle');
+            if (subtitle) {
+                subtitle.innerText = queryWords.length > 0
+                    ? "D'après ce que tu as déjà saisi pour ce repas"
+                    : "Recettes pas encore prévues cette semaine mises en avant";
+            }
+
+            const list = document.getElementById('meal-suggest-list');
+            if (list) {
+                list.innerHTML = scored.length === 0
+                    ? `<p class="text-sm text-slate-400 text-center py-6">Aucune recette ne correspond à ce que tu as saisi. Essaie d'effacer le champ, ou ajoute d'autres recettes dans l'onglet Recettes.</p>`
+                    : scored.map(({ recipe, alreadyUsed }) => `
+                        <button type="button" onclick="applyMealSuggestion(${recipe.id})" class="w-full text-left p-3 rounded-xl border border-slate-100 hover:border-amber-300 hover:bg-amber-50/50 transition-colors flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-lg bg-slate-100 shrink-0 bg-cover bg-center" style="${recipe.image ? `background-image:url('${recipe.image}')` : ''}"></div>
+                            <div class="min-w-0 flex-1">
+                                <div class="font-semibold text-sm text-slate-800 truncate">${recipe.title}</div>
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    ${(recipe.categories || []).map(c => `<span class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white" style="background-color:${getRecipeCategoryColor(c)}">${c}</span>`).join('')}
+                                    ${alreadyUsed ? `<span class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-500">Déjà prévue cette semaine</span>` : ''}
+                                </div>
+                            </div>
+                        </button>
+                    `).join('');
+            }
+
+            document.getElementById('meal-suggest-modal').classList.remove('hidden');
+        }
+
+        function closeMealSuggestModal() {
+            document.getElementById('meal-suggest-modal').classList.add('hidden');
+            window.mealSuggestContext = null;
+        }
+
+        // Applique la recette choisie au créneau ciblé : pré-remplit protéine/féculent/légumes
+        // (best-effort à partir des ingrédients), repasse le créneau en mode normal (pas "incertain")
+        // s'il l'était, et laisse la note existante inchangée.
+        function applyMealSuggestion(recipeId) {
+            if (!window.mealSuggestContext) return;
+            const { dateStr, field } = window.mealSuggestContext;
+            const recipe = window.recipes.find(r => r.id === recipeId);
+            if (!recipe) return;
+
+            if (!window.mealPlans[dateStr]) window.mealPlans[dateStr] = { lunch: emptyMeal(), dinner: emptyMeal() };
+            const existingNote = normalizeMeal(window.mealPlans[dateStr][field]).note;
+
+            window.mealPlans[dateStr][field] = {
+                proteine: extractRecipeComponentGuess(recipe, 'proteine'),
+                feculent: extractRecipeComponentGuess(recipe, 'feculent'),
+                legumes: extractRecipeComponentGuess(recipe, 'legumes'),
+                note: existingNote
+            };
+            window.mealPlans[dateStr][field + 'Unknown'] = false;
+
+            saveData();
+            closeMealSuggestModal();
+            renderMealPlanner();
         }
 
         // --- SEMAINIER SPORT : organisation des séances (1 bloc de texte libre par jour) ---
