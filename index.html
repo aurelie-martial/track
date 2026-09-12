@@ -774,6 +774,7 @@
                     <div class="flex items-center gap-1.5 sm:gap-2">
                         <button onclick="copyMealWeek()" class="px-2.5 sm:px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-lg shadow-xs text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap" title="Copier les repas de la semaine affichée">📋 Copier la semaine</button>
                         <button id="btn-paste-meal-week" onclick="pasteMealWeek()" class="hidden px-2.5 sm:px-3 py-1.5 bg-white hover:bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-lg shadow-xs text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap" title="Coller la semaine copiée ici (remplace cette semaine)">📥 Coller la semaine</button>
+                        <button onclick="fillMealWeekRandom()" class="px-2.5 sm:px-3 py-1.5 bg-white hover:bg-amber-50 border border-amber-200 text-amber-600 rounded-lg shadow-xs text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap" title="Remplir toute la semaine avec des repas piochés au hasard dans le semainier">🎲 Remplir au hasard</button>
                     </div>
                     <div class="flex items-center gap-1.5 sm:gap-2">
                         <button onclick="navigateMealWeek(-1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">←</button>
@@ -845,6 +846,20 @@
                     <span id="budget-month-label" class="text-xs sm:text-sm font-bold text-indigo-700 min-w-[110px] text-center"></span>
                     <button onclick="navigateBudgetMonth(1)" class="px-2 sm:px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shadow-xs font-bold text-sm transition-colors">→</button>
                     <button onclick="goToBudgetCurrentMonth()" class="ml-1 px-2 sm:px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[11px] sm:text-xs font-semibold transition-colors whitespace-nowrap">Mois en cours</button>
+                </div>
+            </div>
+
+            <!-- Bandeau résumé : Restant total du mois affiché (suit la navigation ← →) + compte à
+                 rebours de la prochaine paie (toujours basé sur aujourd'hui, indépendant du mois
+                 affiché — versée le 20 de chaque mois). -->
+            <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-100 shadow-xs grid grid-cols-2 divide-x divide-slate-100">
+                <div class="text-center px-2">
+                    <div class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wide">Restant total</div>
+                    <div id="budget-summary-restant" class="text-lg sm:text-xl font-extrabold mt-0.5"></div>
+                </div>
+                <div class="text-center px-2">
+                    <div class="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wide">Prochaine paie</div>
+                    <div id="budget-summary-payday" class="text-lg sm:text-xl font-extrabold text-indigo-600 mt-0.5"></div>
                 </div>
             </div>
 
@@ -3714,6 +3729,55 @@
             renderMealPlanner();
         }
 
+        // Remplit toute la semaine affichée (14 créneaux midi/soir) avec des repas piochés au hasard
+        // parmi ceux déjà saisis dans le semainier (voir getDistinctMealsFromPlanner plus bas), un peu
+        // comme "Coller la semaine" mais sans presse-papier au préalable. La liste est mélangée pour
+        // limiter les répétitions sur la semaine ; si la réserve de repas distincts est plus petite que
+        // 14, elle est repiochée (des répétitions restent alors possibles). Écrase le contenu actuel
+        // de la semaine, donc une confirmation est demandée avant.
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function fillMealWeekRandom() {
+            const pool = getDistinctMealsFromPlanner(null, null);
+            if (pool.length === 0) {
+                alert("Aucun repas n'est encore saisi dans le semainier pour piocher au hasard. Remplis quelques repas (protéine/féculent/légumes) d'abord, puis réessaie.");
+                return;
+            }
+
+            const label = document.getElementById('meal-week-label');
+            const weekLabel = label ? label.innerText : 'cette semaine';
+            if (!confirm(`Remplir tous les repas de la semaine du ${weekLabel} avec des repas piochés au hasard dans le semainier ? Le contenu actuel de cette semaine sera écrasé.`)) return;
+
+            const monday = getMealWeekMonday();
+            let shuffled = shuffleArray(pool);
+            let idx = 0;
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dateStr = formatDateISO(d);
+                if (!window.mealPlans[dateStr]) window.mealPlans[dateStr] = { lunch: emptyMeal(), dinner: emptyMeal() };
+
+                ['lunch', 'dinner'].forEach(field => {
+                    if (idx >= shuffled.length) { shuffled = shuffleArray(pool); idx = 0; } // réserve épuisée : on repioche
+                    const pick = shuffled[idx++];
+                    const existingNote = normalizeMeal(window.mealPlans[dateStr][field]).note;
+                    window.mealPlans[dateStr][field] = { proteine: pick.proteine, feculent: pick.feculent, legumes: pick.legumes, note: existingNote };
+                    window.mealPlans[dateStr][field + 'Unknown'] = false;
+                });
+            }
+
+            saveData();
+            renderMealPlanner();
+        }
+
         // Vide un créneau de repas (protéine/féculent/légumes/note + statut "incertain").
         function clearMealSlot(dateStr, field) {
             if (!window.mealPlans[dateStr]) return;
@@ -6176,6 +6240,15 @@
                 </tr>
             `;
 
+            // Reflète le même "Restant total" dans le bandeau résumé en haut de l'onglet Budget
+            // (rouge si négatif, comme ailleurs dans l'app pour signaler un découvert).
+            const summaryRestantEl = document.getElementById('budget-summary-restant');
+            if (summaryRestantEl) {
+                summaryRestantEl.innerText = formatEuro(restantApres);
+                summaryRestantEl.classList.toggle('text-rose-600', restantApres < 0);
+                summaryRestantEl.classList.toggle('text-slate-800', restantApres >= 0);
+            }
+
             // Largeur initiale de l'input Découvert : calée sur son contenu dès l'affichage (sans
             // attendre une saisie), la mise à jour au fil de la frappe est déjà gérée par
             // oninput="autoSizeAmountInput(this)" ci-dessus.
@@ -6212,9 +6285,28 @@
             }
         }
 
+        // Nombre de jours avant la prochaine paie (versée le 20 de chaque mois), toujours calculé
+        // par rapport à AUJOURD'HUI (indépendant du mois affiché via les flèches de navigation du
+        // budget). Si on est le 20, affiche "Aujourd'hui !" plutôt que "0 j".
+        function updateBudgetPaydayCountdown() {
+            const el = document.getElementById('budget-summary-payday');
+            if (!el) return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let payday = new Date(today.getFullYear(), today.getMonth(), 20);
+            if (today.getDate() > 20) {
+                payday = new Date(payday.getFullYear(), payday.getMonth() + 1, 20);
+            }
+            const diffDays = Math.round((payday - today) / 86400000);
+            el.innerText = diffDays === 0 ? "Aujourd'hui !" : `${diffDays} j`;
+        }
+
         function renderBudget() {
             const label = document.getElementById('budget-month-label');
             if (!label) return; // section pas encore présente dans le DOM
+
+            updateBudgetPaydayCountdown();
 
             const monthDate = getBudgetMonthDate();
             const periodEndInclusive = new Date(monthDate);
