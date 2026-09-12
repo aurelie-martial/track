@@ -2281,6 +2281,35 @@
             renderAgenda();
         }
 
+        // Navigation par balayage (swipe) tactile sur la vue mois de l'agenda, en plus des flèches
+        // ← → existantes. Seuil de distance minimum + mouvement nettement plus horizontal que
+        // vertical, pour ne jamais se déclencher sur un simple tap (ouvrir un jour) ou un scroll.
+        (function setupAgendaSwipe() {
+            const view = document.getElementById('agenda-month-view');
+            if (!view) return;
+            let startX = 0, startY = 0, tracking = false;
+
+            view.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) { tracking = false; return; }
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                tracking = true;
+            }, { passive: true });
+
+            view.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                const dx = endX - startX;
+                const dy = endY - startY;
+                const SWIPE_THRESHOLD = 50; // px
+                if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    agendaNavigate(dx < 0 ? 1 : -1); // swipe vers la gauche → mois suivant, vers la droite → mois précédent
+                }
+            }, { passive: true });
+        })();
+
         function renderAgenda() {
             renderAgendaMonthView();
         }
