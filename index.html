@@ -879,6 +879,13 @@
                                 Ajouter une transaction
                             </button>
                         </div>
+                        <!-- Filtre par catégorie : ne restreint que l'affichage de la liste ci-dessous,
+                             aucun impact sur les totaux (Restant total, Enveloppe...) calculés ailleurs. -->
+                        <div class="px-4 pt-3 pb-1 bg-slate-50/50 border-b border-slate-100">
+                            <select id="budget-tx-category-filter" onchange="setBudgetTxCategoryFilter(this.value)" class="w-full sm:w-auto px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-600 focus:outline-none focus:border-indigo-300 bg-white">
+                                <option value="">Toutes les catégories</option>
+                            </select>
+                        </div>
                         <div class="p-4 overflow-x-auto">
                             <table class="w-full text-left border-collapse table-fixed">
                                 <thead>
@@ -6363,6 +6370,15 @@
             el.innerText = diffDays === 0 ? "Aujourd'hui !" : `${diffDays} j`;
         }
 
+        // Filtre par catégorie de la liste "Transactions" (bloc de droite du Budget) : '' = toutes.
+        // N'affecte que l'affichage de cette liste, aucun autre calcul du budget.
+        window.budgetTxCategoryFilter = '';
+
+        function setBudgetTxCategoryFilter(value) {
+            window.budgetTxCategoryFilter = value;
+            renderBudget();
+        }
+
         function renderBudget() {
             const label = document.getElementById('budget-month-label');
             if (!label) return; // section pas encore présente dans le DOM
@@ -6387,13 +6403,28 @@
             // panneau d'édition renommer/couleur).
             renderBudgetCategoryList();
 
-            // Historique des transactions du mois, les plus récemment ajoutées en premier
-            // (tri par date, puis par id de création en cas d'égalité de date).
+            // Filtre par catégorie de l'historique des transactions : les options proposées sont les
+            // catégories réellement présentes ce mois-ci (plutôt que toutes les catégories connues),
+            // pour ne jamais proposer un filtre qui viderait la liste. La sélection en cours
+            // (window.budgetTxCategoryFilter) est réappliquée à chaque rendu.
+            const filterSelect = document.getElementById('budget-tx-category-filter');
+            if (filterSelect) {
+                const categoriesInMonth = [...new Set(monthTransactions.map(t => t.category || 'Sans catégorie'))].sort((a, b) => a.localeCompare(b, 'fr'));
+                filterSelect.innerHTML = `<option value="">Toutes les catégories</option>` +
+                    categoriesInMonth.map(c => `<option value="${c.replace(/"/g, '&quot;')}">${c}</option>`).join('');
+                filterSelect.value = categoriesInMonth.includes(window.budgetTxCategoryFilter) ? window.budgetTxCategoryFilter : '';
+            }
+            const displayedTransactions = window.budgetTxCategoryFilter
+                ? monthTransactions.filter(t => (t.category || 'Sans catégorie') === window.budgetTxCategoryFilter)
+                : monthTransactions;
+
+            // Historique des transactions du mois (filtré par catégorie le cas échéant), les plus
+            // récemment ajoutées en premier (tri par date, puis par id de création en cas d'égalité).
             const tbody = document.getElementById('budget-transactions-tbody');
             if (tbody) {
-                const sorted = [...monthTransactions].sort((a, b) => b.date.localeCompare(a.date) || (b.id - a.id));
+                const sorted = [...displayedTransactions].sort((a, b) => b.date.localeCompare(a.date) || (b.id - a.id));
                 if (sorted.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">Aucune transaction ce mois-ci.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">${window.budgetTxCategoryFilter ? 'Aucune transaction pour cette catégorie ce mois-ci.' : 'Aucune transaction ce mois-ci.'}</td></tr>`;
                 } else {
                     // Catégories déjà comptées via le Prévu (tables Fixe/Variable du budget) : ces
                     // transactions sont affichées hachurées et atténuées dans l'historique pour bien
