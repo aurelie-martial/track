@@ -5171,15 +5171,24 @@
             const muscleKgRaw = [];
             const fatPercentArr = [];
             const musclePercentArr = [];
+            // Un jour "réel" a un relevé effectivement saisi ce jour-là ; les autres jours portent une
+            // valeur reportée (dernière connue) pour que la courbe ne soit jamais interrompue, mais ne
+            // doivent jamais afficher de point sur le graphique — seuls ces indicateurs le permettent.
+            const weightIsReal = [];
+            const fatIsReal = [];
+            const muscleIsReal = [];
 
             sortedMeasurements.forEach(m => {
                 const w = (m.weight !== null && m.weight !== undefined) ? m.weight : null;
                 weightArr.push(w);
+                weightIsReal.push(!!m.weightIsReal);
 
                 const fatPct = (m.bodyFat !== null && m.bodyFat !== undefined) ? m.bodyFat : null;
                 const musclePct = (m.muscleMass !== null && m.muscleMass !== undefined) ? m.muscleMass : null;
                 fatPercentArr.push(fatPct);
                 musclePercentArr.push(musclePct);
+                fatIsReal.push(!!m.bodyFatIsReal);
+                muscleIsReal.push(!!m.muscleMassIsReal);
 
                 if (w === null || (fatPct === null && musclePct === null)) {
                     fatKg.push(null);
@@ -5206,7 +5215,7 @@
                 muscleKgRaw.push(muscleShareKg);
             });
 
-            return { weightArr, fatKg, stackedTopKg, fatKgRaw, muscleKgRaw, fatPercentArr, musclePercentArr };
+            return { weightArr, fatKg, stackedTopKg, fatKgRaw, muscleKgRaw, fatPercentArr, musclePercentArr, weightIsReal, fatIsReal, muscleIsReal };
         }
 
         function renderSportCharts() {
@@ -5230,15 +5239,47 @@
             // s'étend plus loin dans le futur.
             const measurementsByDate = new Map(window.sportMeasurements.map(m => [m.date, m]));
             const todayISOForCharts = formatDateISO(new Date());
+
+            // Pour que les courbes ne soient jamais interrompues — y compris en vue "Semaine", où le
+            // tout premier jour affiché n'a quasiment jamais de pesée ce jour précis — chaque jour sans
+            // relevé reprend la dernière valeur réellement enregistrée, en remontant si besoin avant le
+            // début de la période affichée (tout l'historique est parcouru pour ça). Les jours "réels"
+            // restent distingués (weightIsReal/bodyFatIsReal/muscleMassIsReal) pour que seuls eux
+            // affichent un point sur le graphique — le report ne trace qu'une ligne continue, jamais un
+            // faux marqueur. Comme avant, on n'invente rien au-delà d'aujourd'hui.
+            const allMeasurementsAsc = [...window.sportMeasurements].sort((a, b) => a.date.localeCompare(b.date));
+            const periodStartISO = formatDateISO(periodRange.start);
+            let carriedWeight = null, carriedBodyFat = null, carriedMuscleMass = null;
+            let historyPointer = 0;
+            while (historyPointer < allMeasurementsAsc.length && allMeasurementsAsc[historyPointer].date < periodStartISO) {
+                const past = allMeasurementsAsc[historyPointer];
+                if (past.weight !== null && past.weight !== undefined) carriedWeight = past.weight;
+                if (past.bodyFat !== null && past.bodyFat !== undefined) carriedBodyFat = past.bodyFat;
+                if (past.muscleMass !== null && past.muscleMass !== undefined) carriedMuscleMass = past.muscleMass;
+                historyPointer++;
+            }
+
             const sortedMeasurements = [];
             for (let dt = new Date(periodRange.start); dt < periodRange.end; dt.setDate(dt.getDate() + 1)) {
                 const iso = formatDateISO(dt);
                 const real = iso <= todayISOForCharts ? measurementsByDate.get(iso) : null;
+                const hasRealWeight = !!(real && real.weight !== null && real.weight !== undefined);
+                const hasRealBodyFat = !!(real && real.bodyFat !== null && real.bodyFat !== undefined);
+                const hasRealMuscleMass = !!(real && real.muscleMass !== null && real.muscleMass !== undefined);
+
+                if (hasRealWeight) carriedWeight = real.weight;
+                if (hasRealBodyFat) carriedBodyFat = real.bodyFat;
+                if (hasRealMuscleMass) carriedMuscleMass = real.muscleMass;
+
+                const withinKnownRange = iso <= todayISOForCharts;
                 sortedMeasurements.push({
                     date: iso,
-                    weight: (real && real.weight !== null && real.weight !== undefined) ? real.weight : null,
-                    bodyFat: (real && real.bodyFat !== null && real.bodyFat !== undefined) ? real.bodyFat : null,
-                    muscleMass: (real && real.muscleMass !== null && real.muscleMass !== undefined) ? real.muscleMass : null
+                    weight: withinKnownRange ? carriedWeight : null,
+                    bodyFat: withinKnownRange ? carriedBodyFat : null,
+                    muscleMass: withinKnownRange ? carriedMuscleMass : null,
+                    weightIsReal: hasRealWeight,
+                    bodyFatIsReal: hasRealBodyFat,
+                    muscleMassIsReal: hasRealMuscleMass
                 });
             }
             const measurementLabels = sortedMeasurements.map(m => formatDateFRShort(m.date));
@@ -5270,10 +5311,11 @@
                             backgroundColor: '#6366f122',
                             borderWidth: 2.5,
                             // Pas de point sur les jours sans pesée : seuls les jours où un poids a
-                            // réellement été enregistré affichent un marqueur, la ligne se contente
-                            // de relier les points réels entre eux (via spanGaps).
-                            pointRadius: (ctx) => (comp.weightArr[ctx.dataIndex] === null || comp.weightArr[ctx.dataIndex] === undefined) ? 0 : 3,
-                            pointHoverRadius: (ctx) => (comp.weightArr[ctx.dataIndex] === null || comp.weightArr[ctx.dataIndex] === undefined) ? 0 : 5,
+                            // réellement été enregistré affichent un marqueur (weightIsReal) — la
+                            // valeur affichée les autres jours est reportée (voir plus haut), donc
+                            // toujours non-null, mais ne doit jamais avoir son propre point.
+                            pointRadius: (ctx) => comp.weightIsReal[ctx.dataIndex] ? 3 : 0,
+                            pointHoverRadius: (ctx) => comp.weightIsReal[ctx.dataIndex] ? 5 : 0,
                             pointBackgroundColor: '#6366f1',
                             tension: 0.3,
                             spanGaps: true,
@@ -5291,8 +5333,10 @@
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
-                                    const w = comp.weightArr[context.dataIndex];
-                                    return w === null || w === undefined ? 'Poids : non renseigné' : `Poids : ${w} kg`;
+                                    const idx = context.dataIndex;
+                                    const w = comp.weightArr[idx];
+                                    if (w === null || w === undefined) return 'Poids : non renseigné';
+                                    return comp.weightIsReal[idx] ? `Poids : ${w} kg` : `Poids : ${w} kg (dernière valeur connue)`;
                                 },
                                 afterLabel: function(context) {
                                     const idx = context.dataIndex;
@@ -5336,9 +5380,11 @@
                             borderColor: '#f59e0b',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
-                            // Idem que pour le poids : pas de point les jours sans mesure.
-                            pointRadius: (ctx) => (comp.fatKgRaw[ctx.dataIndex] === null || comp.fatKgRaw[ctx.dataIndex] === undefined) ? 0 : 2,
-                            pointHoverRadius: (ctx) => (comp.fatKgRaw[ctx.dataIndex] === null || comp.fatKgRaw[ctx.dataIndex] === undefined) ? 0 : 4,
+                            // Idem que pour le poids : pas de point les jours sans mesure réelle
+                            // (fatIsReal) — la valeur des autres jours est reportée pour garder une
+                            // ligne continue, sans jamais y ajouter de faux marqueur.
+                            pointRadius: (ctx) => comp.fatIsReal[ctx.dataIndex] ? 2 : 0,
+                            pointHoverRadius: (ctx) => comp.fatIsReal[ctx.dataIndex] ? 4 : 0,
                             pointBackgroundColor: '#f59e0b',
                             tension: 0.3,
                             spanGaps: true,
@@ -5350,8 +5396,8 @@
                             borderColor: '#10b981',
                             backgroundColor: 'transparent',
                             borderWidth: 2,
-                            pointRadius: (ctx) => (comp.muscleKgRaw[ctx.dataIndex] === null || comp.muscleKgRaw[ctx.dataIndex] === undefined) ? 0 : 2,
-                            pointHoverRadius: (ctx) => (comp.muscleKgRaw[ctx.dataIndex] === null || comp.muscleKgRaw[ctx.dataIndex] === undefined) ? 0 : 4,
+                            pointRadius: (ctx) => comp.muscleIsReal[ctx.dataIndex] ? 2 : 0,
+                            pointHoverRadius: (ctx) => comp.muscleIsReal[ctx.dataIndex] ? 4 : 0,
                             pointBackgroundColor: '#10b981',
                             tension: 0.3,
                             spanGaps: true,
@@ -5371,6 +5417,7 @@
                                 label: function(context) {
                                     const idx = context.dataIndex;
                                     const arr = context.datasetIndex === 0 ? comp.fatKgRaw : comp.muscleKgRaw;
+                                    const isRealArr = context.datasetIndex === 0 ? comp.fatIsReal : comp.muscleIsReal;
                                     const name = context.datasetIndex === 0 ? 'Masse grasse' : 'Masse musculaire';
                                     const kg = arr[idx];
                                     if (kg === null || kg === undefined) return null;
@@ -5384,7 +5431,8 @@
                                             else deltaText = ' (stable)';
                                         }
                                     }
-                                    return `${name} : ${kg} kg${deltaText}`;
+                                    const reportedText = isRealArr[idx] ? '' : ' (dernière valeur connue)';
+                                    return `${name} : ${kg} kg${deltaText}${reportedText}`;
                                 }
                             }
                         }
