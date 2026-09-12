@@ -6455,8 +6455,15 @@
             const filterSelect = document.getElementById('budget-tx-category-filter');
             if (filterSelect) {
                 const categoriesInMonth = [...new Set(monthTransactions.map(t => t.category || 'Sans catégorie'))].sort((a, b) => a.localeCompare(b, 'fr'));
+                // Montant total du mois par catégorie, affiché entre parenthèses dans chaque option
+                // (toutes transactions confondues, dépense comme revenu — "amount" est déjà positif).
+                const totalsByCategoryForFilter = {};
+                monthTransactions.forEach(t => {
+                    const key = t.category || 'Sans catégorie';
+                    totalsByCategoryForFilter[key] = (totalsByCategoryForFilter[key] || 0) + (parseFloat(t.amount) || 0);
+                });
                 filterSelect.innerHTML = `<option value="">Toutes les catégories</option>` +
-                    categoriesInMonth.map(c => `<option value="${c.replace(/"/g, '&quot;')}">${c}</option>`).join('');
+                    categoriesInMonth.map(c => `<option value="${c.replace(/"/g, '&quot;')}">${c} (${formatEuro(totalsByCategoryForFilter[c] || 0)})</option>`).join('');
                 filterSelect.value = categoriesInMonth.includes(window.budgetTxCategoryFilter) ? window.budgetTxCategoryFilter : '';
             }
             const displayedTransactions = window.budgetTxCategoryFilter
