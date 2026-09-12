@@ -1030,6 +1030,13 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Catégorie</label>
+                    <!-- Une transaction "Fixe" (pointée depuis le "+" du plan Fixe) garde toujours cette
+                         catégorie : le sélecteur normal est masqué au profit de ce badge non cliquable,
+                         pour qu'une modification (date, montant...) ne puisse jamais la faire glisser
+                         vers une autre catégorie. -->
+                    <div id="new-budget-category-fixe-badge" class="hidden inline-flex items-center gap-1.5 bg-slate-200 text-slate-600 rounded-full px-2.5 py-1 text-xs font-semibold">
+                        🔒 Fixe
+                    </div>
                     <div id="new-budget-category-chips" class="flex flex-wrap gap-1.5"></div>
                     <input type="hidden" id="new-budget-category">
                 </div>
@@ -5531,10 +5538,22 @@
         // déroulant) : "new-budget-category" reste un champ caché qui porte la valeur choisie.
         function refreshBudgetCategoryOptions() {
             const chipsEl = document.getElementById('new-budget-category-chips');
+            const badgeEl = document.getElementById('new-budget-category-fixe-badge');
             const hiddenInput = document.getElementById('new-budget-category');
             if (!chipsEl || !hiddenInput) return;
             const cats = [...(window.budgetCategories.depense || [])].sort((a, b) => a.localeCompare(b, 'fr'));
-            if (!cats.includes(hiddenInput.value)) hiddenInput.value = cats[0] || '';
+
+            // "Fixe" n'est pas une catégorie de dépense classique (elle n'apparaît pas dans la liste
+            // ci-dessus) : une transaction pointée comme "Fixe" doit TOUJOURS le rester, y compris
+            // après modification, donc on ne la réinitialise jamais vers une autre catégorie, et le
+            // sélecteur de catégorie est verrouillé (badge à la place des puces cliquables).
+            const isFixe = hiddenInput.value === 'Fixe';
+            if (!isFixe && !cats.includes(hiddenInput.value)) hiddenInput.value = cats[0] || '';
+
+            if (badgeEl) badgeEl.classList.toggle('hidden', !isFixe);
+            chipsEl.classList.toggle('hidden', isFixe);
+            if (isFixe) { chipsEl.innerHTML = ''; return; }
+
             chipsEl.innerHTML = cats.map(c => {
                 const col = getBudgetCategoryColor(c);
                 const isSelected = c === hiddenInput.value;
@@ -5572,6 +5591,11 @@
             if (submitEl) submitEl.lastChild.textContent = 'Ajouter';
             const dateEl = document.getElementById('new-budget-date');
             if (dateEl && !dateEl.value) dateEl.value = formatDateISO(new Date());
+            // Une nouvelle transaction ne doit jamais hériter du verrou "Fixe" laissé par une
+            // précédente édition (voir refreshBudgetCategoryOptions) : catégorie remise à vide, le
+            // sélecteur retombera sur la première catégorie disponible.
+            const categoryInput = document.getElementById('new-budget-category');
+            if (categoryInput) categoryInput.value = '';
             refreshBudgetCategoryOptions();
             modal.classList.remove('hidden');
         }
@@ -5809,6 +5833,24 @@
                 amount,
                 fixeLineId: line.id
             });
+            saveData();
+            renderBudget();
+        }
+
+        // Retire le pointage d'une charge fixe pour le mois affiché (bouton "−", visible une fois la
+        // ligne pointée via le "+" ci-dessus). S'il y a plusieurs transactions pointées pour cette
+        // ligne ce mois-ci (cas rare), on retire la plus récente.
+        function removeFixeLineTransaction(lineId) {
+            const monthDate = getBudgetMonthDate();
+            const matches = window.budgetTransactions
+                .filter(t => t.category === 'Fixe' && t.fixeLineId === lineId && isDateInBudgetPeriod(t.date, monthDate))
+                .sort((a, b) => b.id - a.id);
+            const tx = matches[0];
+            if (!tx) return;
+            if (!confirm(`Retirer le pointage de "${tx.label || 'cette charge'}" (${formatEuro(tx.amount)}) pour ce mois ?`)) return;
+
+            applyTransactionToVariableReel(tx.category, tx.amount, -1);
+            window.budgetTransactions = window.budgetTransactions.filter(t => t.id !== tx.id);
             saveData();
             renderBudget();
         }
@@ -6131,7 +6173,10 @@
                     </td>
                     <td class="px-1 py-1.5 ${montantWidth}">
                         <div class="flex items-center justify-end gap-0.5">
-                            ${section === 'fixe' ? `<button onclick="addFixeLineAsTransaction(${l.id})" class="shrink-0 w-4 h-4 flex items-center justify-center rounded-full bg-slate-200 hover:bg-emerald-200 text-slate-500 hover:text-emerald-700 text-[10px] font-bold leading-none transition-colors" title="Ajouter comme transaction du jour">+</button>` : ''}
+                            ${section === 'fixe' ? (isLogged
+                                ? `<button onclick="removeFixeLineTransaction(${l.id})" class="shrink-0 w-4 h-4 flex items-center justify-center rounded-full bg-slate-200 hover:bg-rose-200 text-slate-500 hover:text-rose-700 text-[10px] font-bold leading-none transition-colors" title="Retirer le pointage de ce mois">−</button>`
+                                : `<button onclick="addFixeLineAsTransaction(${l.id})" class="shrink-0 w-4 h-4 flex items-center justify-center rounded-full bg-slate-200 hover:bg-emerald-200 text-slate-500 hover:text-emerald-700 text-[10px] font-bold leading-none transition-colors" title="Ajouter comme transaction du jour">+</button>`
+                            ) : ''}
                             ${budgetEuroInput(l.prevu, `updateBudgetPlanLine('${section}', ${l.id}, 'prevu', this.value)`, null, struckClass)}
                         </div>
                     </td>
