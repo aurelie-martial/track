@@ -5870,11 +5870,43 @@
             renderBudgetPlan();
         }
 
+        // Recalcule "Réel" d'une ligne "Variable régulier" à partir des transactions du mois affiché
+        // dont la catégorie correspond exactement au libellé de la ligne (insensible à la casse/aux
+        // espaces). "Réel" est normalement incrémenté au fil de l'eau à chaque transaction ajoutée
+        // (applyTransactionToVariableReel), mais cet historique se perd si la ligne est supprimée puis
+        // recréée (ou renommée) après coup : ce recalcul rattrape alors les transactions déjà
+        // existantes plutôt que de repartir de 0 en attendant les prochaines.
+        function recomputeVariableLineReelFromTransactions(line) {
+            if (!line || !line.label) return;
+            const monthDate = getBudgetMonthDate();
+            const norm = s => (s || '').trim().toLowerCase();
+            line.reel = window.budgetTransactions
+                .filter(t => isDateInBudgetPeriod(t.date, monthDate) && norm(t.category) === norm(line.label))
+                .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+        }
+
+        // Bouton ↻ à côté de "Réel" sur une ligne "Variable régulier" : force la resynchronisation
+        // avec les transactions du mois affiché (voir recomputeVariableLineReelFromTransactions),
+        // pour rattraper à la main un cas comme une ligne supprimée puis recréée à l'identique (le
+        // libellé ne "change" donc pas au sens de l'input, et le recalcul automatique sur édition du
+        // libellé ne se déclenche pas).
+        function manualRecomputeVariableLineReel(id) {
+            const line = (window.budgetPlan.variable || []).find(l => l.id === id);
+            if (!line) return;
+            recomputeVariableLineReelFromTransactions(line);
+            saveData();
+            renderBudgetPlan();
+        }
+
         function updateBudgetPlanLine(section, id, field, value) {
             const line = (window.budgetPlan[section] || []).find(l => l.id === id);
             if (!line) return;
             if (field === 'label') {
                 line.label = value;
+                // Le libellé fixe désormais la catégorie que cette ligne doit suivre : on resynchronise
+                // "Réel" avec les transactions déjà présentes ce mois-ci pour ce nouveau libellé (ligne
+                // recréée après une suppression accidentelle, ou simplement renommée).
+                if (section === 'variable') recomputeVariableLineReelFromTransactions(line);
             } else if (field === 'debitDay') {
                 const day = parseInt(value, 10);
                 line.debitDay = (!isNaN(day) && day >= 1 && day <= 31) ? day : null;
@@ -6259,7 +6291,10 @@
                     </td>
                     ${showReel ? `
                     <td class="px-1 py-1.5 ${montantWidth}">
-                        ${budgetEuroInput(l.reel, `updateBudgetPlanLine('${section}', ${l.id}, 'reel', this.value)`)}
+                        <div class="flex items-center justify-end gap-0.5">
+                            ${section === 'variable' ? `<button onclick="manualRecomputeVariableLineReel(${l.id})" class="shrink-0 w-4 h-4 flex items-center justify-center rounded-full bg-slate-200 hover:bg-indigo-200 text-slate-500 hover:text-indigo-700 text-[9px] font-bold leading-none transition-colors" title="Resynchroniser avec les transactions de ce mois">↻</button>` : ''}
+                            ${budgetEuroInput(l.reel, `updateBudgetPlanLine('${section}', ${l.id}, 'reel', this.value)`)}
+                        </div>
                     </td>` : ''}
                     <td class="px-0.5 py-1.5 text-center whitespace-nowrap ${actionWidth}">
                         <button onclick="deleteBudgetPlanLine('${section}', ${l.id})" class="text-slate-300 hover:text-rose-500 text-xs">✕</button>
