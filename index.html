@@ -1533,7 +1533,15 @@
                         window.budgetCategories = data.budgetCategories || window.budgetCategories;
                         window.budgetCategoryColors = data.budgetCategoryColors || window.budgetCategoryColors;
                         window.budgetTargets = data.budgetTargets || window.budgetTargets;
-                        window.budgetPlan = data.budgetPlan || window.budgetPlan;
+                        window.budgetPlanByMonth = data.budgetPlanByMonth || window.budgetPlanByMonth;
+                        if (!data.budgetPlanByMonth && data.budgetPlan) {
+                            // Migration depuis l'ancien format (un seul plan budgétaire Ressources/
+                            // Fixe/Variable/Épargne partagé par tous les mois) : on le reprend comme
+                            // point de départ du mois en cours (et donc, par copie, des mois futurs -
+                            // voir getBudgetPlanForMonth), pour ne pas perdre les montants déjà saisis.
+                            // À partir de maintenant, chaque mois est indépendant.
+                            window.budgetPlanByMonth[getBudgetPeriodKey(getBudgetPeriodAnchor())] = data.budgetPlan;
+                        }
                         // Migration depuis l'ancien format (compte "initial" + historique de
                         // versements/retraits séparé) vers un solde unique "amount" par compte,
                         // pour ne pas perdre les montants déjà suivis.
@@ -1676,6 +1684,7 @@
                 budgetCategoryColors: window.budgetCategoryColors,
                 budgetTargets: window.budgetTargets,
                 budgetPlan: window.budgetPlan,
+                budgetPlanByMonth: window.budgetPlanByMonth,
                 savingsAccounts: window.savingsAccounts
             };
         }
@@ -1860,7 +1869,12 @@
                 window.budgetCategories = data.budgetCategories || window.budgetCategories;
                 window.budgetCategoryColors = data.budgetCategoryColors || window.budgetCategoryColors;
                 window.budgetTargets = data.budgetTargets || window.budgetTargets;
-                window.budgetPlan = data.budgetPlan || window.budgetPlan;
+                window.budgetPlanByMonth = data.budgetPlanByMonth || window.budgetPlanByMonth;
+                if (!data.budgetPlanByMonth && data.budgetPlan) {
+                    // Migration depuis l'ancien format : voir le commentaire équivalent plus haut
+                    // (écoute temps réel du document principal).
+                    window.budgetPlanByMonth[getBudgetPeriodKey(getBudgetPeriodAnchor())] = data.budgetPlan;
+                }
                 if (data.savingsAccounts) window.savingsAccounts = data.savingsAccounts;
 
                 renderHabits();
@@ -1984,14 +1998,21 @@
 
         // --- PLAN BUDGÉTAIRE (Ressources + Fixe/Variable/Épargne) ---
         // Tableau saisi entièrement à la main (Prévu ET Réel), façon tableur, indépendant des
-        // transactions ci-dessus. C'est un budget mensuel "type" qu'on ajuste au fil de l'eau,
-        // pas rattaché à un mois précis.
+        // transactions ci-dessus.
+        //
+        // Chaque mois a son propre plan, totalement indépendant des autres (voir
+        // window.budgetPlanByMonth et getBudgetPlanForMonth plus bas) : modifier le Découvert, ou une
+        // ligne Fixe/Variable/Épargne, sur le mois affiché ne doit jamais changer ce qui a été saisi
+        // sur un autre mois (passé ou futur). window.budgetPlanDefaultTemplate ci-dessous ne sert que
+        // de point de départ pour le tout premier mois jamais affiché (nouvelle utilisatrice, ou
+        // aucune donnée encore sauvegardée) ; ensuite, un mois jamais visité démarre comme une copie
+        // indépendante du plan du mois existant le plus proche.
 
         // Tri de la table Fixe : par 'montant' (Prévu) ou par 'date' (jour de prélèvement),
         // dans le sens 'asc' ou 'desc'. Purement local à l'affichage (pas persisté).
         window.budgetPlanFixeSort = { field: 'montant', dir: 'desc' };
 
-        window.budgetPlan = {
+        window.budgetPlanDefaultTemplate = {
             ressources: {
                 salaire: 3272,
                 decouvert: 0
@@ -2014,6 +2035,17 @@
             ],
             epargne: { prevu: 50, reel: 0 }
         };
+
+        // Plans budgétaires indépendants par mois, clé "AAAA-MM" (voir getBudgetPeriodKey). Rempli à
+        // la volée par getBudgetPlanForMonth au fil de la navigation, et par la migration au
+        // chargement des données pour les comptes qui avaient déjà un plan dans l'ancien format.
+        window.budgetPlanByMonth = {};
+
+        // Alias vers le plan du mois actuellement affiché, tenu à jour par renderBudget() à chaque
+        // changement de mois (voir getBudgetPlanForMonth) : c'est lui que lisent/modifient toutes les
+        // fonctions du plan budgétaire (updateBudgetPlanRessource, updateBudgetPlanLine...). Valeur
+        // initiale = le modèle par défaut, remplacée dès le premier rendu du Budget.
+        window.budgetPlan = window.budgetPlanDefaultTemplate;
 
         const pastelColors = ['bg-pastel-blue', 'bg-pastel-green', 'bg-pastel-purple', 'bg-pastel-pink', 'bg-pastel-orange'];
         
@@ -5585,6 +5617,42 @@
             return base;
         }
 
+        // Clé "AAAA-MM" identifiant la période budgétaire d'une date donnée (typiquement le retour de
+        // getBudgetMonthDate ou getBudgetPeriodAnchor) : sert à stocker/retrouver le plan budgétaire
+        // indépendant de ce mois-là dans window.budgetPlanByMonth.
+        function getBudgetPeriodKey(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        // Copie profonde d'un plan budgétaire (Ressources + Fixe/Variable/Épargne), pour qu'un
+        // nouveau mois créé à partir d'un mois existant n'en partage aucun tableau/objet imbriqué :
+        // sans ça, modifier une ligne Fixe sur un mois modifierait la même ligne sur l'autre.
+        function cloneBudgetPlan(plan) {
+            return JSON.parse(JSON.stringify(plan));
+        }
+
+        // Renvoie le plan budgétaire du mois donné (Ressources + Fixe/Variable/Épargne), en le créant
+        // si ce mois n'a encore jamais été affiché. Chaque mois est indépendant : le modifier (voir
+        // updateBudgetPlanRessource, updateBudgetPlanLine, updateBudgetPlanEpargne...) ne touche
+        // jamais window.budgetPlanByMonth d'un autre mois. Un mois tout neuf ne part pas de zéro pour
+        // autant : il démarre comme une copie du plan du mois existant le plus proche (le précédent
+        // en priorité, sinon le suivant, sinon le modèle par défaut) — juste une copie, jamais une
+        // référence partagée, donc aucun lien ensuite avec le mois dont il a été copié.
+        function getBudgetPlanForMonth(monthDate) {
+            const key = getBudgetPeriodKey(monthDate);
+            if (!window.budgetPlanByMonth[key]) {
+                const existingKeys = Object.keys(window.budgetPlanByMonth).sort();
+                let sourceKey = null;
+                for (const k of existingKeys) {
+                    if (k <= key) sourceKey = k; // le plus récent mois existant <= celui demandé
+                }
+                if (!sourceKey && existingKeys.length > 0) sourceKey = existingKeys[0]; // sinon le plus ancien après
+                const source = sourceKey ? window.budgetPlanByMonth[sourceKey] : window.budgetPlanDefaultTemplate;
+                window.budgetPlanByMonth[key] = cloneBudgetPlan(source);
+            }
+            return window.budgetPlanByMonth[key];
+        }
+
         // Bornes [début inclus, fin exclue) de la période budgétaire qui commence à periodStart.
         function getBudgetPeriodRange(periodStart) {
             const start = new Date(periodStart);
@@ -6543,6 +6611,14 @@
             updateBudgetPaydayCountdown();
 
             const monthDate = getBudgetMonthDate();
+
+            // Bascule le plan budgétaire (Ressources + Fixe/Variable/Épargne) sur celui du mois
+            // affiché : chaque mois a le sien, totalement indépendant des autres (voir
+            // getBudgetPlanForMonth) - modifier le Découvert ou une ligne ici ne touchera donc jamais
+            // un autre mois. Fait ici (avant renderBudgetPlan) plutôt que dans les fonctions
+            // updateBudgetPlan* elles-mêmes, qui continuent de lire/écrire window.budgetPlan tel quel.
+            window.budgetPlan = getBudgetPlanForMonth(monthDate);
+
             const periodEndInclusive = new Date(monthDate);
             periodEndInclusive.setMonth(periodEndInclusive.getMonth() + 1);
             periodEndInclusive.setDate(periodEndInclusive.getDate() - 1);
