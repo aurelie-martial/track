@@ -981,14 +981,14 @@
 
                     <!-- Bloc-notes du mois : texte libre propre à chaque mois (repart vide à chaque nouveau
                          mois, l'historique des mois passés reste consultable en naviguant). Sa hauteur est
-                         calée sur celle du bloc "Fixe" (voir syncBudgetNotesHeight). -->
-                    <div id="budget-notes-card" class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col" style="min-height:16rem">
+                         la moitié de celle du bloc "Fixe" (voir syncBudgetNotesHeight). -->
+                    <div id="budget-notes-card" class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col" style="min-height:9rem">
                         <div class="px-3 py-2 bg-violet-400 text-white flex items-center justify-between shrink-0">
                             <span class="text-xs font-bold uppercase tracking-wide">Bloc-notes</span>
                             <span class="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full">Repart à zéro chaque mois</span>
                         </div>
                         <div class="p-3 flex-1 min-h-0">
-                            <textarea id="budget-notes-textarea" placeholder="Notes du mois..." oninput="onBudgetNotesInput(this.value)" onblur="flushBudgetNotes()" class="w-full h-full resize-none rounded-lg border border-violet-100 bg-violet-50/40 px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-violet-400" style="min-height:11rem"></textarea>
+                            <textarea id="budget-notes-textarea" placeholder="Notes du mois..." oninput="onBudgetNotesInput(this.value)" onblur="flushBudgetNotes()" class="w-full h-full resize-none rounded-lg border border-violet-100 bg-violet-50/40 px-2 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-violet-400" style="min-height:4.5rem"></textarea>
                         </div>
                     </div>
                 </div>
@@ -5697,14 +5697,14 @@
             saveData();
         }
 
-        // Cale la hauteur du bloc-notes sur celle du bloc "Fixe" (qui grandit avec ses lignes). Sans
+        // Cale la hauteur du bloc-notes sur la moitié de celle du bloc "Fixe" (qui grandit avec ses lignes). Sans
         // effet tant que le bloc Fixe n'est pas affiché (mesure nulle) : le min-height prend le relais.
         function syncBudgetNotesHeight() {
             const fixeCard = document.getElementById('budget-plan-fixe-card');
             const notesCard = document.getElementById('budget-notes-card');
             if (!fixeCard || !notesCard) return;
             const h = fixeCard.offsetHeight;
-            if (h > 0) notesCard.style.height = h + 'px';
+            if (h > 0) notesCard.style.height = Math.round(h / 2) + 'px';
         }
         window.addEventListener('resize', syncBudgetNotesHeight);
 
