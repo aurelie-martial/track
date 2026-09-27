@@ -1527,6 +1527,20 @@
                 );
 
                 unsubscribeSnapshot = onSnapshot(currentUserDocRef, (docSnap) => {
+                    // Important : on ignore l'écho local d'une écriture qu'on vient de faire
+                    // nous-même (hasPendingWrites === true, avant confirmation par le serveur).
+                    // Firestore déclenche ce callback quasi instantanément après CHAQUE saveData(),
+                    // donc sans ce garde-fou l'app entière se redessine juste après chaque frappe/
+                    // clic — et si un second clic (sur un autre champ, une autre carte...) tombe
+                    // pile à ce moment-là, les éléments sont remplacés entre le "mousedown" et le
+                    // "mouseup" et le clic ne fait plus rien (il faut alors cliquer une 2e fois).
+                    // Notre état local (window.habits, window.mealPlans...) reflète déjà le
+                    // changement au moment où l'utilisatrice agit : pas besoin d'attendre l'aller-
+                    // retour serveur pour redessiner. Un changement venu d'ailleurs (autre appareil,
+                    // chargement initial, restauration...) n'a lui jamais hasPendingWrites à true et
+                    // continue donc de déclencher normalement le rendu ci-dessous.
+                    if (docSnap.metadata.hasPendingWrites) return;
+
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         window.categories = data.categories || window.categories;
