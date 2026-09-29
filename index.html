@@ -2713,6 +2713,43 @@
             return `<div class="h-1.5 sm:h-2 ${edgeMarginClass} mt-0.5 ${roundingClass} cursor-grab active:cursor-grabbing" draggable="true" ondragstart="agendaEventDragStart(event, ${ev.id}, '${dateStr}')" style="background-color:${ev.color || '#6366f1'};" title="${label} (glisser pour déplacer)"></div>`;
         }
 
+        // Occurrence d'un événement JKME (déjà matérialisé par jour dans foreignJkmeEvents, voir
+        // getForeignJkmeEventsForDate plus bas) sur une date donnée : sert à savoir si la veille/le
+        // lendemain est aussi concerné, pour dessiner un trait continu (voir renderJkmeGardeBar) —
+        // même logique que getBannerSegment ci-dessus pour les bandeaux natifs.
+        function jkmeEventOccursOnDate(ev, dateObj) {
+            return getForeignJkmeEventsForDate(dateObj).some(e => String(e.id) === String(ev.id));
+        }
+
+        function getJkmeGardeSegment(ev, dateObj) {
+            const prevDay = new Date(dateObj);
+            prevDay.setDate(prevDay.getDate() - 1);
+            const nextDay = new Date(dateObj);
+            nextDay.setDate(nextDay.getDate() + 1);
+            const hasPrev = jkmeEventOccursOnDate(ev, prevDay);
+            const hasNext = jkmeEventOccursOnDate(ev, nextDay);
+            if (hasPrev && hasNext) return 'middle';
+            if (hasPrev) return 'end';
+            if (hasNext) return 'start';
+            return 'single';
+        }
+
+        // "Période avec mon fils" (type JKME "garde") : comme côté JKME, affichée non pas en
+        // pastille mais en trait continu qui traverse les jours concernés, arrondi seulement à ses
+        // vraies extrémités — même technique que renderAgendaBannerBar juste au-dessus (marge
+        // négative qui annule le padding de la cellule), avec la couleur JKME_TYPE_COLORS.garde
+        // (définie plus bas, alignée sur --ev-garde côté JKME). Jamais glissable (à la différence
+        // d'un bandeau natif) : pour déplacer une période "mon fils", ouvrir #jkme-event-modal.
+        function renderJkmeGardeBar(ev, dateObj, edgeMarginClass) {
+            const segment = getJkmeGardeSegment(ev, dateObj);
+            const roundingClass = segment === 'single' ? 'rounded-full'
+                : segment === 'start' ? 'rounded-l-full'
+                : segment === 'end' ? 'rounded-r-full'
+                : '';
+            const label = `${jkmeEventLabel(ev)} · JKME`;
+            return `<div class="h-1.5 sm:h-2 ${edgeMarginClass} mt-0.5 ${roundingClass}" style="background-color:${JKME_TYPE_COLORS.garde};" title="${label}"></div>`;
+        }
+
         // Seule la vue Mois existe désormais (vue Semaine retirée) : navigation toujours par mois.
         function agendaNavigate(delta) {
             const d = new Date(window.agendaCurrentDate);
@@ -2782,8 +2819,13 @@
             const bannerEvents = allEvents.filter(ev => ev.banner);
             const pillEvents = allEvents.filter(ev => !ev.banner);
             // Événements JKME partagés (voir sharedAgenda/jkme) : déjà organisés par jour, jamais de
-            // bandeau (ce champ n'existe pas côté JKME), toujours affichés en pastille.
-            const jkmeEvents = getForeignJkmeEventsForDate(dateObj);
+            // bandeau (ce champ n'existe pas côté JKME), toujours affichés en pastille — sauf les
+            // périodes "avec mon fils" (type "garde"), affichées en trait continu comme côté JKME
+            // (voir renderJkmeGardeBar), à part des pastilles classiques et jamais comptées dans le
+            // "+N" ci-dessous (même traitement que les bandeaux natifs juste au-dessus).
+            const allJkmeEvents = getForeignJkmeEventsForDate(dateObj);
+            const jkmeGardeEvents = allJkmeEvents.filter(ev => ev.type === 'garde');
+            const jkmeEvents = allJkmeEvents.filter(ev => ev.type !== 'garde');
 
             const bgClass = muted ? 'bg-slate-50' : (weekend ? 'bg-slate-100' : 'bg-white');
             const borderClass = isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : (muted ? 'border-dashed border-slate-200' : 'border-slate-100');
@@ -2801,6 +2843,7 @@
                 <div class="agenda-day-cell min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} ${mutedClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden ${isPast ? 'day-past-hatch' : ''}" onclick="openAgendaDayModal('${dateStr}')" ondragover="agendaEventDragOver(event, this)" ondragleave="agendaEventDragLeave(event, this)" ondrop="agendaEventDrop(event, this, '${dateStr}')">
                     <div class="text-[10px] sm:text-xs font-bold ${numberClass}">${day}</div>
                     ${bannerEvents.map(ev => renderAgendaBannerBar(ev, dateObj, '-mx-1 sm:-mx-1.5')).join('')}
+                    ${jkmeGardeEvents.map(ev => renderJkmeGardeBar(ev, dateObj, '-mx-1 sm:-mx-1.5')).join('')}
                     <div class="space-y-0.5">
                         ${shownNative.map(ev => renderAgendaEventPill(ev, true, dateStr)).join('')}
                         ${shownJkme.map(ev => renderJkmeEventPill(ev)).join('')}
