@@ -1359,10 +1359,82 @@
 
             <div id="agenda-day-modal-events" class="space-y-2 max-h-72 overflow-y-auto"></div>
 
-            <div class="pt-2 border-t border-slate-100 flex justify-end">
+            <div class="pt-2 border-t border-slate-100 flex flex-wrap justify-end gap-2">
+                <button onclick="openJkmeEventModalFromDay()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow-xs">
+                    📅 + Événement JKME
+                </button>
                 <button onclick="openAgendaEventModalFromDay()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow-xs">
                     ➕ Ajouter un événement ce jour
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL : ÉVÉNEMENT JKME PARTAGÉ (travail/garde/off/rdv, voir sharedAgenda/jkme) -->
+    <div id="jkme-event-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 id="jkme-event-modal-title" class="font-bold text-slate-800 text-lg">Événement JKME</h3>
+                <button onclick="closeJkmeEventModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            </div>
+
+            <p class="text-[11px] text-slate-400 -mt-2">Partagé avec l'agenda JKME (travail / garde / temps off / RDV). Pour les options avancées (récurrence, plage de plusieurs jours...), modifie directement dans JKME.</p>
+
+            <input type="hidden" id="jkme-event-id">
+            <p id="jkme-event-date-label" class="text-xs font-semibold text-slate-500"></p>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
+                <input type="date" id="jkme-event-date" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Type</label>
+                <div class="grid grid-cols-4 gap-1.5" id="jkme-event-type-group">
+                    <button type="button" data-type="rdv" onclick="setJkmeEventType('rdv')" class="jkme-type-btn px-1 py-2 rounded-xl border border-slate-200 bg-white text-slate-500 text-[11px] font-semibold transition-colors">RDV</button>
+                    <button type="button" data-type="travail" onclick="setJkmeEventType('travail')" class="jkme-type-btn px-1 py-2 rounded-xl border border-slate-200 bg-white text-slate-500 text-[11px] font-semibold transition-colors">Travail</button>
+                    <button type="button" data-type="garde" onclick="setJkmeEventType('garde')" class="jkme-type-btn px-1 py-2 rounded-xl border border-slate-200 bg-white text-slate-500 text-[11px] font-semibold transition-colors">Mon fils</button>
+                    <button type="button" data-type="off" onclick="setJkmeEventType('off')" class="jkme-type-btn px-1 py-2 rounded-xl border border-slate-200 bg-white text-slate-500 text-[11px] font-semibold transition-colors">Off</button>
+                </div>
+            </div>
+
+            <div id="jkme-event-title-wrap">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Titre</label>
+                <input type="text" id="jkme-event-title" placeholder="Ex : Dentiste..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400">
+            </div>
+
+            <div id="jkme-event-period-wrap" class="hidden">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Moment</label>
+                <select id="jkme-event-period" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 bg-white">
+                    <option value="matin">Matin</option>
+                    <option value="midi">Midi</option>
+                    <option value="apresmidi">Après-midi</option>
+                    <option value="soir">Soir</option>
+                </select>
+            </div>
+
+            <div id="jkme-event-time-wrap" class="grid grid-cols-2 gap-2">
+                <div class="min-w-0">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Heure début</label>
+                    <input type="time" id="jkme-event-start-time" class="w-full min-w-0 box-border px-2 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
+                </div>
+                <div class="min-w-0">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Heure fin</label>
+                    <input type="time" id="jkme-event-end-time" class="w-full min-w-0 box-border px-2 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-indigo-400">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Note (facultatif)</label>
+                <textarea id="jkme-event-note" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400"></textarea>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                <button id="btn-delete-jkme-event" onclick="deleteJkmeEventFromModal()" class="hidden px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">Supprimer</button>
+                <div class="flex gap-2 ml-auto">
+                    <button onclick="closeJkmeEventModal()" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-200 transition-colors">Annuler</button>
+                    <button onclick="saveJkmeEvent()" class="px-5 py-2 rounded-xl text-sm font-semibold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors shadow-xs">Enregistrer</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1394,7 +1466,7 @@
     <!-- FIREBASE AUTH & FIRESTORE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDocFromServer, getDoc, getDocs, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, getDocFromServer, getDoc, getDocs, collection, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
@@ -1421,6 +1493,33 @@
         const functionsInstance = getFunctions(app); // région par défaut us-central1 (adapte si tu as déployé ailleurs)
         const provider = new GoogleAuthProvider();
 
+        // ==== AGENDA PARTAGÉ AVEC JKME (demande du 29 septembre 2026) ====
+        // Deuxième app Firebase, pointée vers le projet de JKME (jkme-5bad3, distinct de
+        // lilytracker-995a0 ci-dessus), utilisée UNIQUEMENT pour lire/écrire la collection
+        // sharedAgenda (voir plus bas) : les événements travail/garde/off/rdv de JKME
+        // (sharedAgenda/jkme) et les événements personnels de LilyTracker désormais partagés avec
+        // JKME (sharedAgenda/lilytracker, qui remplace l'ancien champ agendaEvents du document
+        // principal ci-dessus — voir buildDataPayload plus bas). Un projet Firebase distinct ne
+        // peut pas réutiliser tel quel le jeton de connexion Google obtenu sur ce premier projet
+        // (chaque projet a son propre client OAuth) : une deuxième connexion Google indépendante
+        // est donc nécessaire (voir loginGoogle), mais une seule fois — Firebase la garde ensuite
+        // en mémoire comme la connexion principale, sans redemander quoi que ce soit aux prochaines
+        // visites. Les règles de sécurité Firestore de jkme-5bad3 limitent l'accès à cette seule
+        // collection aux comptes autorisés des deux applis.
+        const firebaseConfigJkme = {
+            apiKey: "AIzaSyAL06MCePH_S9PMdWTICLZf6jVBPBdcJp4",
+            authDomain: "jkme-5bad3.firebaseapp.com",
+            projectId: "jkme-5bad3",
+            storageBucket: "jkme-5bad3.firebasestorage.app",
+            messagingSenderId: "878455076160",
+            appId: "1:878455076160:web:4d4c025906a9899bf336a5",
+            measurementId: "G-800HW2EDWM"
+        };
+        const appJkme = initializeApp(firebaseConfigJkme, 'jkmeAgendaApp');
+        const dbJkme = getFirestore(appJkme);
+        const authJkme = getAuth(appJkme);
+        const providerJkme = new GoogleAuthProvider();
+
         // Seul ce compte Google (identifié par son UID Firebase) est autorisé à utiliser l'app.
         // Doit correspondre EXACTEMENT à l'UID autorisé dans les règles Firestore (firestore.rules) :
         // allow read, write: if request.auth != null && request.auth.uid == "...";
@@ -1433,11 +1532,35 @@
         let currentUserDocRef = null;
         let dailyBackupChecked = false;
 
+        // ---- Agenda partagé avec JKME (sharedAgenda/jkme, sharedAgenda/lilytracker) ----
+        let unsubscribeSharedJkme = null;
+        let unsubscribeSharedLily = null;
+        let sharedAgendaJkmeRef = null;
+        let sharedAgendaLilyRef = null;
+        // Copie en mémoire du champ agendaEvents lu dans l'ancien document principal, pour la
+        // migration one-shot uniquement (voir maybeMigrateAgendaEvents) — null tant que ce document
+        // n'a pas encore été chargé au moins une fois.
+        let legacyAgendaEventsForMigration = null;
+        let agendaMigrationChecked = false;
+
         // Connexion Google
-        const loginGoogle = () => {
-            signInWithPopup(auth, provider).catch(error => {
+        const loginGoogle = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
                 console.error("Erreur de connexion :", error);
-            });
+                return;
+            }
+            // Deuxième popup, indépendante, pour le projet Firebase de JKME (voir plus haut) : ne
+            // s'affiche qu'à la toute première connexion, la session étant ensuite conservée comme
+            // la connexion principale. Un échec ici (popup bloquée, annulée...) n'empêche pas
+            // d'utiliser LilyTracker normalement : seuls les événements partagés avec JKME resteront
+            // invisibles tant que cette deuxième connexion n'aura pas réussi.
+            try {
+                await signInWithPopup(authJkme, providerJkme);
+            } catch (error) {
+                console.warn("Connexion à l'agenda partagé JKME impossible (le reste de LilyTracker fonctionne normalement) :", error);
+            }
         };
 
         // Déconnexion
@@ -1553,7 +1676,14 @@
                         window.planGoals = data.planGoals || window.planGoals;
                         window.recipeCategories = data.recipeCategories || window.recipeCategories;
                         window.recipes = data.recipes || window.recipes;
-                        window.agendaEvents = data.agendaEvents || window.agendaEvents;
+                        // agendaEvents ne vit plus dans ce document principal (voir buildDataPayload) : il
+                        // vit désormais dans sharedAgenda/lilytracker, sur le projet Firebase de JKME
+                        // (voir authJkme/dbJkme plus haut et l'écoute temps réel juste après ce bloc), pour
+                        // pouvoir être lu/écrit par les deux applis. On garde une copie ici, en mémoire
+                        // seulement, pour la migration one-shot des événements déjà existants (voir
+                        // maybeMigrateAgendaEvents) — jamais réappliquée à window.agendaEvents directement.
+                        legacyAgendaEventsForMigration = Array.isArray(data.agendaEvents) ? data.agendaEvents : [];
+                        maybeMigrateAgendaEvents();
                         window.sportMeasurements = data.sportMeasurements || window.sportMeasurements;
                         window.sportActivities = data.sportActivities || window.sportActivities;
                         window.mealPlans = data.mealPlans || window.mealPlans;
@@ -1644,6 +1774,88 @@
             }
         });
 
+        // Migration one-shot des événements déjà présents dans l'ancien document principal
+        // (legacyAgendaEventsForMigration) vers sharedAgenda/lilytracker, la première fois que ce
+        // document n'existe pas encore. Appelée à la fois depuis l'écoute du document principal
+        // (dès que les anciennes données sont connues) et depuis l'écoute ci-dessous de l'agenda
+        // partagé (dès que la connexion au projet JKME est prête) : selon lequel des deux arrive en
+        // second, c'est cet appel-là qui aboutit réellement (l'autre se contente de vérifier que les
+        // deux conditions ne sont pas encore réunies et ne fait rien).
+        async function maybeMigrateAgendaEvents() {
+            if (agendaMigrationChecked) return;
+            if (!sharedAgendaLilyRef) return; // connexion au projet JKME pas encore prête
+            if (legacyAgendaEventsForMigration === null) return; // document principal pas encore chargé
+            agendaMigrationChecked = true;
+            if (!legacyAgendaEventsForMigration.length) return; // rien à migrer
+            try {
+                const snap = await getDocFromServer(sharedAgendaLilyRef);
+                if (snap.exists()) return; // déjà migré, ou déjà créé depuis LilyTracker/JKME entretemps
+                await setDoc(sharedAgendaLilyRef, { agendaEvents: legacyAgendaEventsForMigration, updatedAt: serverTimestamp() });
+            } catch (err) {
+                console.warn("Migration de l'agenda vers sharedAgenda/lilytracker impossible :", err);
+                agendaMigrationChecked = false; // on retentera au prochain chargement
+            }
+        }
+
+        // Écoute d'état de connexion pour le deuxième projet Firebase (JKME, voir authJkme plus
+        // haut) : indépendante de la connexion principale, gère uniquement l'agenda partagé.
+        onAuthStateChanged(authJkme, (userJkme) => {
+            if (unsubscribeSharedJkme) { unsubscribeSharedJkme(); unsubscribeSharedJkme = null; }
+            if (unsubscribeSharedLily) { unsubscribeSharedLily(); unsubscribeSharedLily = null; }
+
+            if (!userJkme) {
+                sharedAgendaJkmeRef = null;
+                sharedAgendaLilyRef = null;
+                window.foreignJkmeEvents = {};
+                if (typeof renderAgenda === 'function') renderAgenda();
+                return;
+            }
+
+            sharedAgendaJkmeRef = doc(dbJkme, 'sharedAgenda', 'jkme');
+            sharedAgendaLilyRef = doc(dbJkme, 'sharedAgenda', 'lilytracker');
+
+            // Événements natifs JKME (travail/garde/off/rdv), affichés dans LilyTracker et
+            // modifiables depuis ici (voir openJkmeEventModal) sans jamais passer par
+            // window.agendaEvents, qui ne connaît que le format natif de LilyTracker.
+            unsubscribeSharedJkme = onSnapshot(sharedAgendaJkmeRef, (snap) => {
+                if (snap.metadata.hasPendingWrites) return;
+                window.foreignJkmeEvents = snap.exists() ? (snap.data().days || {}) : {};
+                if (typeof renderAgenda === 'function') renderAgenda();
+                if (window.agendaDayModalDate && typeof openAgendaDayModal === 'function') {
+                    openAgendaDayModal(window.agendaDayModalDate);
+                }
+            }, (err) => console.warn("Erreur d'écoute de l'agenda JKME partagé :", err));
+
+            // Événements personnels de LilyTracker elle-même, désormais stockés ici plutôt que dans
+            // le document principal (voir buildDataPayload) pour pouvoir être lus/écrits par JKME.
+            unsubscribeSharedLily = onSnapshot(sharedAgendaLilyRef, (snap) => {
+                if (snap.metadata.hasPendingWrites) return;
+                if (snap.exists()) {
+                    window.agendaEvents = snap.data().agendaEvents || [];
+                    if (typeof renderAgenda === 'function') renderAgenda();
+                }
+                maybeMigrateAgendaEvents();
+            }, (err) => console.warn("Erreur d'écoute de l'agenda LilyTracker partagé :", err));
+
+            maybeMigrateAgendaEvents();
+        });
+
+        // Ponts vers le <script> classique plus bas (portée séparée du <script type="module">
+        // ci-dessus, comme setDoc/doc/serverTimestamp/sharedAgendaJkmeRef/sharedAgendaLilyRef, tous
+        // inaccessibles depuis là-bas sans passer par window — même raison que window.saveData déjà
+        // utilisé ailleurs dans ce fichier) : écriture effective de l'agenda partagé, appelée depuis
+        // scheduleAgendaEventsSync/scheduleForeignJkmeEventsSync (voir <script> classique).
+        window.__isSharedAgendaLilyReady = function () { return !!sharedAgendaLilyRef; };
+        window.__isSharedAgendaJkmeReady = function () { return !!sharedAgendaJkmeRef; };
+        window.__writeSharedAgendaLily = async function (agendaEventsArr) {
+            if (!sharedAgendaLilyRef) return;
+            await setDoc(sharedAgendaLilyRef, { agendaEvents: agendaEventsArr, updatedAt: serverTimestamp() });
+        };
+        window.__writeSharedAgendaJkme = async function (daysObj) {
+            if (!sharedAgendaJkmeRef) return;
+            await setDoc(sharedAgendaJkmeRef, { days: daysObj, updatedAt: serverTimestamp() });
+        };
+
         // --- Connexion / synchronisation Withings ---
         window.connectWithings = function() {
             if (!auth.currentUser) {
@@ -1703,7 +1915,12 @@
                 planGoals: window.planGoals,
                 recipeCategories: window.recipeCategories,
                 recipes: window.recipes,
-                agendaEvents: window.agendaEvents,
+                // agendaEvents n'est plus inclus ici : depuis le partage d'agenda avec JKME, il vit
+                // dans sharedAgenda/lilytracker (projet Firebase de JKME) plutôt que dans ce document
+                // — sinon JKME devrait avoir accès à TOUT le contenu de ce document (budget, santé...)
+                // pour ne synchroniser que l'agenda. maybeRunDailyBackup() le rajoute explicitement
+                // dans la copie qu'il enregistre, pour que la sauvegarde quotidienne continue de le
+                // couvrir (voir plus bas).
                 sportMeasurements: window.sportMeasurements,
                 sportActivities: window.sportActivities,
                 mealPlans: window.mealPlans,
@@ -1786,6 +2003,10 @@
 
                 const payload = buildDataPayload();
                 payload._backupCreatedAt = now.toISOString();
+                // agendaEvents n'est plus dans buildDataPayload() (voir plus haut) : on le rajoute ici
+                // explicitement pour que la sauvegarde quotidienne continue de couvrir l'agenda, pas
+                // seulement le reste des données.
+                payload.agendaEvents = window.agendaEvents;
                 const safePayload = JSON.parse(JSON.stringify(payload));
                 await setDoc(backupRef, safePayload);
                 renderAutoBackupStatus(dateStr);
@@ -1889,7 +2110,19 @@
                 window.planGoals = data.planGoals || window.planGoals;
                 window.recipeCategories = data.recipeCategories || window.recipeCategories;
                 window.recipes = data.recipes || window.recipes;
-                window.agendaEvents = data.agendaEvents || window.agendaEvents;
+                // data.agendaEvents (voir maybeRunDailyBackup, qui l'ajoute explicitement) : à
+                // restaurer aussi dans sharedAgenda/lilytracker, sans quoi la sauvegarde restaurerait
+                // tout SAUF l'agenda partagé avec JKME — agendaEvents n'étant plus dans
+                // buildDataPayload() depuis le partage d'agenda.
+                const restoredAgendaEvents = Array.isArray(data.agendaEvents) ? data.agendaEvents : window.agendaEvents;
+                window.agendaEvents = restoredAgendaEvents;
+                if (sharedAgendaLilyRef) {
+                    try {
+                        await setDoc(sharedAgendaLilyRef, { agendaEvents: restoredAgendaEvents, updatedAt: serverTimestamp() });
+                    } catch (err) {
+                        console.warn("Restauration de l'agenda partagé (JKME) impossible :", err);
+                    }
+                }
                 window.sportMeasurements = data.sportMeasurements || window.sportMeasurements;
                 window.sportActivities = data.sportActivities || window.sportActivities;
                 window.mealPlans = data.mealPlans || window.mealPlans;
@@ -1957,6 +2190,12 @@
         // type: 'garde' | 'pas_garde' | 'vacances' | 'weekend' | 'anniversaire'
         // start/end au format 'YYYY-MM-DD'. recurring = true pour les événements qui se répètent chaque année (anniversaires).
         window.agendaEvents = [];
+        // Événements natifs JKME (travail/garde/off/rdv) partagés en lecture/écriture avec cette
+        // appli (voir sharedAgenda/jkme, chargé par l'écoute temps réel définie plus haut dans le
+        // <script type="module">) : structure native de JKME, { "AAAA-MM-JJ": [ {id, time, endTime,
+        // title, note, startDate, endDate, type, period?, recurrenceId?}, ... ] }, jamais convertie
+        // dans le format agendaEvents ci-dessus — getForeignJkmeEventsForDate() la lit directement.
+        window.foreignJkmeEvents = {};
 
         // --- DONNÉES RECETTES ---
         window.recipeCategories = [
@@ -2307,6 +2546,146 @@
             return window.agendaEvents.filter(ev => eventOccursOnDate(ev, dateObj));
         }
 
+        // ---------- ÉVÉNEMENTS JKME PARTAGÉS (travail/garde/off/rdv, voir sharedAgenda/jkme) ----------
+        // Contrairement à agendaEvents ci-dessus (règle de récurrence calculée à l'affichage),
+        // window.foreignJkmeEvents est déjà organisé par jour (JKME matérialise chaque occurrence,
+        // y compris les événements sur plusieurs jours ou récurrents) : pas besoin de recalculer quoi
+        // que ce soit, juste lire la bonne clé.
+        function getForeignJkmeEventsForDate(dateObj) {
+            const dateStr = formatDateISO(dateObj);
+            return (window.foreignJkmeEvents && window.foreignJkmeEvents[dateStr]) || [];
+        }
+
+        const JKME_TYPE_COLORS = { rdv: '#C4574F', travail: '#C98A2E', garde: '#B15590', off: '#7B8A80' };
+        const JKME_PERIOD_LABELS = { matin: 'Matin', midi: 'Midi', apresmidi: 'Aprem', soir: 'Soir' };
+        // Même mapping que WORK_PERIOD_BASE_HOUR côté JKME (fichier index.html du repo
+        // aurelie-martial/jkme) : chaque moment de la journée démarre à une heure de base pour un
+        // premier créneau d'1h, et s'enchaîne d'une heure en cas de créneau déjà posé sur ce moment.
+        const JKME_WORK_PERIOD_BASE_HOUR = { matin: 9, midi: 12, apresmidi: 14, soir: 18 };
+
+        function jkmeMinutesToTime(mins) {
+            const h = Math.floor(mins / 60), m = mins % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+
+        function jkmeTimeToMinutes(t) {
+            if (!t) return 0;
+            const [h, m] = t.split(':').map(Number);
+            return h * 60 + (m || 0);
+        }
+
+        // Port du même calcul que nextWorkSlotTime() côté JKME, pour proposer une heure cohérente
+        // avec les créneaux déjà posés ce jour-là (par JKME ou par LilyTracker) sur le même moment.
+        function nextJkmeWorkSlotTime(period, dayKey, excludeId) {
+            const base = JKME_WORK_PERIOD_BASE_HOUR[period];
+            if (base == null || !dayKey) return null;
+            const dayEvents = (window.foreignJkmeEvents && window.foreignJkmeEvents[dayKey]) || [];
+            const takenHours = new Set(
+                dayEvents
+                    .filter(ev => ev.type === 'travail' && ev.period === period && String(ev.id) !== String(excludeId) && ev.time)
+                    .map(ev => Math.floor(jkmeTimeToMinutes(ev.time) / 60))
+            );
+            let h = base;
+            while (takenHours.has(h)) h++;
+            return [jkmeMinutesToTime(h * 60), jkmeMinutesToTime((h + 1) * 60)];
+        }
+
+        function jkmeEventLabel(ev) {
+            if (ev.type === 'travail') return `💼 ${JKME_PERIOD_LABELS[ev.period] || ''}`.trim();
+            if (ev.type === 'garde') return `👦 ${ev.title || 'Mon fils'}`;
+            if (ev.type === 'off') return `🌙 ${ev.title || 'Temps off'}`;
+            return `📌 ${ev.title || 'RDV'}`;
+        }
+
+        function renderJkmeEventPill(ev) {
+            const color = JKME_TYPE_COLORS[ev.type] || JKME_TYPE_COLORS.rdv;
+            const label = jkmeEventLabel(ev);
+            return `<div class="text-[9px] px-1 py-0.5 truncate rounded-md font-semibold mt-0.5" style="background-color:${color}1f; color:${color}; border:1px dashed ${color}80;" title="${label} · Partagé depuis JKME">${label}</div>`;
+        }
+
+        // Un même événement JKME peut apparaître sous plusieurs clés-jour (plage de plusieurs jours,
+        // occurrence d'une série récurrente) : les fonctions ci-dessous opèrent par id, sur TOUTES ses
+        // clés-jour à la fois, pour rester cohérentes avec updateEventEverywhere/deleteEventEverywhere
+        // côté JKME (fichier index.html du repo aurelie-martial/jkme).
+        function findForeignJkmeEventById(id) {
+            const days = window.foreignJkmeEvents || {};
+            for (const key of Object.keys(days)) {
+                const found = (days[key] || []).find(e => String(e.id) === String(id));
+                if (found) return found;
+            }
+            return null;
+        }
+
+        function updateForeignJkmeEventEverywhere(id, updatedFields) {
+            const days = window.foreignJkmeEvents || {};
+            Object.keys(days).forEach(key => {
+                (days[key] || []).forEach(ev => {
+                    if (String(ev.id) === String(id)) {
+                        Object.assign(ev, updatedFields);
+                        if (updatedFields.type !== 'travail') delete ev.period;
+                    }
+                });
+            });
+        }
+
+        function deleteForeignJkmeEventEverywhere(id) {
+            const days = window.foreignJkmeEvents || {};
+            Object.keys(days).forEach(key => {
+                days[key] = (days[key] || []).filter(ev => String(ev.id) !== String(id));
+                if (!days[key].length) delete days[key];
+            });
+        }
+
+        // Édition simplifiée depuis LilyTracker : contrairement à JKME, pas de plage de plusieurs
+        // jours ni de récurrence bimensuelle pour un événement créé ici (voir #jkme-event-modal) —
+        // pour ces options avancées, ouvrir directement JKME. La date n'est modifiable qu'à la
+        // création (voir openJkmeEventModal) : la changer en édition dupliquerait/déplacerait
+        // l'événement sans mettre à jour ses autres occurrences éventuelles.
+        function createForeignJkmeEvent(dateStr, fields) {
+            if (!window.foreignJkmeEvents) window.foreignJkmeEvents = {};
+            if (!window.foreignJkmeEvents[dateStr]) window.foreignJkmeEvents[dateStr] = [];
+            const ev = Object.assign({ id: Date.now() + Math.random(), startDate: dateStr, endDate: dateStr }, fields);
+            window.foreignJkmeEvents[dateStr].push(ev);
+        }
+
+        let agendaEventsSyncTimer = null;
+        // Enregistre window.agendaEvents (événements LilyTracker) dans sharedAgenda/lilytracker —
+        // remplace l'ancien saveData() pour ces événements, qui ne vivent plus dans le document
+        // principal (voir buildDataPayload).
+        function scheduleAgendaEventsSync() {
+            if (!window.__isSharedAgendaLilyReady || !window.__isSharedAgendaLilyReady()) {
+                console.warn("Agenda partagé avec JKME non connecté : cette modification reste locale pour l'instant.");
+                return;
+            }
+            clearTimeout(agendaEventsSyncTimer);
+            agendaEventsSyncTimer = setTimeout(async () => {
+                try {
+                    const safeEvents = JSON.parse(JSON.stringify(window.agendaEvents));
+                    await window.__writeSharedAgendaLily(safeEvents);
+                } catch (err) {
+                    console.error("Erreur Firestore (agenda partagé) :", err);
+                }
+            }, 500);
+        }
+
+        let foreignJkmeEventsSyncTimer = null;
+        // Enregistre window.foreignJkmeEvents (événements natifs JKME) dans sharedAgenda/jkme.
+        function scheduleForeignJkmeEventsSync() {
+            if (!window.__isSharedAgendaJkmeReady || !window.__isSharedAgendaJkmeReady()) {
+                console.warn("Agenda partagé avec JKME non connecté : cette modification reste locale pour l'instant.");
+                return;
+            }
+            clearTimeout(foreignJkmeEventsSyncTimer);
+            foreignJkmeEventsSyncTimer = setTimeout(async () => {
+                try {
+                    const safeDays = JSON.parse(JSON.stringify(window.foreignJkmeEvents));
+                    await window.__writeSharedAgendaJkme(safeDays);
+                } catch (err) {
+                    console.error("Erreur Firestore (agenda JKME, depuis LilyTracker) :", err);
+                }
+            }, 500);
+        }
+
         // Position d'un jour au sein d'une "série" d'un événement-bandeau (celui-ci pouvant se répéter,
         // ex: 1 semaine sur 2) : permet d'arrondir uniquement les extrémités visibles pour donner
         // l'impression d'une barre continue sur plusieurs jours, même si chaque jour est une case séparée.
@@ -2402,19 +2781,30 @@
             const allEvents = getAgendaEventsForDate(dateObj);
             const bannerEvents = allEvents.filter(ev => ev.banner);
             const pillEvents = allEvents.filter(ev => !ev.banner);
+            // Événements JKME partagés (voir sharedAgenda/jkme) : déjà organisés par jour, jamais de
+            // bandeau (ce champ n'existe pas côté JKME), toujours affichés en pastille.
+            const jkmeEvents = getForeignJkmeEventsForDate(dateObj);
 
             const bgClass = muted ? 'bg-slate-50' : (weekend ? 'bg-slate-100' : 'bg-white');
             const borderClass = isToday ? 'border-indigo-400 ring-1 ring-indigo-200' : (muted ? 'border-dashed border-slate-200' : 'border-slate-100');
             const mutedClass = muted ? 'opacity-40' : '';
             const numberClass = isToday ? 'text-indigo-600' : (muted ? 'text-slate-400' : 'text-slate-600');
 
+            // Pastilles natives d'abord, puis JKME dans les emplacements restants (3 au total,
+            // "+N" combiné) — les pastilles JKME ne sont jamais glissables (agendaEventDragStart
+            // n'opère que sur window.agendaEvents), donc pas d'attribut draggable dessus.
+            const shownNative = pillEvents.slice(0, 3);
+            const shownJkme = jkmeEvents.slice(0, Math.max(0, 3 - shownNative.length));
+            const combinedOverflow = (pillEvents.length + jkmeEvents.length) - (shownNative.length + shownJkme.length);
+
             return `
                 <div class="agenda-day-cell min-h-[70px] sm:min-h-[90px] p-1 sm:p-1.5 rounded-lg border ${borderClass} ${bgClass} ${mutedClass} hover:border-indigo-300 cursor-pointer transition-colors overflow-hidden ${isPast ? 'day-past-hatch' : ''}" onclick="openAgendaDayModal('${dateStr}')" ondragover="agendaEventDragOver(event, this)" ondragleave="agendaEventDragLeave(event, this)" ondrop="agendaEventDrop(event, this, '${dateStr}')">
                     <div class="text-[10px] sm:text-xs font-bold ${numberClass}">${day}</div>
                     ${bannerEvents.map(ev => renderAgendaBannerBar(ev, dateObj, '-mx-1 sm:-mx-1.5')).join('')}
                     <div class="space-y-0.5">
-                        ${pillEvents.slice(0, 3).map(ev => renderAgendaEventPill(ev, true, dateStr)).join('')}
-                        ${pillEvents.length > 3 ? `<div class="text-[9px] text-slate-400 font-medium">+${pillEvents.length - 3}</div>` : ''}
+                        ${shownNative.map(ev => renderAgendaEventPill(ev, true, dateStr)).join('')}
+                        ${shownJkme.map(ev => renderJkmeEventPill(ev)).join('')}
+                        ${combinedOverflow > 0 ? `<div class="text-[9px] text-slate-400 font-medium">+${combinedOverflow}</div>` : ''}
                     </div>
                 </div>
             `;
@@ -2471,7 +2861,7 @@
             if (ev.end) ev.end = shiftDateStr(ev.end, delta);
             if (ev.until) ev.until = shiftDateStr(ev.until, delta);
 
-            saveData();
+            scheduleAgendaEventsSync();
             renderAgenda();
         }
 
@@ -2530,12 +2920,13 @@
             document.getElementById('agenda-day-modal-title').innerText = label;
 
             const events = getAgendaEventsForDate(dateObj);
+            const jkmeEvents = getForeignJkmeEventsForDate(dateObj);
             const listEl = document.getElementById('agenda-day-modal-events');
 
-            if (events.length === 0) {
+            if (events.length === 0 && jkmeEvents.length === 0) {
                 listEl.innerHTML = `<p class="text-sm text-center text-slate-400 py-4">Aucun événement ce jour-là.</p>`;
             } else {
-                listEl.innerHTML = events.map(ev => {
+                const nativeHtml = events.map(ev => {
                     const label = ev.title ? `${ev.emoji || '📌'} ${ev.title}` : `${ev.emoji || '📌'}`;
                     return `
                         <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
@@ -2549,6 +2940,25 @@
                         </div>
                     `;
                 }).join('');
+                // Événements JKME (voir sharedAgenda/jkme) : un seul bouton "Modifier", qui ouvre
+                // #jkme-event-modal (celui-ci propose sa propre suppression) — même choix que côté
+                // JKME pour les événements personnels LilyTracker, voir openPersoModal.
+                const jkmeHtml = jkmeEvents.map(ev => {
+                    const color = JKME_TYPE_COLORS[ev.type] || JKME_TYPE_COLORS.rdv;
+                    const label = jkmeEventLabel(ev);
+                    return `
+                        <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-dashed border-slate-200 hover:bg-slate-50 transition-colors">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="text-xs px-2 py-1 rounded-md font-semibold truncate" style="background-color:${color}1f; color:${color}; border:1px dashed ${color}80;">${label}</span>
+                                <span class="text-[10px] text-slate-400 shrink-0">· JKME</span>
+                            </div>
+                            <div class="flex gap-1 shrink-0">
+                                <button onclick="openJkmeEventModal('${dateStr}', '${ev.id}')" class="text-slate-400 hover:text-indigo-600 p-1 text-xs" title="Modifier">✏️</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                listEl.innerHTML = nativeHtml + jkmeHtml;
             }
 
             document.getElementById('agenda-day-modal').classList.remove('hidden');
@@ -2564,11 +2974,121 @@
             openAgendaEventModal(dateStr);
         }
 
+        function openJkmeEventModalFromDay() {
+            const dateStr = window.agendaDayModalDate;
+            openJkmeEventModal(dateStr, null);
+        }
+
         function deleteAgendaEventFromDay(eventId) {
             window.agendaEvents = window.agendaEvents.filter(e => e.id !== eventId);
-            saveData();
+            scheduleAgendaEventsSync();
             renderAgenda();
             if (window.agendaDayModalDate) openAgendaDayModal(window.agendaDayModalDate);
+        }
+
+        // --- Modale : événement JKME partagé (travail/garde/off/rdv) ---
+        function setJkmeEventType(type) {
+            const group = document.getElementById('jkme-event-type-group');
+            group.dataset.value = type;
+            group.querySelectorAll('.jkme-type-btn').forEach(btn => {
+                const active = btn.dataset.type === type;
+                const color = JKME_TYPE_COLORS[btn.dataset.type];
+                btn.style.backgroundColor = active ? color : '#fff';
+                btn.style.color = active ? '#fff' : '#64748b';
+                btn.style.borderColor = active ? color : '#e2e8f0';
+            });
+            const isTravail = type === 'travail';
+            document.getElementById('jkme-event-period-wrap').classList.toggle('hidden', !isTravail);
+            document.getElementById('jkme-event-time-wrap').classList.toggle('hidden', type !== 'rdv');
+            document.getElementById('jkme-event-title-wrap').classList.toggle('hidden', type === 'garde' || type === 'off');
+        }
+
+        // dateStr : jour concerné (création) ou jour d'affichage (édition, voir openAgendaDayModal).
+        // id : null pour une création, sinon l'id de l'événement JKME existant à modifier.
+        function openJkmeEventModal(dateStr, id) {
+            const ev = id ? findForeignJkmeEventById(id) : null;
+            document.getElementById('jkme-event-id').value = ev ? ev.id : '';
+            const dateVal = ev ? ev.startDate : dateStr;
+            const dateInput = document.getElementById('jkme-event-date');
+            dateInput.value = dateVal;
+            dateInput.disabled = !!ev;
+            const [y, m, d] = dateVal.split('-');
+            document.getElementById('jkme-event-date-label').textContent = ev
+                ? `Le ${d}/${m}/${y} — date non modifiable ici (voir JKME pour la déplacer)`
+                : '';
+            document.getElementById('jkme-event-title').value = ev ? (ev.title || '') : '';
+            document.getElementById('jkme-event-note').value = ev ? (ev.note || '') : '';
+            document.getElementById('jkme-event-start-time').value = ev ? (ev.time || '') : '';
+            document.getElementById('jkme-event-end-time').value = ev ? (ev.endTime || '') : '';
+            document.getElementById('jkme-event-period').value = (ev && ev.period) ? ev.period : 'matin';
+            const type = ev ? (['travail', 'garde', 'off'].includes(ev.type) ? ev.type : 'rdv') : 'rdv';
+            setJkmeEventType(type);
+            document.getElementById('jkme-event-modal-title').textContent = ev ? "Modifier l'événement JKME" : 'Nouvel événement JKME';
+            document.getElementById('btn-delete-jkme-event').classList.toggle('hidden', !ev);
+
+            document.getElementById('agenda-day-modal').classList.add('hidden');
+            document.getElementById('jkme-event-modal').classList.remove('hidden');
+        }
+
+        // Referme le modal JKME et redonne à voir le modal du jour en dessous (comme avant son
+        // ouverture) plutôt que de tout fermer d'un coup — même choix que openPersoModal côté JKME.
+        function closeJkmeEventModal() {
+            document.getElementById('jkme-event-modal').classList.add('hidden');
+            if (window.agendaDayModalDate) openAgendaDayModal(window.agendaDayModalDate);
+        }
+
+        function saveJkmeEvent() {
+            const idVal = document.getElementById('jkme-event-id').value;
+            const type = document.getElementById('jkme-event-type-group').dataset.value || 'rdv';
+            let title = document.getElementById('jkme-event-title').value.trim();
+            const note = document.getElementById('jkme-event-note').value.trim();
+            const dateVal = document.getElementById('jkme-event-date').value;
+
+            if (type === 'garde') {
+                if (!title) title = 'Mon fils';
+            } else if (type === 'off') {
+                if (!title) title = 'Temps off';
+            } else if (!title) {
+                alert('Merci de renseigner un titre.');
+                return;
+            }
+            if (!dateVal) {
+                alert('Merci de renseigner une date.');
+                return;
+            }
+
+            let time = '', endTime = '', period = '';
+            if (type === 'travail') {
+                period = document.getElementById('jkme-event-period').value;
+                const slot = nextJkmeWorkSlotTime(period, dateVal, idVal);
+                if (slot) { [time, endTime] = slot; }
+            } else if (type === 'rdv') {
+                time = document.getElementById('jkme-event-start-time').value || '';
+                endTime = document.getElementById('jkme-event-end-time').value || '';
+            }
+
+            if (idVal) {
+                const fields = { type, title, note, time, endTime };
+                if (type === 'travail') fields.period = period;
+                updateForeignJkmeEventEverywhere(idVal, fields);
+            } else {
+                const fields = { type, title, note, time, endTime };
+                if (period) fields.period = period;
+                createForeignJkmeEvent(dateVal, fields);
+            }
+
+            scheduleForeignJkmeEventsSync();
+            renderAgenda();
+            closeJkmeEventModal();
+        }
+
+        function deleteJkmeEventFromModal() {
+            const idVal = document.getElementById('jkme-event-id').value;
+            if (!idVal) return;
+            deleteForeignJkmeEventEverywhere(idVal);
+            scheduleForeignJkmeEventsSync();
+            renderAgenda();
+            closeJkmeEventModal();
         }
 
         // --- Modale de création / édition d'événement ---
@@ -2682,7 +3202,7 @@
                 });
             }
 
-            saveData();
+            scheduleAgendaEventsSync();
             closeAgendaEventModal();
             renderAgenda();
         }
@@ -2691,7 +3211,7 @@
             const idVal = document.getElementById('agenda-event-id').value;
             if (!idVal) return;
             window.agendaEvents = window.agendaEvents.filter(e => e.id !== parseInt(idVal));
-            saveData();
+            scheduleAgendaEventsSync();
             closeAgendaEventModal();
             renderAgenda();
         }
