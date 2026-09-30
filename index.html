@@ -1376,12 +1376,14 @@
                 <button onclick="closeAgendaDayModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
 
-            <!-- Pas de scroll interne sur desktop (sm+) : tous les créneaux du jour tiennent dans un
-                 seul aperçu, sans avoir à faire défiler une petite zone à l'intérieur de la fenêtre
-                 (le modal lui-même peut toujours défiler avec la page si un jour a vraiment beaucoup
-                 d'événements, voir overflow-y-auto sur #agenda-day-modal). Gardé en mobile (écran
-                 plus petit) pour éviter que le modal ne dépasse trop la hauteur visible. -->
-            <div id="agenda-day-modal-events" class="space-y-2 max-h-72 overflow-y-auto sm:max-h-none sm:overflow-visible"></div>
+            <!-- Plus aucun scroll interne, mobile compris (retiré le 30 septembre 2026 : le plafond
+                 max-h-72 + overflow-y-auto laissé sur mobile lors du premier correctif obligeait
+                 encore à faire défiler une petite zone à l'intérieur de la fenêtre pour voir tous les
+                 créneaux du jour). Le modal entier peut toujours défiler avec la page si un jour a
+                 vraiment beaucoup d'événements (voir overflow-y-auto sur #agenda-day-modal
+                 ci-dessus) : c'est donc la page qui défile, plus une zone interne, sur toutes les
+                 tailles d'écran. -->
+            <div id="agenda-day-modal-events" class="space-y-2"></div>
 
             <div class="pt-2 border-t border-slate-100 flex flex-wrap justify-end gap-2">
                 <button onclick="openJkmeEventModalFromDay()" class="bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 font-medium px-4 py-2 rounded-xl text-sm transition-colors shadow-xs">
