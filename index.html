@@ -607,10 +607,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <!-- Même correctif que meal-planner-grid ci-dessous (onglet Recettes) : 1 colonne
-                         empilée verticalement sous sm, au lieu d'un seul jour visible à la fois avec
-                         défilement horizontal. Voir scrollSportWeekPlannerToToday plus bas. -->
-                    <div id="sport-week-planner-grid" class="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-7 gap-2 sm:gap-3">
+                    <div id="sport-week-planner-grid" class="p-4 sm:p-6 grid grid-cols-7 gap-2 sm:gap-3 min-w-[760px] sm:min-w-0">
                         <!-- Généré par JS -->
                     </div>
                 </div>
@@ -797,13 +794,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <!-- 1 colonne (les 7 jours empilés verticalement, défilement normal de la page)
-                         en dessous de sm, 7 colonnes côte à côte à partir de sm : avant, la grille
-                         restait à 7 colonnes même sur mobile (min-w-[912px]), avec un seul jour
-                         visible à la fois et un défilement HORIZONTAL pour voir les autres — la
-                         semaine entière n'était donc jamais visible d'un coup. Voir aussi
-                         scrollMealPlannerToToday plus bas, adapté en conséquence. -->
-                    <div id="meal-planner-grid" class="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-7 gap-2 sm:gap-3">
+                    <div id="meal-planner-grid" class="p-4 sm:p-6 grid grid-cols-7 gap-2 sm:gap-3 min-w-[912px] sm:min-w-0">
                         <!-- Généré par JS -->
                     </div>
                 </div>
@@ -4707,27 +4698,12 @@
             requestAnimationFrame(scrollMealPlannerToToday);
         }
 
-        // Amène le jour J dans la vue, sans qu'elle ait à le chercher manuellement.
+        // Fait défiler horizontalement le semainier pour amener la colonne du jour J tout à gauche
+        // (pas besoin de voir le jour précédent, surtout sur mobile où une seule colonne est visible).
         function scrollMealPlannerToToday() {
             if (window.mealWeekOffset !== 0) return; // seulement pertinent quand on affiche la semaine en cours
             const grid = document.getElementById('meal-planner-grid');
             if (!grid) return;
-            const todayIndex = (new Date().getDay() + 6) % 7; // 0 = lundi ... 6 = dimanche
-
-            // Sous sm (voir grid-cols-1 sm:grid-cols-7 plus haut, correction du 30 septembre 2026 :
-            // avant, la grille restait à 7 colonnes même sur mobile avec un seul jour visible à la
-            // fois, obligeant à défiler HORIZONTALEMENT pour voir le reste de la semaine — la
-            // semaine entière n'était donc jamais visible d'un coup) : les jours sont désormais
-            // empilés verticalement, on amène donc simplement la carte du jour dans la vue par un
-            // défilement VERTICAL normal de la page, au lieu de l'ancien défilement horizontal
-            // ci-dessous (qui ne s'applique plus qu'à partir de sm, où les 7 jours tiennent déjà
-            // côte à côte).
-            if (window.innerWidth < 640) {
-                const todayCol = grid.querySelector('[data-meal-day-col="' + todayIndex + '"]');
-                if (todayCol) todayCol.scrollIntoView({ block: 'nearest' });
-                return;
-            }
-
             const scrollContainer = grid.closest('.overflow-x-auto');
             if (!scrollContainer) return;
 
@@ -4736,6 +4712,8 @@
             if (totalWidth <= visibleWidth) return;
 
             const dayWidth = totalWidth / 7;
+            const todayIndex = (new Date().getDay() + 6) % 7; // 0 = lundi ... 6 = dimanche
+
             let target = dayWidth * todayIndex;
             target = Math.max(0, Math.min(target, totalWidth - visibleWidth));
             scrollContainer.scrollLeft = target;
@@ -4870,7 +4848,7 @@
                 }
 
                 html += `
-                    <div class="rounded-xl border ${borderClass} ${bgClass} p-2.5 flex flex-col gap-1.5 transition-colors ${isPast ? 'day-past-hatch' : ''}" data-sport-day-col="${i}">
+                    <div class="rounded-xl border ${borderClass} ${bgClass} p-2.5 flex flex-col gap-1.5 transition-colors ${isPast ? 'day-past-hatch' : ''}">
                         <div class="text-center">
                             <div class="text-[10px] font-bold uppercase tracking-wide ${isToday ? 'text-emerald-600' : 'text-slate-400'}">${sportWeekDayHeaders[i]}</div>
                             <div class="text-xs font-bold ${isToday ? 'text-emerald-700' : 'text-slate-600'}">${dateObj.getDate()}</div>
@@ -4889,20 +4867,12 @@
             requestAnimationFrame(scrollSportWeekPlannerToToday);
         }
 
-        // Amène le jour J dans la vue (même logique que scrollMealPlannerToToday ci-dessus, voir son
-        // commentaire pour le détail du correctif du 30 septembre 2026).
+        // Fait défiler horizontalement le semainier sport pour amener la colonne du jour J tout à
+        // gauche (même logique que pour le semainier repas).
         function scrollSportWeekPlannerToToday() {
             if (window.sportWeekOffset !== 0) return;
             const grid = document.getElementById('sport-week-planner-grid');
             if (!grid) return;
-            const todayIndex = (new Date().getDay() + 6) % 7;
-
-            if (window.innerWidth < 640) {
-                const todayCol = grid.querySelector('[data-sport-day-col="' + todayIndex + '"]');
-                if (todayCol) todayCol.scrollIntoView({ block: 'nearest' });
-                return;
-            }
-
             const scrollContainer = grid.closest('.overflow-x-auto');
             if (!scrollContainer) return;
 
@@ -4911,6 +4881,8 @@
             if (totalWidth <= visibleWidth) return;
 
             const dayWidth = totalWidth / 7;
+            const todayIndex = (new Date().getDay() + 6) % 7;
+
             let target = dayWidth * todayIndex;
             target = Math.max(0, Math.min(target, totalWidth - visibleWidth));
             scrollContainer.scrollLeft = target;
