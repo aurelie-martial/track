@@ -6368,6 +6368,16 @@
                 window.budgetPlanByMonth[key] = cloneBudgetPlan(source);
                 // Le bloc-notes ne se copie pas d'un mois à l'autre : chaque nouveau mois repart vide.
                 window.budgetPlanByMonth[key].notes = '';
+                // Le "Réel" des lignes "Variable régulier" ne doit pas non plus être repris du mois
+                // source (ce ne sont pas ses dépenses) : on le resynchronise avec les transactions déjà
+                // présentes pour ce nouveau mois (normalement aucune), au lieu de garder la valeur
+                // copiée par cloneBudgetPlan.
+                const norm = s => (s || '').trim().toLowerCase();
+                (window.budgetPlanByMonth[key].variable || []).forEach(l => {
+                    l.reel = window.budgetTransactions
+                        .filter(t => isDateInBudgetPeriod(t.date, monthDate) && norm(t.category) === norm(l.label))
+                        .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+                });
             }
             const plan = window.budgetPlanByMonth[key];
             if (typeof plan.notes !== 'string') plan.notes = '';
