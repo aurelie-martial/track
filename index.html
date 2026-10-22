@@ -6773,7 +6773,7 @@
             }
             window.budgetTransactions.push({
                 id: Date.now(),
-                date: formatDateISO(new Date()),
+                date: dateForFixeLineTransaction(line),
                 type: 'depense',
                 category: 'Fixe',
                 label: line.label || '',
@@ -6782,6 +6782,33 @@
             });
             saveData();
             renderBudget();
+        }
+
+        // Date à utiliser pour le pointage d'une charge fixe (bouton "+"), pour qu'elle s'ajoute dans
+        // le mois actuellement affiché (navigation Budget) et non dans le mois réel du jour où on
+        // clique. Si aujourd'hui tombe dans la période affichée (cas normal : on pointe le mois en
+        // cours), on garde la date du jour. Sinon, on reconstruit une date à l'intérieur de cette
+        // période : le jour de prélèvement de la ligne (debitDay) s'il est renseigné, sinon le 1er
+        // jour de la période.
+        function dateForFixeLineTransaction(line) {
+            const periodStart = getBudgetMonthDate();
+            const todayISO = formatDateISO(new Date());
+            if (isDateInBudgetPeriod(todayISO, periodStart)) return todayISO;
+
+            const { startISO, endISO } = getBudgetPeriodRange(periodStart);
+            const day = parseInt(line.debitDay, 10);
+            if (!isNaN(day) && day >= 1 && day <= 31) {
+                // Une période "AAAA-MM" couvre le 20 du mois M au 19 du mois M+1 (voir
+                // BUDGET_PERIOD_START_DAY) : le jour de prélèvement appartient au mois de début de
+                // la période s'il est >= 20, sinon au mois de fin.
+                const base = new Date(periodStart);
+                if (day < window.BUDGET_PERIOD_START_DAY) base.setMonth(base.getMonth() + 1);
+                const lastDayOfThatMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+                base.setDate(Math.min(day, lastDayOfThatMonth));
+                const candidate = formatDateISO(base);
+                if (candidate >= startISO && candidate < endISO) return candidate;
+            }
+            return startISO; // repli : le 1er jour de la période affichée
         }
 
         // Retire le pointage d'une charge fixe pour le mois affiché (bouton "−", visible une fois la
