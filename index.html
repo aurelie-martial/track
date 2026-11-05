@@ -1687,6 +1687,7 @@
                         window.habits = data.habits || window.habits;
                         window.moodHistory = data.moodHistory || window.moodHistory;
                         window.moodComments = data.moodComments || window.moodComments;
+                        window.habitRestDays = data.habitRestDays || window.habitRestDays;
                         window.todoData = data.todoData || window.todoData;
                         window.todoStarBlocks = data.todoStarBlocks || window.todoStarBlocks;
                         window.planCategories = data.planCategories || window.planCategories;
@@ -1956,6 +1957,7 @@
                 habits: window.habits,
                 moodHistory: window.moodHistory,
                 moodComments: window.moodComments,
+                habitRestDays: window.habitRestDays,
                 todoData: window.todoData,
                 todoStarBlocks: window.todoStarBlocks,
                 planCategories: window.planCategories,
@@ -2164,6 +2166,7 @@
                 window.habits = data.habits || window.habits;
                 window.moodHistory = data.moodHistory || window.moodHistory;
                 window.moodComments = data.moodComments || window.moodComments;
+                window.habitRestDays = data.habitRestDays || window.habitRestDays;
                 window.todoData = data.todoData || window.todoData;
                 window.todoStarBlocks = data.todoStarBlocks || window.todoStarBlocks;
                 window.planCategories = data.planCategories || window.planCategories;
@@ -2278,6 +2281,9 @@
         window.moodHistory = {};
         // Commentaire libre associé à une journée d'humeur, même clé que moodHistory.
         window.moodComments = {};
+        // Jours de pause (vacances, repos) : { '2026-9-4': true }. Ces jours sont désactivés pour
+        // toutes les habitudes et ne comptent pas dans le pourcentage de réussite.
+        window.habitRestDays = {};
         window.todoData = {
             "Airbnb": [{ id: 101, text: "Répondre aux messages", completed: false }],
             "TODO": [{ id: 105, text: "Exemple de tâche", completed: false }]
@@ -3456,7 +3462,10 @@
                                     const weekendClass = isWeekend ? 'bg-slate-100' : '';
                                     const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
 
-                                    catHtml += `<th class="day-header py-2 ${weekendClass} mobile-day-col ${isMobileVisible}"><span class="${highlightClass}">${d}</span></th>`;
+                                    const isRestHeader = !!(window.habitRestDays && window.habitRestDays[`2026-${monthIndex}-${d}`]);
+                                    const restHeaderClass = isRestHeader ? 'bg-amber-100 text-amber-700' : weekendClass;
+                                    const restHeaderTitle = isRestHeader ? 'Jour de pause — clique pour le réactiver' : 'Clique pour mettre ce jour en pause (vacances, repos)';
+                                    catHtml += `<th class="day-header py-2 ${restHeaderClass} mobile-day-col ${isMobileVisible} cursor-pointer hover:bg-amber-50" onclick="toggleHabitRestDay('2026-${monthIndex}-${d}')" title="${restHeaderTitle}"><span class="${highlightClass}">${d}</span></th>`;
                                 }
 
                 catHtml += `
@@ -3480,7 +3489,8 @@
                         const eventOccursToday = linkedEvent ? eventOccursOnDate(linkedEvent, checkDate) : false;
                         const isLinkedDisabledDay = linkedEvent ? (habit.linkedEventInvert ? !eventOccursToday : eventOccursToday) : false;
                         const isArchivedDay = !!(habit.deletedFrom && monthIndex === habit.deletedFrom.month && d >= habit.deletedFrom.day);
-                        const isDisabledDay = isArchivedDay || isLinkedDisabledDay;
+                        const isRestDay = !!(window.habitRestDays && window.habitRestDays[key]);
+                        const isDisabledDay = isArchivedDay || isLinkedDisabledDay || isRestDay;
                         const isDone = habit.history[key] || false;
 
                         if (isDisabledDay) {
@@ -3494,11 +3504,13 @@
                         const isMobileVisible = (d === selectedMobileDay || d === selectedMobileDay - 1) ? 'mobile-visible' : '';
 
                         if (isDisabledDay) {
-                            const disabledTitle = isArchivedDay
+                            const disabledTitle = isRestDay
+                                ? 'Jour de pause'
+                                : isArchivedDay
                                 ? `Habitude supprimée le ${habit.deletedFrom.day}/${habit.deletedFrom.month + 1}/2026`
                                 : `Désactivée ce jour : ${linkedEvent.emoji || '📌'} ${linkedEvent.title || ''}`;
                             daysHtml += `
-                                <td class="day-cell py-3 bg-slate-50 mobile-day-col ${isMobileVisible}" title="${disabledTitle}">
+                                <td class="day-cell py-3 ${isRestDay ? 'bg-amber-50' : 'bg-slate-50'} mobile-day-col ${isMobileVisible}" title="${disabledTitle}">
                                     <span class="text-slate-300 text-xs">–</span>
                                 </td>
                             `;
@@ -3571,7 +3583,8 @@
                 `;
                 for (let d = 1; d <= totalDays; d++) {
                     let catColumnTotal = 0;
-                    catHabits.forEach(h => { if(h.history[`2026-${monthIndex}-${d}`]) catColumnTotal++; });
+                    const restKey = `2026-${monthIndex}-${d}`;
+                    if (!(window.habitRestDays && window.habitRestDays[restKey])) catHabits.forEach(h => { if(h.history[restKey]) catColumnTotal++; });
                     const checkDate = new Date(2026, monthIndex, d);
                     const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
                     const weekendClass = isWeekend ? 'bg-slate-200/50' : '';
@@ -3646,6 +3659,14 @@
         }
 
         let categoryBlocksSortableInstance = null;
+
+        function toggleHabitRestDay(key) {
+            if (!window.habitRestDays) window.habitRestDays = {};
+            if (window.habitRestDays[key]) delete window.habitRestDays[key];
+            else window.habitRestDays[key] = true;
+            saveData();
+            renderHabits();
+        }
 
         function toggleHabitDay(habitId, key, isChecked) {
             const habit = habits.find(h => h.id === habitId);
