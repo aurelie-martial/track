@@ -199,6 +199,14 @@
             font-size: 12px !important;
         }
     </style>
+    <style>
+        /* Habitude non faite sur un jour passé : croix rouge à la place de la case vide */
+        input[type="checkbox"].habit-missed {
+            -webkit-appearance: none; appearance: none;
+            width: 1rem; height: 1rem; border: 1.5px solid #fca5a5; border-radius: 3px;
+            background: #fef2f2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23ef4444' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+        }
+    </style>
 </head>
 <body class="text-slate-700 min-h-screen flex flex-col">
 
@@ -3515,11 +3523,15 @@
                                 </td>
                             `;
                         } else {
+                            // Jour passé non fait : croix rouge à la place de la case vide
+                            const todayStart = new Date(realYear, realMonth, realDay);
+                            const isMissed = !isDone && checkDate < todayStart;
                             daysHtml += `
                                 <td class="day-cell py-3 ${weekendClass} mobile-day-col ${isMobileVisible}">
                                     <input type="checkbox" ${isDone ? 'checked' : ''}
                                         onclick="toggleHabitDay(${habit.id}, '${key}', this.checked)"
-                                        class="w-4 h-4 text-indigo-600 border-slate-300 rounded-sm focus:ring-indigo-400 cursor-pointer transition-transform duration-100 hover:scale-110">
+                                        ${isMissed ? 'title="Pas fait — clique pour cocher"' : ''}
+                                        class="${isMissed ? 'habit-missed' : ''} w-4 h-4 text-indigo-600 border-slate-300 rounded-sm focus:ring-indigo-400 cursor-pointer transition-transform duration-100 hover:scale-110">
                                 </td>
                             `;
                         }
