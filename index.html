@@ -934,7 +934,10 @@
                     <!-- Dépenses fixes -->
                     <div id="budget-plan-fixe-card" class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                         <div class="px-3 py-2 bg-rose-300 text-rose-900 flex items-center justify-between">
-                            <span class="text-xs font-bold uppercase tracking-wide">Fixe</span>
+                            <span class="flex items-center gap-2">
+                                <span class="text-xs font-bold uppercase tracking-wide">Fixe</span>
+                                <span id="budget-plan-fixe-remaining" class="text-xs font-bold normal-case" title="Total des charges fixes pas encore pointées en transaction ce mois-ci"></span>
+                            </span>
                             <span id="budget-plan-fixe-percent" class="text-xs font-bold bg-white/40 px-2 py-0.5 rounded-full">0% du salaire</span>
                         </div>
                         <div class="p-3">
@@ -7179,6 +7182,17 @@
                     .filter(t => isDateInBudgetPeriod(t.date, monthDateForFixe) && t.category === 'Fixe' && t.fixeLineId)
                     .map(t => t.fixeLineId)
             );
+
+            // Montant des charges fixes qui restent à passer en transaction (non pointées ce mois-ci)
+            if (section === 'fixe') {
+                const remainingEl = document.getElementById('budget-plan-fixe-remaining');
+                if (remainingEl) {
+                    const remaining = lines
+                        .filter(l => !loggedFixeLineIds.has(l.id))
+                        .reduce((sum, l) => sum + (parseFloat(l.prevu) || 0), 0);
+                    remainingEl.innerText = `· reste ${formatEuro(remaining)}`;
+                }
+            }
 
             // Pas d'en-tête de colonnes (Libellé/Montant/Prévu/Réel retirés) : les largeurs de
             // colonnes du tableau (table-fixed) sont donc portées directement par chaque ligne.
