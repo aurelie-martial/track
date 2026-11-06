@@ -200,10 +200,11 @@
         }
     </style>
     <style>
-        /* Case d'habitude à 3 états : grise avec tiret (non applicable) / coche verte (fait) / croix rouge (pas fait) */
-        .habit-cell-btn { width: 1.15rem; height: 1.15rem; border-radius: 4px; border: 1.5px solid #cbd5e1; background: #e2e8f0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: transform .1s; vertical-align: middle; }
+        /* Case d'habitude à 4 états : blanche (non remplie) / coche verte (fait) / croix rouge (pas fait) / grise avec tiret (non applicable) / coche verte (fait) / croix rouge (pas fait) */
+        .habit-cell-btn { width: 1.15rem; height: 1.15rem; border-radius: 4px; border: 1.5px solid #cbd5e1; background: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: transform .1s; vertical-align: middle; }
         .habit-cell-btn:hover { transform: scale(1.15); }
         .habit-cell-btn.done { background: #22c55e; border-color: #22c55e; }
+        .habit-cell-btn.na { background: #e2e8f0; border-color: #cbd5e1; }
         .habit-cell-btn.missed { background: #fef2f2; border-color: #f87171; }
         .habit-cell-btn svg { width: 100%; height: 100%; }
     </style>
@@ -3502,6 +3503,7 @@
                         const isDisabledDay = isArchivedDay || isLinkedDisabledDay || isRestDay;
                         const isDone = habit.history[key] === true;
                         const isMissed = habit.history[key] === 'missed';
+                        const isNA = habit.history[key] === 'na';
 
                         if (isDisabledDay) {
                             disabledDaysCount++;
@@ -3529,16 +3531,16 @@
                         } else {
                             const cellIcon = isDone
                                 ? '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-                                : (isMissed ? '<svg viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round"/></svg>' : '<svg viewBox="0 0 16 16"><path d="M4.5 8h7" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round"/></svg>');
+                                : (isMissed ? '<svg viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round"/></svg>' : (isNA ? '<svg viewBox="0 0 16 16"><path d="M4.5 8h7" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round"/></svg>' : ''));
                             daysHtml += `
                                 <td class="day-cell py-3 ${weekendClass} mobile-day-col ${isMobileVisible}">
-                                    <button type="button" onclick="cycleHabitDay(${habit.id}, '${key}')" class="habit-cell-btn ${isDone ? 'done' : (isMissed ? 'missed' : '')}" title="${isDone ? 'Fait' : (isMissed ? 'Pas fait' : 'Non applicable')} — clique pour changer">${cellIcon}</button>
+                                    <button type="button" onclick="cycleHabitDay(${habit.id}, '${key}')" class="habit-cell-btn ${isDone ? 'done' : (isMissed ? 'missed' : (isNA ? 'na' : ''))}" title="${isDone ? 'Fait' : (isMissed ? 'Pas fait' : (isNA ? 'Non applicable' : 'Non rempli'))} — clique pour changer">${cellIcon}</button>
                                 </td>
                             `;
                         }
                     }
 
-                    // Les cases blanches (non applicable) sont ignorées : réussite = faits ÷ (faits + pas faits)
+                    // Les cases blanches (non applicable) sont ignorées : réussite = faits ÷ (faits + pas faits) ; blanc et non applicable sont ignorés
                     const applicableDays = doneCount + missedCount;
                     const progressPercent = applicableDays > 0 ? Math.round((doneCount / applicableDays) * 100) : 0;
                     const linkedBadgeTitle = linkedEvent
@@ -3682,7 +3684,7 @@
             renderHabits();
         }
 
-        // Cycle : vide (non applicable) -> coche verte (fait) -> croix rouge (pas fait) -> vide
+        // Cycle : blanc (non rempli) -> coche verte (fait) -> croix rouge (pas fait) -> gris/tiret (non applicable) -> blanc
         function cycleHabitDay(habitId, key) {
             const habit = habits.find(h => h.id === habitId);
             if (!habit) return;
@@ -3690,6 +3692,8 @@
             if (cur === true) {
                 habit.history[key] = 'missed';
             } else if (cur === 'missed') {
+                habit.history[key] = 'na';
+            } else if (cur === 'na') {
                 delete habit.history[key];
             } else {
                 habit.history[key] = true;
