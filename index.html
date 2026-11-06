@@ -3549,7 +3549,7 @@
                     const linkedBadge = linkedEvent ? `<span class="ml-1 text-[10px]" title="${linkedBadgeTitle}">${linkedEvent.emoji || '🔗'}</span>` : '';
                     const archivedBadgeDay = habit.deletedFrom ? (habit.deletedFrom.displayDay ?? habit.deletedFrom.day) : null;
                     const archivedBadgeMonth = habit.deletedFrom ? (habit.deletedFrom.displayMonth ?? habit.deletedFrom.month) : null;
-                    const archivedBadge = habit.deletedFrom
+                    const archivedBadge = (habit.deletedFrom && habit.deletedFrom.day !== 32)
                         ? `<span class="ml-1 text-[10px]" title="Supprimée le ${archivedBadgeDay}/${archivedBadgeMonth + 1}/2026 — historique conservé">🗄️</span>`
                         : '';
                     // Tant qu'on est dans le mois où l'habitude a été archivée (suppression après
@@ -4071,21 +4071,21 @@
         // l'habitude n'apparaît plus du tout à partir du mois suivant.
         function deleteHabit(id) {
             const habit = habits.find(h => h.id === id);
-            if (!habit || habit.deletedFrom) return; // déjà archivée, on ne touche plus à la date
+            if (!habit || habit.deletedFrom) return;
 
-            const now = new Date();
-            const day = now.getDate();
-            const month = now.getMonth();
+            // Suppression à partir du mois affiché : l'habitude disparaît de ce mois et des
+            // suivants, mais l'historique des mois précédents reste consultable.
+            const month = parseInt(document.getElementById('habit-month-select').value);
 
-            if (day <= 5) {
-                // Suppression en tout début de mois (du 1er au 5) : pas de cases grisées
-                // sur le mois en cours, l'habitude disparaît directement de ce mois (comme
-                // si elle avait été supprimée à la fin du mois précédent). L'historique des
-                // mois antérieurs, s'il existe, reste consultable. displayMonth/displayDay
-                // gardent la vraie date de suppression pour l'affichage (badge/tooltip).
-                habit.deletedFrom = { month: month - 1, day: 32, displayMonth: month, displayDay: day };
+            const hasEarlierHistory = Object.keys(habit.history || {}).some(k => {
+                const parts = k.split('-');
+                return parseInt(parts[1]) < month && habit.history[k] !== undefined;
+            });
+
+            if (hasEarlierHistory) {
+                habit.deletedFrom = { month: month - 1, day: 32 };
             } else {
-                habit.deletedFrom = { month: month, day: day };
+                habits = habits.filter(h => h.id !== id);
             }
 
             saveData();
