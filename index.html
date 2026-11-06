@@ -200,12 +200,12 @@
         }
     </style>
     <style>
-        /* Habitude non faite sur un jour passé : croix rouge à la place de la case vide */
-        input[type="checkbox"].habit-missed {
-            -webkit-appearance: none; appearance: none;
-            width: 1rem; height: 1rem; border: 1.5px solid #fca5a5; border-radius: 3px;
-            background: #fef2f2 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23ef4444' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center/100% 100% no-repeat;
-        }
+        /* Case d'habitude à 3 états : vide (non applicable) / coche verte (fait) / croix rouge (pas fait) */
+        .habit-cell-btn { width: 1.15rem; height: 1.15rem; border-radius: 4px; border: 1.5px solid #cbd5e1; background: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; transition: transform .1s; vertical-align: middle; }
+        .habit-cell-btn:hover { transform: scale(1.15); }
+        .habit-cell-btn.done { background: #22c55e; border-color: #22c55e; }
+        .habit-cell-btn.missed { background: #fef2f2; border-color: #f87171; }
+        .habit-cell-btn svg { width: 100%; height: 100%; }
     </style>
 </head>
 <body class="text-slate-700 min-h-screen flex flex-col">
@@ -3487,6 +3487,7 @@
                 catHabits.forEach(habit => {
                     let doneCount = 0;
                     let disabledDaysCount = 0;
+                    let missedCount = 0;
                     let daysHtml = '';
 
                     const linkedEvent = habit.linkedEventId ? window.agendaEvents.find(e => e.id === habit.linkedEventId) : null;
@@ -3499,12 +3500,15 @@
                         const isArchivedDay = !!(habit.deletedFrom && monthIndex === habit.deletedFrom.month && d >= habit.deletedFrom.day);
                         const isRestDay = !!(window.habitRestDays && window.habitRestDays[key]);
                         const isDisabledDay = isArchivedDay || isLinkedDisabledDay || isRestDay;
-                        const isDone = habit.history[key] || false;
+                        const isDone = habit.history[key] === true;
+                        const isMissed = habit.history[key] === 'missed';
 
                         if (isDisabledDay) {
                             disabledDaysCount++;
                         } else if (isDone) {
                             doneCount++;
+                        } else if (isMissed) {
+                            missedCount++;
                         }
 
                         const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
@@ -3523,21 +3527,19 @@
                                 </td>
                             `;
                         } else {
-                            // Jour passé non fait : croix rouge à la place de la case vide
-                            const todayStart = new Date(realYear, realMonth, realDay);
-                            const isMissed = !isDone && checkDate < todayStart;
+                            const cellIcon = isDone
+                                ? '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                                : (isMissed ? '<svg viewBox="0 0 16 16"><path d="M4.5 4.5l7 7M11.5 4.5l-7 7" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round"/></svg>' : '');
                             daysHtml += `
                                 <td class="day-cell py-3 ${weekendClass} mobile-day-col ${isMobileVisible}">
-                                    <input type="checkbox" ${isDone ? 'checked' : ''}
-                                        onclick="toggleHabitDay(${habit.id}, '${key}', this.checked)"
-                                        ${isMissed ? 'title="Pas fait — clique pour cocher"' : ''}
-                                        class="${isMissed ? 'habit-missed' : ''} w-4 h-4 text-indigo-600 border-slate-300 rounded-sm focus:ring-indigo-400 cursor-pointer transition-transform duration-100 hover:scale-110">
+                                    <button type="button" onclick="cycleHabitDay(${habit.id}, '${key}')" class="habit-cell-btn ${isDone ? 'done' : (isMissed ? 'missed' : '')}" title="${isDone ? 'Fait' : (isMissed ? 'Pas fait' : 'Non applicable')} — clique pour changer">${cellIcon}</button>
                                 </td>
                             `;
                         }
                     }
 
-                    const applicableDays = totalDays - disabledDaysCount;
+                    // Les cases blanches (non applicable) sont ignorées : réussite = faits ÷ (faits + pas faits)
+                    const applicableDays = doneCount + missedCount;
                     const progressPercent = applicableDays > 0 ? Math.round((doneCount / applicableDays) * 100) : 0;
                     const linkedBadgeTitle = linkedEvent
                         ? (habit.linkedEventInvert ? `Désactivée en dehors de : ${linkedEvent.title || ''}` : `Désactivée pendant : ${linkedEvent.title || ''}`)
@@ -3596,7 +3598,7 @@
                 for (let d = 1; d <= totalDays; d++) {
                     let catColumnTotal = 0;
                     const restKey = `2026-${monthIndex}-${d}`;
-                    if (!(window.habitRestDays && window.habitRestDays[restKey])) catHabits.forEach(h => { if(h.history[restKey]) catColumnTotal++; });
+                    if (!(window.habitRestDays && window.habitRestDays[restKey])) catHabits.forEach(h => { if(h.history[restKey] === true) catColumnTotal++; });
                     const checkDate = new Date(2026, monthIndex, d);
                     const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
                     const weekendClass = isWeekend ? 'bg-slate-200/50' : '';
@@ -3680,14 +3682,21 @@
             renderHabits();
         }
 
-        function toggleHabitDay(habitId, key, isChecked) {
+        // Cycle : vide (non applicable) -> coche verte (fait) -> croix rouge (pas fait) -> vide
+        function cycleHabitDay(habitId, key) {
             const habit = habits.find(h => h.id === habitId);
-            if (habit) {
-                habit.history[key] = isChecked;
-                if (isChecked) triggerConfetti();
-                saveData();
-                renderHabits();
+            if (!habit) return;
+            const cur = habit.history[key];
+            if (cur === true) {
+                habit.history[key] = 'missed';
+            } else if (cur === 'missed') {
+                delete habit.history[key];
+            } else {
+                habit.history[key] = true;
+                triggerConfetti();
             }
+            saveData();
+            renderHabits();
         }
 
         // --- SUIVI D'HUMEUR ---
