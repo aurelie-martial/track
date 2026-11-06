@@ -1241,17 +1241,10 @@
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Catégorie</label>
                     <select id="habit-edit-category" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white"></select>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-500 mb-1">Désactivation automatique</label>
-                    <select id="habit-edit-linked-event" onchange="updateHabitEditInvertVisibility()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-white">
-                        <option value="">Toujours active</option>
-                    </select>
-                    <label id="habit-edit-invert-wrapper" class="hidden flex items-start gap-2 bg-slate-50 rounded-xl px-3 py-2 mt-2 cursor-pointer">
-                        <input type="checkbox" id="habit-edit-invert" class="mt-0.5 w-4 h-4 text-indigo-600 border-slate-300 rounded-sm focus:ring-indigo-400 cursor-pointer">
-                        <span class="text-[11px] text-slate-500">Désactiver quand cet événement <strong>n'a PAS lieu</strong> (au lieu de quand il a lieu)</span>
-                    </label>
-                    <p class="text-[11px] text-slate-400 mt-1">L'habitude sera automatiquement grisée (non cochable, exclue du % de réussite) les jours concernés. Utile par ex. pour une habitude liée à un enfant en garde alternée : crée d'abord dans l'Agenda un bandeau récurrent "1 semaine sur 2" pour tes semaines <strong>avec</strong> lui, sélectionne-le ici, puis coche la case ci-dessus pour désactiver l'habitude les semaines où il n'est pas enregistré.</p>
-                </div>
+                <label class="flex items-start gap-2 bg-slate-50 rounded-xl px-3 py-2 cursor-pointer">
+                    <input type="checkbox" id="habit-edit-with-son" class="mt-0.5 w-4 h-4 text-indigo-600 border-slate-300 rounded-sm focus:ring-indigo-400 cursor-pointer">
+                    <span class="text-[11px] text-slate-500"><strong>Habitude avec mon fils (Nahil)</strong> — grisée automatiquement les jours où il n'est pas avec moi (d'après les périodes « Mon fils » de l'agenda). Non cochable et exclue du % de réussite ces jours-là.</span>
+                </label>
             </div>
 
             <div class="flex justify-between items-center pt-2">
@@ -1878,6 +1871,8 @@
                 if (snap.metadata.hasPendingWrites) return;
                 window.foreignJkmeEvents = snap.exists() ? (snap.data().days || {}) : {};
                 if (typeof renderAgenda === 'function') renderAgenda();
+                // Les habitudes « avec mon fils » dépendent des périodes « Mon fils » (type garde)
+                if (typeof renderHabits === 'function') renderHabits();
                 if (window.agendaDayModalDate && typeof openAgendaDayModal === 'function') {
                     openAgendaDayModal(window.agendaDayModalDate);
                 }
@@ -2669,6 +2664,17 @@
         // window.foreignJkmeEvents est déjà organisé par jour (JKME matérialise chaque occurrence,
         // y compris les événements sur plusieurs jours ou récurrents) : pas besoin de recalculer quoi
         // que ce soit, juste lire la bonne clé.
+        // Vrai si une période « Mon fils » (type JKME 'garde') couvre ce jour
+        function isSonDay(dateObj) {
+            return getForeignJkmeEventsForDate(dateObj).some(ev => ev.type === 'garde');
+        }
+
+        // Habitude liée à Nahil : l'ancien réglage « désactiver quand l'événement n'a PAS lieu »
+        // (linkedEventInvert) est repris automatiquement comme « avec mon fils ».
+        function isSonHabit(habit) {
+            return !!(habit.withSon || (habit.linkedEventId && habit.linkedEventInvert));
+        }
+
         function getForeignJkmeEventsForDate(dateObj) {
             const dateStr = formatDateISO(dateObj);
             return (window.foreignJkmeEvents && window.foreignJkmeEvents[dateStr]) || [];
@@ -3491,13 +3497,12 @@
                     let missedCount = 0;
                     let daysHtml = '';
 
-                    const linkedEvent = habit.linkedEventId ? window.agendaEvents.find(e => e.id === habit.linkedEventId) : null;
+                    const sonHabit = isSonHabit(habit);
 
                     for (let d = 1; d <= totalDays; d++) {
                         const key = `2026-${monthIndex}-${d}`;
                         const checkDate = new Date(2026, monthIndex, d);
-                        const eventOccursToday = linkedEvent ? eventOccursOnDate(linkedEvent, checkDate) : false;
-                        const isLinkedDisabledDay = linkedEvent ? (habit.linkedEventInvert ? !eventOccursToday : eventOccursToday) : false;
+                        const isLinkedDisabledDay = sonHabit ? !isSonDay(checkDate) : false;
                         const isArchivedDay = !!(habit.deletedFrom && monthIndex === habit.deletedFrom.month && d >= habit.deletedFrom.day);
                         const isRestDay = !!(window.habitRestDays && window.habitRestDays[key]);
                         const isDisabledDay = isArchivedDay || isLinkedDisabledDay || isRestDay;
@@ -3522,7 +3527,7 @@
                                 ? 'Jour de pause'
                                 : isArchivedDay
                                 ? `Habitude supprimée le ${habit.deletedFrom.day}/${habit.deletedFrom.month + 1}/2026`
-                                : `Désactivée ce jour : ${linkedEvent.emoji || '📌'} ${linkedEvent.title || ''}`;
+                                : `Pas avec mon fils ce jour-là`;
                             daysHtml += `
                                 <td class="day-cell py-3 ${isRestDay ? 'bg-amber-50' : 'bg-slate-50'} mobile-day-col ${isMobileVisible}" title="${disabledTitle}">
                                     <span class="text-slate-300 text-xs">–</span>
@@ -3543,10 +3548,7 @@
                     // Les cases blanches (non applicable) sont ignorées : réussite = faits ÷ (faits + pas faits) ; blanc et non applicable sont ignorés
                     const applicableDays = doneCount + missedCount;
                     const progressPercent = applicableDays > 0 ? Math.round((doneCount / applicableDays) * 100) : 0;
-                    const linkedBadgeTitle = linkedEvent
-                        ? (habit.linkedEventInvert ? `Désactivée en dehors de : ${linkedEvent.title || ''}` : `Désactivée pendant : ${linkedEvent.title || ''}`)
-                        : '';
-                    const linkedBadge = linkedEvent ? `<span class="ml-1 text-[10px]" title="${linkedBadgeTitle}">${linkedEvent.emoji || '🔗'}</span>` : '';
+                    const linkedBadge = sonHabit ? `<span class="ml-1 text-[10px]" title="Désactivée les jours où mon fils n'est pas avec moi">👦</span>` : '';
                     const archivedBadgeDay = habit.deletedFrom ? (habit.deletedFrom.displayDay ?? habit.deletedFrom.day) : null;
                     const archivedBadgeMonth = habit.deletedFrom ? (habit.deletedFrom.displayMonth ?? habit.deletedFrom.month) : null;
                     const archivedBadge = (habit.deletedFrom && habit.deletedFrom.day !== 32)
@@ -4019,21 +4021,9 @@
             const catSelect = document.getElementById('habit-edit-category');
             catSelect.innerHTML = categories.map(cat => `<option value="${cat}" ${cat === habit.category ? 'selected' : ''}>${cat}</option>`).join('');
 
-            const linkedEventSelect = document.getElementById('habit-edit-linked-event');
-            const sortedEvents = [...window.agendaEvents].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-            linkedEventSelect.innerHTML = `<option value="">Toujours active</option>` +
-                sortedEvents.map(ev => `<option value="${ev.id}" ${habit.linkedEventId === ev.id ? 'selected' : ''}>${ev.emoji || '📌'} ${ev.title || '(sans titre)'}</option>`).join('');
-
-            document.getElementById('habit-edit-invert').checked = !!habit.linkedEventInvert;
-            updateHabitEditInvertVisibility();
+            document.getElementById('habit-edit-with-son').checked = isSonHabit(habit);
 
             document.getElementById('habit-edit-modal').classList.remove('hidden');
-        }
-
-        function updateHabitEditInvertVisibility() {
-            const linkedEventSelect = document.getElementById('habit-edit-linked-event');
-            const invertWrapper = document.getElementById('habit-edit-invert-wrapper');
-            invertWrapper.classList.toggle('hidden', !linkedEventSelect.value);
         }
 
         function closeHabitEditModal() {
@@ -4047,12 +4037,13 @@
 
             const newTitle = document.getElementById('habit-edit-title').value.trim();
             const newCategory = document.getElementById('habit-edit-category').value;
-            const linkedEventVal = document.getElementById('habit-edit-linked-event').value;
 
             if (newTitle !== "") habit.title = newTitle;
             if (newCategory) habit.category = newCategory;
-            habit.linkedEventId = linkedEventVal ? parseInt(linkedEventVal) : null;
-            habit.linkedEventInvert = linkedEventVal ? document.getElementById('habit-edit-invert').checked : false;
+            habit.withSon = document.getElementById('habit-edit-with-son').checked;
+            // Ancien système (lien vers un événement d'agenda au choix) supprimé
+            habit.linkedEventId = null;
+            habit.linkedEventInvert = false;
 
             saveData();
             closeHabitEditModal();
