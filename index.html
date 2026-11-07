@@ -1488,7 +1488,7 @@
     <!-- FIREBASE AUTH & FIRESTORE LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, onSnapshot, setDoc, getDocFromServer, getDoc, getDocs, collection, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDocFromServer, getDoc, getDocs, collection, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
@@ -2033,7 +2033,22 @@
                 // sont écrits ; un champ qu'on ne connaît plus ici (legacy, ou géré ailleurs comme
                 // l'agenda partagé désormais) reste intact côté serveur au lieu d'être silencieusement
                 // effacé à la prochaine sauvegarde.
-                await setDoc(currentUserDocRef, safePayload, { merge: true });
+                // CORRECTIF (novembre 2026) : { merge: true } fusionne aussi les objets en profondeur.
+                // Or todoData (blocs → tâches), moodHistory, habitRestDays, mealPlans, budgetPlanByMonth...
+                // sont des objets dont on SUPPRIME des clés (bloc Todo supprimé ou renommé, jour de pause
+                // retiré...) : avec merge, ces clés supprimées restaient côté serveur et réapparaissaient
+                // au rechargement. updateDoc remplace chaque champ de premier niveau en entier (donc les
+                // clés supprimées disparaissent vraiment) tout en laissant intacts les champs que ce
+                // payload ne contient pas (même protection que merge pour l'ancien champ agendaEvents).
+                try {
+                    await updateDoc(currentUserDocRef, safePayload);
+                } catch (updateErr) {
+                    if (updateErr && updateErr.code === 'not-found') {
+                        await setDoc(currentUserDocRef, safePayload); // premier enregistrement : le document n'existe pas encore
+                    } else {
+                        throw updateErr;
+                    }
+                }
             } catch (e) {
                 console.error("Erreur de sauvegarde Firebase: ", e);
                 alert("⚠️ La sauvegarde a échoué. Vos derniers changements (peut-être une photo trop volumineuse) n'ont pas été enregistrés.");
